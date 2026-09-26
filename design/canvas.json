@@ -1,0 +1,99 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Contribute.dc.html": {
+      "h": 1024,
+      "is_interactive": true,
+      "title": "Update timings (modal)",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 1024,
+      "is_interactive": true,
+      "title": "Explore · London",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "MobileMosque.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · Mosque",
+      "w": 390,
+      "x": 0,
+      "y": 2700
+    },
+    "MobileProfile.dc.html": {
+      "h": 844,
+      "title": "Mobile · Profile",
+      "w": 390,
+      "x": 940,
+      "y": 2700,
+      "is_interactive": true
+    },
+    "MobileVerify.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · Quick verify at the mosque",
+      "w": 390,
+      "x": 470,
+      "y": 2700
+    },
+    "Mosque.dc.html": {
+      "h": 2200,
+      "is_interactive": true,
+      "title": "Mosque page · East London Mosque",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Profile.dc.html": {
+      "h": 2080,
+      "is_interactive": true,
+      "title": "Profile · mosques.world/@wahabshaikh",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-26T15:20:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 6000,
+      "text": "mosques.world — desktop MVP",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 1330,
+      "text": "On the go — mobile",
+      "w": 240,
+      "x": 0,
+      "y": 2400
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Mosque.dc.html",
+    "Contribute.dc.html",
+    "Profile.dc.html",
+    "MobileMosque.dc.html",
+    "MobileVerify.dc.html",
+    "MobileProfile.dc.html"
+  ],
+  "pages": [],
+  "title": "mosques.world MVP"
+}

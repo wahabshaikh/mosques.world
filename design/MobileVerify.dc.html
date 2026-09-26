@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quick verify at East London Mosque</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#1F1D1A;background:#FFFFFF}
+a{color:#0B6E4F;text-decoration:none}a:hover{color:#08553D}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: #ECEEE7; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #1F1D1A">
+
+<svg width="390" height="844" viewBox="0 0 390 844" aria-hidden="true" style="position: absolute; inset: 0">
+<rect width="390" height="844" fill="#ECEEE7"></rect>
+<path d="M-10 250 L400 200" stroke="#FFFFFF" stroke-width="16"></path>
+<path d="M120 -10 L160 500" stroke="#FFFFFF" stroke-width="8"></path>
+<path d="M300 -10 L270 500" stroke="#FFFFFF" stroke-width="5"></path>
+<path d="M0 90 L390 120" stroke="#FFFFFF" stroke-width="4"></path>
+<ellipse cx="330" cy="360" rx="80" ry="40" fill="#D3E4CF"></ellipse>
+<text x="20" y="238" font-family="Plus Jakarta Sans, sans-serif" font-size="10" font-weight="700" letter-spacing="1.2" fill="#7A766E">WHITECHAPEL RD</text>
+</svg>
+<div style="position: absolute; left: 195px; top: 220px; transform: translate(-50%, -50%); width: 120px; height: 120px; border-radius: 999px; background: rgba(11,110,79,0.14)"></div>
+<div style="position: absolute; left: 195px; top: 220px; transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 999px; background: #0B6E4F; border: 4px solid #FFFFFF; box-shadow: 0 3px 12px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20v-6a6 6 0 0 1 12 0v6z"></path><path d="M12 5v3"></path><path d="M3 20h18"></path></svg></div>
+<a href="MobileMosque.dc.html" aria-label="Close" style="position: absolute; left: 16px; top: 52px; width: 40px; height: 40px; border-radius: 999px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; color: #1F1D1A; box-shadow: 0 1px 4px rgba(0,0,0,0.15)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+
+<div style="position: absolute; left: 0; bottom: 0; width: 390px; height: 520px; box-sizing: border-box; background: #FFFFFF; border-radius: 24px 24px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); padding: 10px 20px 34px; display: flex; flex-direction: column; gap: 18px">
+<span style="align-self: center; width: 40px; height: 5px; border-radius: 999px; background: #D6D1C7"></span>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: #0B6E4F">YOU'RE AT</span>
+<span style="font-size: 22px; font-weight: 800; letter-spacing: -0.3px">East London Mosque</span>
+<span style="font-size: 13px; color: #5E5A53">Checked in for Asr · added to your map</span>
+</div>
+
+<div style="display: flex; gap: 6px">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="3">
+<span style="flex-grow: 1; height: 4px; border-radius: 999px; background: {{d.bg}}"></span>
+</sc-for>
+</div>
+
+<sc-if value="{{q0}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 13px; color: #5E5A53">Quick check 1 of 3 · 3 people reported a change</span>
+<span style="font-size: 24px; font-weight: 800; line-height: 1.25">Is Isha iqamah<br>now <span style="color: #0B6E4F">8:30 PM</span>?</span>
+<span style="font-size: 14px; color: #5E5A53">Check the timetable board by the entrance.</span>
+<button type="button" onClick="{{yes}}" style="border: 0; background: #0B6E4F; color: #FFFFFF; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer">Yes, it's 8:30</button>
+<button type="button" onClick="{{yes}}" style="border: 1px solid #1F1D1A; background: #FFFFFF; color: #1F1D1A; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer">No, still 8:45</button>
+<button type="button" style="border: 0; background: transparent; color: #1F1D1A; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 6px">It's something else</button>
+</div>
+</sc-if>
+
+<sc-if value="{{q1}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 13px; color: #5E5A53">Quick check 2 of 3</span>
+<span style="font-size: 24px; font-weight: 800; line-height: 1.25">Is the women's section<br>open right now?</span>
+<span style="font-size: 14px; color: #5E5A53">Skip if you can't tell — only answer what you've seen.</span>
+<button type="button" onClick="{{yes}}" style="border: 0; background: #0B6E4F; color: #FFFFFF; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer">Yes, it's open</button>
+<button type="button" onClick="{{yes}}" style="border: 1px solid #1F1D1A; background: #FFFFFF; color: #1F1D1A; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer">No, it's closed</button>
+<button type="button" onClick="{{yes}}" style="border: 0; background: transparent; color: #1F1D1A; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 6px">Not sure — skip</button>
+</div>
+</sc-if>
+
+<sc-if value="{{q2}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 13px; color: #5E5A53">Quick check 3 of 3</span>
+<span style="font-size: 24px; font-weight: 800; line-height: 1.25">Snap the timetable<br>board?</span>
+<span style="font-size: 14px; color: #5E5A53">One photo keeps a whole month of times honest.</span>
+<button type="button" onClick="{{yes}}" style="border: 0; background: #0B6E4F; color: #FFFFFF; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v12H4z"></path><circle cx="12" cy="13.5" r="3.5"></circle></svg>Open camera</button>
+<button type="button" onClick="{{yes}}" style="border: 0; background: transparent; color: #1F1D1A; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 6px">Maybe next time</button>
+</div>
+</sc-if>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; padding-top: 10px">
+<span style="width: 72px; height: 72px; border-radius: 999px; background: #E6F1EB; display: flex; align-items: center; justify-content: center"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B6E4F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+<span style="font-size: 24px; font-weight: 800">JazakAllahu khayran</span>
+<span style="font-size: 14px; color: #5E5A53; line-height: 1.5">Isha now needs 1 more confirmation to update for everyone. You've verified 215 timings.</span>
+<a href="MobileProfile.dc.html" style="background: #1F1D1A; color: #FFFFFF; border-radius: 14px; padding: 15px 20px; font-size: 15px; font-weight: 700; align-self: stretch">See your map</a>
+<button type="button" onClick="{{restart}}" style="border: 0; background: transparent; color: #1F1D1A; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 6px">Start over</button>
+</div>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { step: 0 }; }
+renderVals() {
+const s = this.state.step;
+return {
+q0: s === 0, q1: s === 1, q2: s === 2, done: s >= 3,
+dots: [0, 1, 2].map((i) => ({ bg: i < s ? '#0B6E4F' : i === s ? '#1F1D1A' : '#E8E4DC' })),
+yes: () => this.setState({ step: s + 1 }),
+restart: () => this.setState({ step: 0 })
+};
+}
+}
+</script>
+</body>
+</html>
