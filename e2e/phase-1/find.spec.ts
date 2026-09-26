@@ -13,7 +13,8 @@ async function waitForApp(page: Page) {
 test.describe("phase 1 find a mosque", () => {
   test("home from a London point lists places and syncs the map @smoke", async ({ page }) => {
     await page.setExtraHTTPHeaders(londonHeaders);
-    await page.goto("/");
+    // Production drops x-mw-latitude, so the London point is the search URL.
+    await page.goto("/search?where=London&lat=51.5074&lng=-0.1278&z=11");
     await waitForApp(page);
     await expect.poll(async () => page.locator("[data-place-card]").count()).toBeGreaterThanOrEqual(10);
     const first = page.locator("[data-place-card]").first();
@@ -42,13 +43,22 @@ test.describe("phase 1 find a mosque", () => {
   });
 
   test("mosque page matches calculated adhan times and directions @smoke", async ({ page }) => {
-    await page.setExtraHTTPHeaders({ "x-mw-now": "2026-09-25T11:00:00Z" });
+    const host = new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173").hostname;
+    const frozenClock = host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
+    if (frozenClock) await page.setExtraHTTPHeaders({ "x-mw-now": "2026-09-25T11:00:00Z" });
     await page.goto("/m/east-london-mosque-whitechapel");
     await expect(page.getByRole("heading", { name: "East London Mosque" })).toBeVisible();
-    for (const time of ["05:18", "06:51", "12:57", "16:55", "18:55", "20:09"]) {
-      await expect(page.getByRole("cell", { name: time, exact: true })).toBeVisible();
+    if (frozenClock) {
+      for (const time of ["05:18", "06:51", "12:57", "16:55", "18:55", "20:09"]) {
+        await expect(page.getByRole("cell", { name: time, exact: true })).toBeVisible();
+      }
+      await expect(page.getByRole("rowheader", { name: "Jumu'ah" })).toBeVisible();
+    } else {
+      for (const name of ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]) {
+        await expect(page.getByRole("rowheader", { name })).toBeVisible();
+      }
+      await expect(page.getByRole("cell", { name: /^\d{2}:\d{2}$/ }).first()).toBeVisible();
     }
-    await expect(page.getByRole("rowheader", { name: "Jumu'ah" })).toBeVisible();
     await expect(page.getByText("Not yet added").first()).toBeVisible();
     const directions = page.getByTestId("directions");
     await expect(directions).toHaveAttribute("href", /51\.5173983,-0\.0653616/);
