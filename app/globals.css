@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.75rem;
+  --background: #ffffff;
+  --foreground: #1f1d1a;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --muted: #f6f4ef;
+  --muted-foreground: #5e5a53;
+  --border: #e8e4dc;
+  --input: #e0dbd2;
+  --border-strong: #c9c3b8;
+  --primary: #0b6e4f;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e6f1eb;
+  --secondary: #1f1d1a;
+  --secondary-foreground: #ffffff;
+  --warning: #a4520a;
+  --warning-soft: #fcf1e1;
+  --destructive: #b42318;
+  --ring: #0b6e4f;
+  --info: #2f6fdb;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark {
+  --background: #121110;
+  --foreground: #f3f1ec;
+  --card: #1b1a18;
+  --popover: #1b1a18;
+  --muted: #24221f;
+  --muted-foreground: #a9a399;
+  --border: #2e2b27;
+  --input: #38352f;
+  --border-strong: #4a463f;
+  --primary: #34b98a;
+  --primary-foreground: #0b1f17;
+  --primary-soft: #16322a;
+  --secondary: #f3f1ec;
+  --secondary-foreground: #121110;
+  --warning: #e8a55a;
+  --warning-soft: #3a2a14;
+  --destructive: #f97066;
+  --ring: #34b98a;
+  --info: #6ea0f0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-info: var(--info);
+  --radius-lg: var(--radius);
+  --font-sans: var(--font-sans);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

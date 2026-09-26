@@ -1,0 +1,55 @@
+# Phase 1 runbook
+
+## What is live
+
+Public directory: explore, search, mosque pages with calculated adhan times, city and country pages, sitemap, and waitlist double opt-in.
+
+## Rollback
+
+Deploy the previous Worker version and leave the database as-is. Migrations are additive, so there is no database rollback.
+
+```bash
+wrangler rollback
+```
+
+## Local
+
+```bash
+pnpm install
+pnpm exec wrangler d1 migrations apply DB --local
+pnpm dev
+```
+
+The app listens on http://127.0.0.1:5173. Local and preview hosts accept `x-mw-latitude`, `x-mw-longitude`, and `x-mw-now` so tests can pin a place and a clock. Production ignores those headers.
+
+## Data
+
+`migrations/0001_phase1.sql` creates the directory tables. `migrations/0002_seed.sql` loads launch-city places from OpenStreetMap (London, Istanbul, Makkah, Toronto, Jakarta, Oslo, Mumbai).
+
+To import another region when Overpass is reachable:
+
+```bash
+pnpm exec tsx scripts/import-osm.ts --bbox 51.28,-0.52,51.70,0.30 --country GB --city london --city-name London \
+  | pnpm exec wrangler d1 execute DB --remote --file=/dev/stdin
+```
+
+A nightly cron recounts `city.place_count`.
+
+## Deploy
+
+Production is the `mosques-world` Worker on `mosques.world`. Preview is `mosques-world-preview`.
+
+```bash
+pnpm exec wrangler d1 migrations apply DB --remote
+pnpm exec vinext build
+pnpm exec wrangler deploy
+```
+
+## Email
+
+Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production sending needs Cloudflare Email Service on `mail.mosques.world`, which is not bound yet.
+
+## Known gaps before the definition of done is fully closed
+
+- Google Places, Turnstile, Sentry, and DataFast keys are unset. Search falls back to the city table. Geocode requests past 20 per hour per IP are rejected until Turnstile keys exist.
+- Lighthouse is run against the deployed mosque page after each production deploy.
