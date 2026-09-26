@@ -16,8 +16,31 @@
   "vars": {
     "PUBLIC_BASE_URL": "https://mosques.world",
     "EMAIL_SINK": "0",
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+    }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "Q_EMAIL", "queue": "q-email" },
+      { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
+      { "binding": "Q_MEDIA", "queue": "q-media" }
+    ],
+    "consumers": [
+      { "queue": "q-email", "max_retries": 5, "dead_letter_queue": "q-dlq" },
+      { "queue": "q-recompute", "max_retries": 5, "dead_letter_queue": "q-dlq" },
+      { "queue": "q-media", "max_retries": 5, "dead_letter_queue": "q-dlq" }
+    ]
+  },
+  "ratelimits": [
+    { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+  ],
   "d1_databases": [
     {
       "binding": "DB",
@@ -42,10 +65,28 @@
     "preview": {
       "name": "mosques-world-preview",
       "vars": {
-        "PUBLIC_BASE_URL": "https://mosques-world-preview.workers.dev",
+        "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
         "EMAIL_SINK": "1",
-        "ENVIRONMENT": "preview"
+        "ENVIRONMENT": "preview",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
       },
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+        }
+      ],
+      "queues": {
+        "producers": [
+          { "binding": "Q_EMAIL", "queue": "q-email" },
+          { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
+          { "binding": "Q_MEDIA", "queue": "q-media" }
+        ]
+      },
+      "ratelimits": [
+        { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+        { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+      ],
       "d1_databases": [
         {
           "binding": "DB",

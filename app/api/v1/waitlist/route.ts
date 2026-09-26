@@ -52,6 +52,15 @@ export async function POST(request: Request) {
       JSON.stringify({ to: email, ...message }),
       { expirationTtl: 60 * 60 * 24 },
     );
+  } else if (env.Q_EMAIL) {
+    await env.Q_EMAIL.send({ to: email, subject: message.subject, text: message.text });
+  } else if (env.EMAIL) {
+    await env.EMAIL.send({
+      from: "no-reply@mail.mosques.world",
+      to: email,
+      subject: message.subject,
+      text: message.text,
+    });
   }
   return Response.json({ ok: true });
 }

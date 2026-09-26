@@ -33,6 +33,7 @@ export function ExploreView({
   kind,
   subline,
   showGeoPrompt,
+  turnstileSiteKey,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -42,6 +43,7 @@ export function ExploreView({
   kind: PlaceKindFilter;
   subline: string;
   showGeoPrompt: boolean;
+  turnstileSiteKey?: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -50,6 +52,8 @@ export function ExploreView({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState(false);
   const [searchAsMove, setSearchAsMove] = useState(true);
+  const [challenge, setChallenge] = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setQuery(where);
@@ -57,19 +61,67 @@ export function ExploreView({
 
   const cards = useMemo(() => places, [places]);
 
-  async function onType(value: string) {
+  async function onType(value: string, token?: string) {
     queryRef.current = value;
     setQuery(value);
     if (value.trim().length < 2) {
       setSuggestions([]);
+      setChallenge(false);
       return;
     }
-    const response = await fetch(`/api/v1/geocode/autocomplete?q=${encodeURIComponent(value)}`);
+    const turnstile = token ? `&turnstile=${encodeURIComponent(token)}` : "";
+    const response = await fetch(`/api/v1/geocode/autocomplete?q=${encodeURIComponent(value)}${turnstile}`);
+    if (response.status === 403 && turnstileSiteKey) {
+      const denied = (await response.json().catch(() => null)) as { challenge?: boolean } | null;
+      if (denied?.challenge) {
+        setChallenge(true);
+        setSuggestions([]);
+        return;
+      }
+    }
     if (!response.ok || queryRef.current !== value) return;
     const body = (await response.json()) as { suggestions: Array<{ label: string; lat: number; lng: number }> };
     if (queryRef.current !== value) return;
+    setChallenge(false);
     setSuggestions(body.suggestions);
   }
+
+  useEffect(() => {
+    if (!challenge || !turnstileSiteKey || !widgetRef.current) return;
+    const host = widgetRef.current;
+    let widgetId = "";
+    let cancelled = false;
+    const turnstileWindow = window as Window & {
+      turnstile?: {
+        render: (element: HTMLElement, options: { sitekey: string; callback: (token: string) => void }) => string;
+        remove: (id: string) => void;
+      };
+    };
+    const render = () => {
+      if (cancelled || !turnstileWindow.turnstile) return;
+      widgetId = turnstileWindow.turnstile.render(host, {
+        sitekey: turnstileSiteKey,
+        callback: (token) => {
+          setChallenge(false);
+          void onType(queryRef.current, token);
+        },
+      });
+    };
+    if (turnstileWindow.turnstile) {
+      render();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.dataset.turnstile = "mosques";
+      script.onload = render;
+      document.head.appendChild(script);
+    }
+    return () => {
+      cancelled = true;
+      if (widgetId) turnstileWindow.turnstile?.remove(widgetId);
+    };
+  }, [challenge, turnstileSiteKey]);
 
   function goTo(next: { label: string; lat: number; lng: number }) {
     const params = new URLSearchParams({
@@ -118,6 +170,9 @@ export function ExploreView({
                 placeholder="City or mosque"
                 autoComplete="off"
               />
+              {challenge ? (
+                <div ref={widgetRef} className="px-3 pb-2" />
+              ) : null}
               {suggestions.length > 0 ? (
                 <ul className="absolute top-full right-0 left-0 z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">
                   {suggestions.map((item) => (

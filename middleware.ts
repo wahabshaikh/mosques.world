@@ -35,7 +35,7 @@ export function middleware(request: NextRequest) {
       scriptSrc,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://tiles.openfreemap.org https://*.openfreemap.org",
-      "connect-src 'self' https://tiles.openfreemap.org https://*.openfreemap.org https://datafa.st https://*.sentry.io",
+      "connect-src 'self' https://tiles.openfreemap.org https://*.openfreemap.org https://datafa.st https://*.sentry.io https://challenges.cloudflare.com",
       "font-src 'self' data:",
       "worker-src 'self' blob:",
       "frame-src https://challenges.cloudflare.com https://www.openstreetmap.org",

@@ -16,6 +16,12 @@ export type AppEnv = {
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   SENTRY_DSN?: string;
+  EMAIL?: SendEmail;
+  Q_EMAIL?: Queue;
+  Q_RECOMPUTE?: Queue;
+  Q_MEDIA?: Queue;
+  RL_WRITE?: RateLimit;
+  RL_AUTH?: RateLimit;
 };
 
 export function appEnv(): AppEnv {

@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { ExploreView } from "@/components/mw/explore-view";
+import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
 import { isNonProductionHost, madhabOf, readNow, toCard } from "@/lib/places/present";
@@ -57,6 +58,7 @@ export async function ExplorePage({
       kind={view.kind}
       subline={subline}
       showGeoPrompt={view.source !== "url"}
+      turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
     />
   );
 }

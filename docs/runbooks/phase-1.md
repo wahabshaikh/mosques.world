@@ -47,9 +47,9 @@ pnpm exec wrangler deploy
 
 ## Email
 
-Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production sending needs Cloudflare Email Service on `mail.mosques.world`, which is not bound yet.
+Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production enqueues the message on `q-email`. The consumer sends it with the Email Service binding from `no-reply@mail.mosques.world` (SPF, DKIM, and DMARC on `mail.mosques.world`).
 
 ## Known gaps before the definition of done is fully closed
 
-- Google Places, Turnstile, Sentry, and DataFast keys are unset. Search falls back to the city table. Geocode requests past 20 per hour per IP are rejected until Turnstile keys exist.
+- `GOOGLE_MAPS_API_KEY`, `SENTRY_DSN`, `DATAFAST_WEBSITE_ID`, and `DATAFAST_API_KEY` are unset. Search falls back to the city table. Geocode requests past 20 per hour per IP ask for the Turnstile widget when `TURNSTILE_SECRET_KEY` is bound.
 - Lighthouse is run against the deployed mosque page after each production deploy.
