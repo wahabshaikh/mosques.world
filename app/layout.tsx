@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { ConsentBanner } from "@/components/mw/consent";
+import { HoistMetadata } from "@/components/mw/hoist-metadata";
 import { appEnv } from "@/lib/db/client";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <HoistMetadata />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <ConsentBanner websiteId={websiteId} />
