@@ -64,6 +64,10 @@
   "env": {
     "preview": {
       "name": "mosques-world-preview",
+      "workers_dev": true,
+      "routes": [],
+      "triggers": { "crons": [] },
+      "images": { "binding": "IMAGES" },
       "vars": {
         "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
         "EMAIL_SINK": "1",

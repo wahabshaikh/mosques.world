@@ -37,12 +37,20 @@ A nightly cron recounts `city.place_count`.
 
 ## Deploy
 
-Production is the `mosques-world` Worker on `mosques.world`. Preview is `mosques-world-preview`.
+Production is the `mosques-world` Worker on `mosques.world`.
 
 ```bash
 pnpm exec wrangler d1 migrations apply DB --remote
 pnpm exec vinext build
 pnpm exec wrangler deploy
+```
+
+Preview is `mosques-world-preview` on `workers.dev` only. Its Wrangler env sets `routes` and `triggers.crons` to empty so a preview deploy does not take `mosques.world` or the nightly cron, and it declares the `IMAGES` binding (that binding is not inherited). Build with `CLOUDFLARE_ENV=preview`, then deploy the flattened config vinext writes:
+
+```bash
+pnpm exec wrangler d1 migrations apply DB --remote --env preview
+CLOUDFLARE_ENV=preview pnpm exec vinext build
+pnpm exec wrangler deploy --config dist/server/wrangler.json
 ```
 
 ## Email
