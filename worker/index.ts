@@ -1,10 +1,14 @@
+import * as Sentry from "@sentry/cloudflare";
 import handler from "vinext/server/fetch-handler";
+import { sentryOptions } from "@/lib/sentry";
 
 type Env = {
   DB: D1Database;
   CACHE?: KVNamespace;
   EMAIL?: SendEmail;
   PUBLIC_BASE_URL?: string;
+  SENTRY_DSN?: string;
+  ENVIRONMENT?: string;
 };
 
 const MAIL_FROM = "no-reply@mail.mosques.world";
@@ -23,7 +27,7 @@ const CITY_RECOUNT = `UPDATE city SET place_count = (
     AND place.status = 'active'
 )`;
 
-export default {
+export default Sentry.withSentry((env) => sentryOptions(env), {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
     if (url.hostname === "www.mosques.world") {
@@ -48,4 +52,4 @@ export default {
       message.ack();
     }
   },
-};
+});
