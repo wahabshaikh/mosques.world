@@ -1,5 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { suggestPlaces } from "@/lib/db/queries";
+import { googleAutocomplete } from "@/lib/places/autocomplete";
 import { geocodeDecision } from "@/lib/places/view";
 
 export const dynamic = "force-dynamic";
@@ -30,32 +31,6 @@ export async function GET(request: Request) {
   }
   const suggestions = await suggestPlaces(q);
   return Response.json({ suggestions });
-}
-
-async function googleAutocomplete(input: string, apiKey: string) {
-  const response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-    },
-    body: JSON.stringify({
-      input,
-      includedPrimaryTypes: ["locality", "(regions)"],
-    }),
-  });
-  if (!response.ok) return [];
-  const body = (await response.json()) as {
-    suggestions?: Array<{ placePrediction?: { placeId?: string; text?: { text?: string } } }>;
-  };
-  return (body.suggestions ?? [])
-    .map((item) => ({
-      label: item.placePrediction?.text?.text ?? "",
-      placeId: item.placePrediction?.placeId ?? "",
-      lat: null as number | null,
-      lng: null as number | null,
-    }))
-    .filter((item) => item.label && item.placeId);
 }
 
 async function verifyTurnstile(token: string, secret: string) {
