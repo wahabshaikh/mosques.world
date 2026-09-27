@@ -37,12 +37,20 @@ A nightly cron recounts `city.place_count`.
 
 ## Deploy
 
-Production is the `mosques-world` Worker on `mosques.world`. Preview is `mosques-world-preview`.
+Production is the `mosques-world` Worker on `mosques.world`.
 
 ```bash
 pnpm exec wrangler d1 migrations apply DB --remote
 pnpm exec vinext build
 pnpm exec wrangler deploy
+```
+
+Preview is `mosques-world-preview` on `workers.dev` only. Its Wrangler env sets `routes` and `triggers.crons` to empty so a preview deploy does not take `mosques.world` or the nightly cron, and it declares the `IMAGES` binding (that binding is not inherited). Build with `CLOUDFLARE_ENV=preview`, then deploy the flattened config vinext writes:
+
+```bash
+pnpm exec wrangler d1 migrations apply DB --remote --env preview
+CLOUDFLARE_ENV=preview pnpm exec vinext build
+pnpm exec wrangler deploy --config dist/server/wrangler.json
 ```
 
 ## Email
@@ -51,5 +59,6 @@ Waitlist confirmation is stored in D1. Preview and localhost copy the message in
 
 ## Known gaps before the definition of done is fully closed
 
-- `GOOGLE_MAPS_API_KEY`, `SENTRY_DSN`, `DATAFAST_WEBSITE_ID`, and `DATAFAST_API_KEY` are unset. Search falls back to the city table. Geocode requests past 20 per hour per IP ask for the Turnstile widget when `TURNSTILE_SECRET_KEY` is bound.
+- `GOOGLE_MAPS_API_KEY`, `DATAFAST_WEBSITE_ID`, and `DATAFAST_API_KEY` are unset. Search falls back to the city table. Geocode requests past 20 per hour per IP ask for the Turnstile widget when `TURNSTILE_SECRET_KEY` is bound.
+- `SENTRY_DSN` is a Worker secret (already set on production and preview). The Worker reports server errors when it is present and does nothing when it is absent. No build-time variable is required. On preview, `GET /api/v1/test/sentry` throws `Sentry preview check` (same gate as the email sink). Production returns 404.
 - Lighthouse is run against the deployed mosque page after each production deploy.

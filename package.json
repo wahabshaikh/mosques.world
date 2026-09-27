@@ -22,6 +22,7 @@
     "@date-fns/tz": "^1.2.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.2.6",
     "@radix-ui/react-slot": "^1.2.3",
+    "@sentry/cloudflare": "^11.0.0",
     "@vinext/cloudflare": "1.0.0-beta.10",
     "adhan": "^4.4.3",
     "class-variance-authority": "^0.7.1",

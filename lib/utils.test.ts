@@ -7,7 +7,8 @@ describe("utils", () => {
   });
 
   it("merges class names", () => {
-    expect(cn("px-2", "px-4", false && "hidden")).toBe("px-4");
+    const hidden = false;
+    expect(cn("px-2", "px-4", hidden && "hidden")).toBe("px-4");
   });
 
   it("picks a stable cover tint", () => {

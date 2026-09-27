@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { contentSecurityPolicy } from "@/lib/csp";
 
 type CfFields = { latitude?: string | number; longitude?: string | number };
 
@@ -25,26 +26,7 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request: { headers } });
-  const scriptSrc = nonProd
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://datafa.st https://challenges.cloudflare.com"
-    : "script-src 'self' 'unsafe-inline' https://datafa.st https://challenges.cloudflare.com";
-  response.headers.set(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      scriptSrc,
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://tiles.openfreemap.org https://*.openfreemap.org",
-      "connect-src 'self' https://tiles.openfreemap.org https://*.openfreemap.org https://datafa.st https://*.sentry.io https://challenges.cloudflare.com",
-      "font-src 'self' data:",
-      "worker-src 'self' blob:",
-      "frame-src https://challenges.cloudflare.com https://www.openstreetmap.org",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-    ].join("; "),
-  );
+  response.headers.set("Content-Security-Policy", contentSecurityPolicy(nonProd));
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "geolocation=(self)");
   response.headers.set("X-Content-Type-Options", "nosniff");

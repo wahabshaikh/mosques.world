@@ -2,7 +2,7 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["design/**", "public/**", "dist/**", ".wrangler/**", "coverage/**", "migrations/**", "node_modules/**"] },
+  { ignores: ["design/**", "public/**", "dist/**", ".next/**", ".wrangler/**", "coverage/**", "migrations/**", "node_modules/**"] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
