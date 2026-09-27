@@ -1,4 +1,6 @@
-import { getPrayerDay, nextAdhanLabel, type AsrMadhab } from "@/lib/prayer/times";
+import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab } from "@/lib/prayer/times";
+import { formatTime12, toMinutes } from "@/lib/trust/facts";
+import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
 import { coverTint } from "@/lib/utils";
 import type { DirectoryPlace } from "@/lib/db/queries";
 import type { ExplorePlace } from "@/components/mw/explore-view";
@@ -17,7 +19,13 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
     highLat: place.highLatRule,
     now,
   });
-  const next = nextAdhanLabel(day);
+  const summary = parseSummary(place.iqamahSummaryJson);
+  const nowLocal = formatHm(now, place.timezone);
+  const jamaah = summary ? nextJamaah(summary, day, nowLocal) : null;
+  const adhan = nextAdhanLabel(day);
+  const iqamah = jamaah?.kind === "iqamah" ? jamaah : null;
+  const next = iqamah ? { label: iqamah.label, time: formatTime12(iqamah.time) } : adhan;
+  const verifiers = summary ? Math.max(0, ...Object.values(summary.iqamah).map((entry) => entry?.n ?? 0)) : 0;
   return {
     id: place.id,
     slug: place.slug,
@@ -29,6 +37,11 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
     distanceKm: place.distanceKm,
     nextLabel: next.label,
     nextTime: next.time,
+    nextKind: iqamah ? "iqamah" : "adhan",
+    minutesUntil: iqamah ? iqamah.minutes - toMinutes(nowLocal) : null,
+    verification: asVerification(place.verificationState),
+    changeReported: hasOpenChange(summary),
+    verifiers,
     tint: coverTint(place.id).bg,
   };
 }
@@ -43,4 +56,33 @@ export function readNow(headerValue: string | null, nonProduction: boolean): Dat
 
 export function isNonProductionHost(host: string): boolean {
   return host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
+}
+
+export type ExploreSort = "distance" | "iqamah" | "verified";
+
+export function asSort(value: string | undefined): ExploreSort {
+  return value === "iqamah" || value === "verified" ? value : "distance";
+}
+
+function asVerification(value: string): ExplorePlace["verification"] {
+  return value === "verified" || value === "partial" || value === "needs_check" ? value : "none";
+}
+
+const VERIFICATION_RANK: Record<ExplorePlace["verification"], number> = { verified: 0, partial: 1, needs_check: 2, none: 3 };
+
+/** Card order for the explore sort menu; ties fall back to distance. */
+export function sortCards(cards: ExplorePlace[], sort: ExploreSort): ExplorePlace[] {
+  const distance = (card: ExplorePlace) => card.distanceKm ?? Infinity;
+  const sorted = [...cards];
+  if (sort === "iqamah") {
+    sorted.sort((a, b) => (a.minutesUntil ?? Infinity) - (b.minutesUntil ?? Infinity) || distance(a) - distance(b));
+  } else if (sort === "verified") {
+    sorted.sort(
+      (a, b) =>
+        VERIFICATION_RANK[a.verification] - VERIFICATION_RANK[b.verification] || b.verifiers - a.verifiers || distance(a) - distance(b),
+    );
+  } else {
+    sorted.sort((a, b) => distance(a) - distance(b));
+  }
+  return sorted;
 }

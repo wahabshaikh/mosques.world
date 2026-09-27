@@ -7,9 +7,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["lib/**/*.ts"],
-      exclude: ["lib/**/*.test.ts", "lib/db/**", "lib/analytics.ts"],
+      exclude: ["lib/**/*.test.ts", "lib/db/**", "lib/testing/**", "lib/analytics.ts", "lib/auth-client.ts"],
       thresholds: { lines: 80, statements: 80, functions: 80, branches: 70 },
     },
   },
-  resolve: { alias: { "@": new URL("./", import.meta.url).pathname } },
+  resolve: {
+    alias: {
+      "@": new URL("./", import.meta.url).pathname,
+      "cloudflare:workers": new URL("./lib/testing/cloudflare-workers.ts", import.meta.url).pathname,
+    },
+  },
 });

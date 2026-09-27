@@ -79,7 +79,7 @@ function adhanDate(year: number, month: number, day: number): Date {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
-function formatHm(instant: Date, timeZone: string): string {
+export function formatHm(instant: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone,
     hour: "2-digit",

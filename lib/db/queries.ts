@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type { HighLatRule, AsrMadhab } from "@/lib/prayer/times";
 import { haversineKm, type Bbox } from "@/lib/geo/distance";
 import { ftsMatch } from "@/lib/places/view";
@@ -31,6 +31,7 @@ export async function placesInBbox(
   bbox: Bbox,
   kind: "all" | "mosque" | "prayer_room",
   origin: { lat: number; lng: number },
+  options: { verifiedOnly?: boolean } = {},
 ): Promise<DirectoryPlace[]> {
   const filters = [
     eq(place.status, "active"),
@@ -40,6 +41,7 @@ export async function placesInBbox(
     lte(place.lng, bbox.east),
   ];
   if (kind !== "all") filters.push(eq(place.kind, kind));
+  if (options.verifiedOnly) filters.push(inArray(place.verificationState, ["verified", "partial"]));
   const rows = await db()
     .select({ place, highLat: calcDefault.highLatRule })
     .from(place)
@@ -101,7 +103,9 @@ export async function allCities() {
   return db().select().from(city).orderBy(asc(city.countryCode), asc(city.name));
 }
 
-export async function suggestPlaces(match: string): Promise<Array<{ label: string; lat: number; lng: number; kind: "city" | "place" }>> {
+export async function suggestPlaces(
+  match: string,
+): Promise<Array<{ label: string; lat: number; lng: number; kind: "city" | "place"; country?: string }>> {
   const like = `%${match.replaceAll("%", "")}%`;
   const cities = await db()
     .select()
@@ -113,6 +117,7 @@ export async function suggestPlaces(match: string): Promise<Array<{ label: strin
     lat: row.lat,
     lng: row.lng,
     kind: "city" as const,
+    country: row.countryCode,
   }));
   if (!match) return named;
   const ftsRows = await appFts(match);
