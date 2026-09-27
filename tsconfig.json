@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": ["vite/client", "vinext/types", "@cloudflare/workers-types"],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["app", "components", "lib", "worker", "scripts", "e2e", "*.ts", "middleware.ts"],
+  "exclude": ["node_modules", "dist", ".wrangler"]
+}

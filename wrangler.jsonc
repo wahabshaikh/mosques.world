@@ -1,0 +1,111 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mosques-world",
+  "account_id": "fbc18389ee167dc62b75c26c811e3e13",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./worker/index.ts",
+  "preview_urls": true,
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "assets": {
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "images": { "binding": "IMAGES" },
+  "vars": {
+    "PUBLIC_BASE_URL": "https://mosques.world",
+    "EMAIL_SINK": "0",
+    "ENVIRONMENT": "production",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+    }
+  ],
+  "queues": {
+    "producers": [
+      { "binding": "Q_EMAIL", "queue": "q-email" },
+      { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
+      { "binding": "Q_MEDIA", "queue": "q-media" }
+    ],
+    "consumers": [
+      { "queue": "q-email", "max_retries": 5, "dead_letter_queue": "q-dlq" },
+      { "queue": "q-recompute", "max_retries": 5, "dead_letter_queue": "q-dlq" },
+      { "queue": "q-media", "max_retries": 5, "dead_letter_queue": "q-dlq" }
+    ]
+  },
+  "ratelimits": [
+    { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mosques-world",
+      "database_id": "67a99e89-35ff-4c14-8a4c-633711fb50d1",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA", "bucket_name": "mosques-media" }
+  ],
+  "kv_namespaces": [
+    { "binding": "FLAGS", "id": "8ebd3aa5942c4201a1daff013b159a11" },
+    { "binding": "CACHE", "id": "40548f22b18f41ddb801f0f8f19dc5a3" }
+  ],
+  "triggers": { "crons": ["15 2 * * *"] },
+  "routes": [
+    { "pattern": "mosques.world", "custom_domain": true },
+    { "pattern": "www.mosques.world", "custom_domain": true }
+  ],
+  "env": {
+    "preview": {
+      "name": "mosques-world-preview",
+      "workers_dev": true,
+      "routes": [],
+      "triggers": { "crons": [] },
+      "images": { "binding": "IMAGES" },
+      "vars": {
+        "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
+        "EMAIL_SINK": "1",
+        "ENVIRONMENT": "preview",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
+      },
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+        }
+      ],
+      "queues": {
+        "producers": [
+          { "binding": "Q_EMAIL", "queue": "q-email" },
+          { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
+          { "binding": "Q_MEDIA", "queue": "q-media" }
+        ]
+      },
+      "ratelimits": [
+        { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+        { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+      ],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "mosques-world-preview",
+          "database_id": "f5c9e8ac-b263-4ef5-86f5-564ffe1e9816",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        { "binding": "MEDIA", "bucket_name": "mosques-media-preview" }
+      ],
+      "kv_namespaces": [
+        { "binding": "FLAGS", "id": "101da01539e9490f86e7b45adc25ebd6" },
+        { "binding": "CACHE", "id": "1f406bb733d845fcab3d60c10d8c14fe" }
+      ]
+    }
+  }
+}
