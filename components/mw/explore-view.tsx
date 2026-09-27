@@ -1,12 +1,13 @@
 "use client";
 
-import { LocateFixed, Navigation, Search } from "lucide-react";
+import { CircleAlert, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { formatDistance } from "@/lib/geo/distance";
 import type { PlaceKindFilter } from "@/lib/places/view";
+import type { ExploreSort } from "@/lib/places/present";
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
 
@@ -21,6 +22,11 @@ export type ExplorePlace = {
   distanceKm: number | null;
   nextLabel: string;
   nextTime: string;
+  nextKind: "iqamah" | "adhan";
+  minutesUntil: number | null;
+  verification: "none" | "partial" | "verified" | "needs_check";
+  changeReported: boolean;
+  verifiers: number;
   tint: string;
 };
 
@@ -34,6 +40,9 @@ export function ExploreView({
   subline,
   showGeoPrompt,
   turnstileSiteKey,
+  sort = "distance",
+  verifiedOnly = false,
+  community = false,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -44,6 +53,9 @@ export function ExploreView({
   subline: string;
   showGeoPrompt: boolean;
   turnstileSiteKey?: string;
+  sort?: ExploreSort;
+  verifiedOnly?: boolean;
+  community?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -123,6 +135,20 @@ export function ExploreView({
     };
   }, [challenge, turnstileSiteKey]);
 
+  function withFilters(params: URLSearchParams, overrides: { sort?: ExploreSort; verified?: boolean } = {}) {
+    const nextSort = overrides.sort ?? sort;
+    const nextVerified = overrides.verified ?? verifiedOnly;
+    if (nextSort !== "distance") params.set("sort", nextSort);
+    if (nextVerified) params.set("verified", "1");
+    return params;
+  }
+
+  function currentParams() {
+    const params = new URLSearchParams({ where, lat: String(lat), lng: String(lng), z: String(zoom) });
+    if (kind !== "all") params.set("kind", kind);
+    return params;
+  }
+
   function goTo(next: { label: string; lat: number; lng: number }) {
     const params = new URLSearchParams({
       where: next.label,
@@ -131,6 +157,7 @@ export function ExploreView({
       z: "12",
     });
     if (kind !== "all") params.set("kind", kind);
+    withFilters(params);
     track("search", { has_where: true, filters: kind });
     router.push(`/search?${params.toString()}`);
     setSuggestions([]);
@@ -144,7 +171,21 @@ export function ExploreView({
       z: String(zoom),
     });
     if (next !== "all") params.set("kind", next);
+    withFilters(params);
     track("search", { has_where: Boolean(where), filters: next });
+    router.push(`/search?${params.toString()}`);
+  }
+
+  function setVerified(next: boolean) {
+    const params = withFilters(currentParams(), { verified: next });
+    if (!next) params.delete("verified");
+    track("search", { has_where: Boolean(where), filters: next ? "verified" : kind });
+    router.push(`/search?${params.toString()}`);
+  }
+
+  function setSort(next: ExploreSort) {
+    const params = withFilters(currentParams(), { sort: next });
+    if (next === "distance") params.delete("sort");
     router.push(`/search?${params.toString()}`);
   }
 
@@ -204,6 +245,11 @@ export function ExploreView({
             <FilterChip active={kind === "prayer_room"} onClick={() => setKind("prayer_room")}>
               Prayer rooms
             </FilterChip>
+            {community ? (
+              <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
+                Has verified times
+              </FilterChip>
+            ) : null}
           </div>
         </div>
       </div>
@@ -216,7 +262,23 @@ export function ExploreView({
               </h1>
               <p className="text-sm text-muted-foreground">{subline}</p>
             </div>
-            <p className="text-sm font-semibold">Distance</p>
+            {community ? (
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <span className="sr-only sm:not-sr-only">Sort</span>
+                <select
+                  aria-label="Sort"
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as ExploreSort)}
+                  className="h-10 rounded-full border border-border bg-card px-3"
+                >
+                  <option value="iqamah">Soonest iqamah</option>
+                  <option value="distance">Distance</option>
+                  <option value="verified">Most verified</option>
+                </select>
+              </label>
+            ) : (
+              <p className="text-sm font-semibold">Distance</p>
+            )}
           </div>
           {showGeoPrompt ? (
             <button
@@ -260,12 +322,19 @@ export function ExploreView({
                     )}
                   >
                     <div className="relative aspect-[4/3.3]" style={{ background: place.tint }}>
-                      <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2 py-1 text-[11px] font-bold">
-                        Adhan
-                      </span>
+                      <CardChip place={place} />
                     </div>
                     <div className="space-y-1 p-3">
-                      <h2 className="font-bold">{place.name}</h2>
+                      <h2 className="font-bold">
+                        {place.name}
+                        {place.verifiers > 0 ? (
+                          <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-semibold text-muted-foreground">
+                            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
+                            <span className="sr-only">confirmed by</span>
+                            {place.verifiers}
+                          </span>
+                        ) : null}
+                      </h2>
                       <p className="text-sm text-muted-foreground">
                         {place.locality}
                         {place.distanceKm !== null ? ` · ${formatDistance(place.distanceKm)}` : ""}
@@ -274,7 +343,7 @@ export function ExploreView({
                         <span className="tabular text-base font-extrabold">
                           {place.nextLabel} {place.nextTime}
                         </span>{" "}
-                        <span className="text-muted-foreground">· adhan</span>
+                        <span className="text-muted-foreground">{place.nextKind === "iqamah" ? "iqamah" : "· adhan"}</span>
                       </p>
                     </div>
                   </Link>
@@ -306,6 +375,7 @@ export function ExploreView({
                 bbox: `${bbox.west.toFixed(4)},${bbox.south.toFixed(4)},${bbox.east.toFixed(4)},${bbox.north.toFixed(4)}`,
               });
               if (kind !== "all") params.set("kind", kind);
+              withFilters(params);
               router.replace(`/search?${params.toString()}`);
             }}
           />
@@ -319,6 +389,28 @@ export function ExploreView({
         {mapMode ? "List" : "Map"}
       </button>
     </div>
+  );
+}
+
+function CardChip({ place }: { place: ExplorePlace }) {
+  if (place.changeReported) {
+    return (
+      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-warning shadow-sm">
+        <CircleAlert className="size-3.5" aria-hidden="true" /> Change reported
+      </span>
+    );
+  }
+  if (place.verification === "verified") {
+    return (
+      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-primary shadow-sm">
+        <ShieldCheck className="size-3.5" aria-hidden="true" /> Community verified
+      </span>
+    );
+  }
+  return (
+    <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2 py-1 text-[11px] font-bold">
+      {place.nextKind === "iqamah" ? "Iqamah" : "Adhan"}
+    </span>
   );
 }
 

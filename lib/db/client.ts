@@ -12,7 +12,12 @@ export type AppEnv = {
   EMAIL_SINK?: string;
   ENVIRONMENT?: string;
   GOOGLE_MAPS_API_KEY?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
   DATAFAST_WEBSITE_ID?: string;
+  DATAFAST_API_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   SENTRY_DSN?: string;

@@ -3,7 +3,8 @@ import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
-import { isNonProductionHost, madhabOf, readNow, toCard } from "@/lib/places/present";
+import { phase2Enabled } from "@/lib/phase";
+import { asSort, isNonProductionHost, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
 
 export async function ExplorePage({
@@ -29,8 +30,14 @@ export async function ExplorePage({
     headerLng: headerList.get("x-mw-longitude"),
   });
   const now = readNow(headerList.get("x-mw-now"), isNonProductionHost(host));
-  const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng });
-  const cards = places.slice(0, 60).map((place) => toCard(place, now));
+  const community = await phase2Enabled();
+  const sort = community ? asSort(one("sort")) : "distance";
+  const verifiedOnly = community && one("verified") === "1";
+  const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly });
+  const cards = sortCards(
+    places.map((place) => toCard(place, now)),
+    sort,
+  ).slice(0, 60);
   const anchor = places[0];
   const subline = anchor
     ? (() => {
@@ -59,6 +66,9 @@ export async function ExplorePage({
       subline={subline}
       showGeoPrompt={view.source !== "url"}
       turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
+      sort={sort}
+      verifiedOnly={verifiedOnly}
+      community={community}
     />
   );
 }

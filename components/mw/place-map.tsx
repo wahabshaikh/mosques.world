@@ -37,7 +37,10 @@ export function PlaceMap({
       const pin = marker.querySelector<HTMLElement>("[data-pin]");
       const place = places.find((item) => item.id === pin?.dataset.pin);
       if (!place) continue;
-      marker.setAttribute("aria-label", `${place.name}, ${place.nextLabel} ${place.nextTime}`);
+      marker.setAttribute(
+        "aria-label",
+        `${place.name}, ${place.nextLabel} ${place.nextKind === "iqamah" ? "iqamah" : "adhan"} ${place.nextTime}${place.changeReported ? ", change reported" : ""}`,
+      );
     }
   }, [places, activeId]);
 
@@ -75,6 +78,9 @@ export function PlaceMap({
               )}
             >
               {place.nextLabel} {place.nextTime}
+              {place.changeReported ? (
+                <span className="ml-1 inline-block size-2 rounded-full bg-warning align-middle" aria-hidden="true" />
+              ) : null}
             </span>
           </Marker>
         ))}

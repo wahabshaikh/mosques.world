@@ -1,6 +1,5 @@
 import { placesInBbox } from "@/lib/db/queries";
-import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
-import { madhabOf } from "@/lib/places/present";
+import { toCard } from "@/lib/places/present";
 import { parseBbox } from "@/lib/places/view";
 
 export const dynamic = "force-dynamic";
@@ -16,16 +15,9 @@ export async function GET(request: Request) {
     lng: (bbox.west + bbox.east) / 2,
   };
   const places = await placesInBbox(bbox, kind, origin);
+  const now = new Date();
   const features = places.slice(0, 500).map((place) => {
-    const day = getPrayerDay({
-      lat: place.lat,
-      lng: place.lng,
-      timeZone: place.timezone,
-      method: place.calcMethod,
-      madhab: madhabOf(place.asrMadhab),
-      highLat: place.highLatRule,
-    });
-    const next = nextAdhanLabel(day);
+    const card = toCard(place, now);
     return {
       type: "Feature" as const,
       geometry: { type: "Point" as const, coordinates: [place.lng, place.lat] },
@@ -34,8 +26,11 @@ export async function GET(request: Request) {
         slug: place.slug,
         name: place.name,
         kind: place.kind,
-        nextLabel: next.label,
-        nextTime: next.time,
+        nextLabel: card.nextLabel,
+        nextTime: card.nextTime,
+        nextKind: card.nextKind,
+        verification: card.verification,
+        changeReported: card.changeReported,
       },
     };
   });

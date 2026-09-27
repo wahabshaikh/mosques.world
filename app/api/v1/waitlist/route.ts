@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { appEnv, db } from "@/lib/db/client";
 import { place, waitlist } from "@/lib/db/schema";
+import { deliver } from "@/lib/email/send";
 import { hashToken, newToken, normalizeEmail, waitlistMessage } from "@/lib/email/waitlist";
 
 export const dynamic = "force-dynamic";
@@ -44,23 +45,6 @@ export async function POST(request: Request) {
   const env = appEnv();
   const host = new URL(request.url).hostname;
   const confirmUrl = `${env.PUBLIC_BASE_URL}/waitlist/confirm?token=${token}`;
-  const message = waitlistMessage({ placeName: found.name, confirmUrl });
-  const sink = env.EMAIL_SINK === "1" || host === "localhost" || host === "127.0.0.1";
-  if (sink) {
-    await env.CACHE.put(
-      "email:latest",
-      JSON.stringify({ to: email, ...message }),
-      { expirationTtl: 60 * 60 * 24 },
-    );
-  } else if (env.Q_EMAIL) {
-    await env.Q_EMAIL.send({ to: email, subject: message.subject, text: message.text });
-  } else if (env.EMAIL) {
-    await env.EMAIL.send({
-      from: "no-reply@mail.mosques.world",
-      to: email,
-      subject: message.subject,
-      text: message.text,
-    });
-  }
+  await deliver(env, host, { to: email, ...waitlistMessage({ placeName: found.name, confirmUrl }) });
   return Response.json({ ok: true });
 }
