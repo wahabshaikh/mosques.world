@@ -37,7 +37,7 @@ accounts (`phase2.contributions`). While off, `/ar/…` etc. are not found and t
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0009 adds `api_key` and
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0010 adds `api_key` and
    `export_run`; additive).
 2. Deploy with the new `RL_API` rate-limit binding (namespace 1003, 60 requests / 60 s per key) in `wrangler.jsonc`.
 3. Turn the flag on. The first nightly run afterwards queues that month's export (see below); to publish right away,
@@ -58,4 +58,4 @@ accounts (`phase2.contributions`). While off, `/ar/…` etc. are not found and t
 
 Flag `phase8.global` off: prefixed URLs stop resolving (English pages are untouched), and the API, docs and download
 routes 404. Revoke all keys with `UPDATE api_key SET revoked_at = unixepoch() * 1000 WHERE revoked_at IS NULL` if
-needed. Migration 0009 is additive; export files can be deleted from R2 under `open-data/`.
+needed. Migration 0010 is additive; export files can be deleted from R2 under `open-data/`.
