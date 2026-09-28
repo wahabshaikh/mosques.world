@@ -26,7 +26,7 @@ Unset: on for localhost / `*.workers.dev`, off on mosques.world.
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0004 is additive; it creates the
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0005 is additive; it creates the
    `system` account and imports OSM wheelchair tags as initial step-free values).
 2. Secrets / vars: `GOOGLE_MAPS_API_KEY` (Places API New; restrict to Places), optional `GOOGLE_PLACES_DAILY_CAP`
    (default 2,000 billable calls/day; each member is capped at 60). Without a key, `/add` falls back to placing the
@@ -45,5 +45,5 @@ Unset: on for localhost / `*.workers.dev`, off on mosques.world.
 
 ## Rollback
 
-Flag `phase3.places` off (within 60 s). Previous Worker version if needed. Migration 0004 is additive; Phase 2 code
+Flag `phase3.places` off (within 60 s). Previous Worker version if needed. Migration 0005 is additive; Phase 2 code
 ignores the new columns and tables.
