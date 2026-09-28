@@ -63,14 +63,14 @@ describe("saved-place change notifications", () => {
     ]);
     void saver;
 
-    const sent = await deliverPending(env(), { host: "localhost" });
+    const sent = await deliverPending(env(), { host: "localhost", now: NOW });
     expect(sent).toEqual({ emails: 2, pushes: 0 });
     const mail = JSON.parse(kv.get("email:to:saver@example.com") ?? "{}") as { subject: string; text: string; headers: Record<string, string> };
     expect(mail.subject).toBe("Isha iqamah changed at East London Mosque");
     expect(mail.text).toContain("https://preview.example/m/elm?from=email");
     expect(mail.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
     expect(sqlite.prepare(`SELECT DISTINCT email_status, push_status FROM notification`).all()).toEqual([{ email_status: "sent", push_status: "skipped" }]);
-    expect(await deliverPending(env(), { host: "localhost" })).toEqual({ emails: 0, pushes: 0 });
+    expect(await deliverPending(env(), { host: "localhost", now: NOW })).toEqual({ emails: 0, pushes: 0 });
   });
 
   it("respects unsubscribes, skips deleted people and expires old rows", async () => {
