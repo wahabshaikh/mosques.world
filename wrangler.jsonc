@@ -61,6 +61,52 @@
     { "pattern": "mosques.world", "custom_domain": true },
     { "pattern": "www.mosques.world", "custom_domain": true }
   ],
+  // Worker Previews (`wrangler preview`) do not inherit top-level settings.
+  // This block points them at the preview resources. It deliberately omits
+  // routes, cron triggers, and queue consumers so a preview cannot take
+  // mosques.world or the nightly cron. Queue producers keep the shared
+  // queue names; non-production hosts do not enqueue onto them.
+  "previews": {
+    "images": { "binding": "IMAGES" },
+    "vars": {
+      "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
+      "EMAIL_SINK": "1",
+      "ENVIRONMENT": "preview",
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
+    },
+    "send_email": [
+      {
+        "name": "EMAIL",
+        "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+      }
+    ],
+    "queues": {
+      "producers": [
+        { "binding": "Q_EMAIL", "queue": "q-email" },
+        { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
+        { "binding": "Q_MEDIA", "queue": "q-media" }
+      ]
+    },
+    "ratelimits": [
+      { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+      { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+    ],
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "mosques-world-preview",
+        "database_id": "f5c9e8ac-b263-4ef5-86f5-564ffe1e9816",
+        "migrations_dir": "migrations"
+      }
+    ],
+    "r2_buckets": [
+      { "binding": "MEDIA", "bucket_name": "mosques-media-preview" }
+    ],
+    "kv_namespaces": [
+      { "binding": "FLAGS", "id": "101da01539e9490f86e7b45adc25ebd6" },
+      { "binding": "CACHE", "id": "1f406bb733d845fcab3d60c10d8c14fe" }
+    ]
+  },
   "env": {
     "preview": {
       "name": "mosques-world-preview",

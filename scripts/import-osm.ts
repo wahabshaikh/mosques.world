@@ -60,6 +60,8 @@ for (const element of body.elements) {
   const kind = /prayer room/i.test(name) ? "prayer_room" : "mosque";
   const address = [tags["addr:street"], tags["addr:postcode"]].filter(Boolean).join(", ") || null;
   const timezone = tzLookup(lat, lng);
+  // Elements listed in osm_exclusion (merged duplicates, e.g. node/469777869) are skipped by
+  // the place_osm_exclusion trigger (migration 0004), so replaying this output cannot re-create them.
   const sql = `INSERT INTO place (id, slug, name, name_local, kind, status, lat, lng, geohash6, address, locality, region, country_code, city_slug, timezone, calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, created_at, updated_at)
 VALUES (${q(crypto.randomUUID())}, ${q(slug)}, ${q(tags["name:en"] ?? name)}, ${q(tags["name:en"] ? name : null)}, ${q(kind)}, 'active', ${lat}, ${lng}, ${q(encodeGeohash(lat, lng))}, ${q(address)}, ${q(locality)}, ${q(tags["addr:state"] ?? null)}, ${q(country)}, ${q(citySlug)}, ${q(timezone)}, 'MuslimWorldLeague', 'shafi', ${q(element.type)}, ${element.id}, ${q(tags.website ?? tags["contact:website"] ?? null)}, ${q(tags.phone ?? tags["contact:phone"] ?? null)}, ${q(tags.wheelchair ?? null)}, ${now}, ${now})
 ON CONFLICT(osm_type, osm_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, address=excluded.address, website=excluded.website, phone=excluded.phone, wheelchair=excluded.wheelchair, updated_at=excluded.updated_at;`;
