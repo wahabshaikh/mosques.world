@@ -18,6 +18,14 @@ export default function PrivacyPage() {
         username appears next to your contributions and in each mosque&apos;s public history and activity feed. Your trust level
         is derived from how many of your contributions are accepted.
       </p>
+      <h2 className="text-lg font-bold">Photos and places you add</h2>
+      <p>
+        Photos are re-encoded when you upload them: location (GPS), camera details and all other metadata are removed, and the
+        original file is deleted once the resized copies exist. Photos may be checked by an automated image classifier and by
+        moderators before they appear. Places you add, and the times and facilities you mark, are shown with your username.
+        When you search for a place to add, your search text is sent to Google Places; we keep only Google&apos;s place
+        identifier.
+      </p>
       <h2 className="text-lg font-bold">Your choices</h2>
       <p>
         In <strong>Settings → Account</strong> you can download everything we hold about you as JSON, or delete your account.

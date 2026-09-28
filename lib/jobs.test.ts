@@ -39,7 +39,7 @@ describe("jobs", () => {
     const result = await nightly({ DB: d1, Q_RECOMPUTE: { sendBatch } as unknown as Queue }, NOW);
     expect(result.queued).toBe(1);
     expect(sendBatch).toHaveBeenCalledWith([{ body: { kind: "facts", ids: [factId] } }]);
-    expect(sqlite.prepare(`SELECT trust_level FROM user`).get()).toEqual({ trust_level: 1 });
+    expect(sqlite.prepare(`SELECT trust_level FROM user WHERE id = 'u'`).get()).toEqual({ trust_level: 1 });
     await recomputeFacts(d1, [factId, "gone"], NOW);
     expect(sqlite.prepare(`SELECT state FROM fact`).get()).toEqual({ state: "stale" });
   });
@@ -48,5 +48,22 @@ describe("jobs", () => {
     const { d1, sqlite } = await seeded();
     await nightly({ DB: d1 }, NOW);
     expect(sqlite.prepare(`SELECT state FROM fact`).get()).toEqual({ state: "stale" });
+  });
+});
+
+describe("pending places", () => {
+  it("go public after 24 hours unless reported", async () => {
+    const { d1, sqlite } = createTestD1();
+    for (const id of ["old", "reported", "fresh"]) {
+      sqlite.exec(`INSERT INTO place (id, slug, name, kind, status, lat, lng, geohash6, country_code, city_slug, timezone, calc_method, asr_madhab, created_at, updated_at)
+        VALUES ('${id}', '${id}', '${id}', 'mosque', 'pending', 0, 0, 's00000', 'GB', 'london', 'Europe/London', 'MuslimWorldLeague', 'shafi', ${id === "fresh" ? NOW - 1000 : NOW - 2 * DAY}, 0)`);
+    }
+    sqlite.exec(`INSERT INTO report (id, target_type, target_id, place_id, reason, status, created_at) VALUES ('r', 'place', 'reported', 'reported', 'closed', 'open', 0)`);
+    await nightly({ DB: d1 }, NOW);
+    expect(sqlite.prepare(`SELECT id, status FROM place ORDER BY id`).all()).toEqual([
+      { id: "fresh", status: "pending" },
+      { id: "old", status: "active" },
+      { id: "reported", status: "pending" },
+    ]);
   });
 });

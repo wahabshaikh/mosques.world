@@ -39,7 +39,7 @@ export function middleware(request: NextRequest) {
   const shared = (path.startsWith("/m/") && !path.endsWith("/update")) || path.startsWith("/cities/");
   if (request.method === "GET" && shared && !signedIn) {
     response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
-  } else if (signedIn) {
+  } else if (signedIn && !path.startsWith("/media/") && !path.startsWith("/api/")) {
     response.headers.set("Cache-Control", "private, no-store");
   }
   return response;

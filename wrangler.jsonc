@@ -13,6 +13,7 @@
     "binding": "ASSETS"
   },
   "images": { "binding": "IMAGES" },
+  "ai": { "binding": "AI" },
   "vars": {
     "PUBLIC_BASE_URL": "https://mosques.world",
     "EMAIL_SINK": "0",
@@ -56,7 +57,7 @@
     { "binding": "FLAGS", "id": "8ebd3aa5942c4201a1daff013b159a11" },
     { "binding": "CACHE", "id": "40548f22b18f41ddb801f0f8f19dc5a3" }
   ],
-  "triggers": { "crons": ["15 2 * * *"] },
+  "triggers": { "crons": ["15 2 * * *", "30 3 * * 1"] },
   "routes": [
     { "pattern": "mosques.world", "custom_domain": true },
     { "pattern": "www.mosques.world", "custom_domain": true }
@@ -68,6 +69,7 @@
   // queue names; non-production hosts do not enqueue onto them.
   "previews": {
     "images": { "binding": "IMAGES" },
+    "ai": { "binding": "AI" },
     "vars": {
       "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
       "EMAIL_SINK": "1",
@@ -114,6 +116,7 @@
       "routes": [],
       "triggers": { "crons": [] },
       "images": { "binding": "IMAGES" },
+      "ai": { "binding": "AI" },
       "vars": {
         "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
         "EMAIL_SINK": "1",

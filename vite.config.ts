@@ -8,6 +8,8 @@ export default defineConfig({
     vinext(),
     tailwindcss(),
     cloudflare({
+      // Workers AI has no local simulator; set CLOUDFLARE_REMOTE_BINDINGS=1 (with a Cloudflare login) to use it in dev.
+      remoteBindings: process.env.CLOUDFLARE_REMOTE_BINDINGS === "1",
       viteEnvironment: {
         name: "rsc",
         childEnvironments: ["ssr"],

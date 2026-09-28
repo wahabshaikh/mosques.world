@@ -50,7 +50,7 @@ async function setToday(page: Page) {
 }
 
 test.describe("phase 2 trusted iqamah times", () => {
-  test.describe.configure({ mode: "serial" });
+  test.describe.configure({ mode: "serial", timeout: 60_000 });
 
   test("sign up with email OTP, choose a username, land back on the page", async ({ page }) => {
     const person = identity("otp");

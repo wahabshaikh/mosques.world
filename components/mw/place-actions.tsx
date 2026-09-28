@@ -173,7 +173,7 @@ export function UpdateLink({ href, className, children }: { href: string; classN
 
 const ReportDialog = lazy(() => import("./report-dialog"));
 
-export function ReportProblem({ placeId, facts }: { placeId: string; facts: Array<{ key: string; label: string }> }) {
+export function ReportProblem({ placeId, facts, reasons = false }: { placeId: string; facts: Array<{ key: string; label: string }>; reasons?: boolean }) {
   const { viewer, loaded, signInHref } = useViewer();
   const [open, setOpen] = useState(false);
   return (
@@ -189,11 +189,11 @@ export function ReportProblem({ placeId, facts }: { placeId: string; facts: Arra
           setOpen(true);
         }}
       >
-        <Flag className="size-4" aria-hidden="true" /> Report a timing change
+        <Flag className="size-4" aria-hidden="true" /> {reasons ? "Report a problem" : "Report a timing change"}
       </button>
       {open ? (
         <Suspense fallback={null}>
-          <ReportDialog placeId={placeId} facts={facts} open={open} onOpenChange={setOpen} />
+          <ReportDialog placeId={placeId} facts={facts} open={open} onOpenChange={setOpen} reasons={reasons} />
         </Suspense>
       ) : null}
     </>

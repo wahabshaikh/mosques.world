@@ -15,6 +15,13 @@ const input = z.object({
     })
     .optional(),
   resetPlace: z.string().optional(),
+  places: z
+    .object({
+      autocomplete: z.array(z.object({ placeId: z.string(), label: z.string(), secondary: z.string().nullable() })),
+      details: z.array(z.record(z.string(), z.unknown())),
+    })
+    .optional(),
+  deletePlace: z.string().optional(),
 });
 
 /** Preview/local only (same gate as the email sink): E2E fixtures for trust levels and clean places. */
@@ -25,7 +32,31 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Bad fixture" }, { status: 400 });
   const database = env.DB;
   const now = Date.now();
-  const { user, resetPlace } = parsed.data;
+  const { user, resetPlace, places, deletePlace } = parsed.data;
+  if (places) {
+    await env.CACHE.put("test:places:autocomplete", JSON.stringify(places.autocomplete), { expirationTtl: 3600 });
+    for (const details of places.details) {
+      await env.CACHE.put(`test:places:details:${String(details.placeId)}`, JSON.stringify(details), { expirationTtl: 3600 });
+    }
+  }
+  if (deletePlace) {
+    // Removes places a test created (by Google place id) so the add flow can be re-run.
+    const rows = await database.prepare(`SELECT id FROM place WHERE google_place_id = ?`).bind(deletePlace).all<{ id: string }>();
+    for (const row of rows.results ?? []) {
+      await database.batch([
+        database.prepare(`DELETE FROM vote WHERE candidate_id IN (SELECT fact_candidate.id FROM fact_candidate JOIN fact ON fact.id = fact_candidate.fact_id WHERE fact.place_id = ?)`).bind(row.id),
+        database.prepare(`DELETE FROM fact_candidate WHERE fact_id IN (SELECT id FROM fact WHERE place_id = ?)`).bind(row.id),
+        database.prepare(`DELETE FROM fact WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM activity WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM place_duplicate_candidate WHERE a_id = ? OR b_id = ?`).bind(row.id, row.id),
+        database.prepare(`DELETE FROM photo WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM place_slug_history WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM report WHERE place_id = ?`).bind(row.id),
+        database.prepare(`UPDATE place SET merged_into_id = NULL WHERE merged_into_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM place WHERE id = ?`).bind(row.id),
+      ]);
+    }
+  }
   if (user) {
     const row = await database.prepare(`SELECT id, created_at FROM user WHERE email = ?`).bind(user.email.toLowerCase()).first<{ id: string; created_at: number }>();
     if (!row) return Response.json({ error: "No such user" }, { status: 404 });

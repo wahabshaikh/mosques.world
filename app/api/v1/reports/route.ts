@@ -2,7 +2,7 @@ import { reportInput } from "@/lib/contribute";
 import { firstIssue } from "@/lib/account";
 import { appEnv } from "@/lib/db/client";
 import { ulid } from "@/lib/id";
-import { phase2EnabledFor } from "@/lib/phase";
+import { phase2EnabledFor, phase3EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 import { isFactKey } from "@/lib/trust/facts";
@@ -33,7 +33,15 @@ export async function POST(request: Request) {
 
   let targetType = "place";
   let targetId = input.placeId;
-  if (input.factKey && isFactKey(input.factKey)) {
+  if (input.reason === "inappropriate_photo") {
+    if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
+    const photo = input.photoId
+      ? await database.prepare(`SELECT id FROM photo WHERE id = ? AND place_id = ?`).bind(input.photoId, input.placeId).first<{ id: string }>()
+      : null;
+    if (!photo) return jsonError("That photo was not found.", 404);
+    targetType = "photo";
+    targetId = photo.id;
+  } else if (input.factKey && isFactKey(input.factKey)) {
     const current = await database
       .prepare(
         `SELECT fact_candidate.id FROM fact_candidate JOIN fact ON fact.id = fact_candidate.fact_id

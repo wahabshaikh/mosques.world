@@ -1,15 +1,4 @@
-import tzLookup from "tz-lookup";
-import { encodeGeohash } from "../lib/geo/geohash";
-import { placeSlug, uniqueSlug } from "../lib/slug";
-
-type OverpassElement = {
-  type: "node" | "way" | "relation";
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
-};
+import { osmPlaceRow, overpassQuery, type OsmElement } from "../lib/osm";
 
 const args = new Map(
   process.argv.slice(2).flatMap((arg, index, all) => (arg.startsWith("--") ? [[arg.slice(2), all[index + 1] ?? ""]] : [])),
@@ -25,13 +14,7 @@ if (!bbox || !country || !citySlug) {
 }
 
 const [south, west, north, east] = bbox.split(",").map(Number);
-const query = `[out:json][timeout:90];(
-  node["amenity"="place_of_worship"]["religion"="muslim"](${south},${west},${north},${east});
-  way["amenity"="place_of_worship"]["religion"="muslim"](${south},${west},${north},${east});
-  relation["amenity"="place_of_worship"]["religion"="muslim"](${south},${west},${north},${east});
-  node["building"="mosque"](${south},${west},${north},${east});
-  way["building"="mosque"](${south},${west},${north},${east});
-);out center tags;`;
+const query = overpassQuery({ south, west, north, east });
 
 const response = await fetch("https://overpass-api.de/api/interpreter", {
   method: "POST",
@@ -42,28 +25,17 @@ if (!response.ok) {
   console.error(`Overpass failed: ${response.status}`);
   process.exit(1);
 }
-const body = (await response.json()) as { elements: OverpassElement[] };
+const body = (await response.json()) as { elements: OsmElement[] };
 const taken = new Set<string>();
 const now = Date.now();
 
 for (const element of body.elements) {
-  const tags = element.tags ?? {};
-  const name = tags.name ?? tags["name:en"];
-  if (!name) continue;
-  const lat = element.lat ?? element.center?.lat;
-  const lng = element.lon ?? element.center?.lon;
-  if (lat === undefined || lng === undefined) continue;
-  const locality = tags["addr:suburb"] ?? tags["addr:city"] ?? cityName;
-  const base = placeSlug(tags["name:en"] ?? name, locality);
-  const slug = uniqueSlug(base || "place", taken);
-  taken.add(slug);
-  const kind = /prayer room/i.test(name) ? "prayer_room" : "mosque";
-  const address = [tags["addr:street"], tags["addr:postcode"]].filter(Boolean).join(", ") || null;
-  const timezone = tzLookup(lat, lng);
-  // Elements listed in osm_exclusion (merged duplicates, e.g. node/469777869) are skipped by
-  // the place_osm_exclusion trigger (migration 0004), so replaying this output cannot re-create them.
+  // Keep the phase-3 row parser; the database's osm_exclusion trigger from the
+  // dedupe migration skips excluded OSM elements on this INSERT/upsert.
+  const row = osmPlaceRow(element, { country, citySlug, cityName, taken, now });
+  if (!row) continue;
   const sql = `INSERT INTO place (id, slug, name, name_local, kind, status, lat, lng, geohash6, address, locality, region, country_code, city_slug, timezone, calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, created_at, updated_at)
-VALUES (${q(crypto.randomUUID())}, ${q(slug)}, ${q(tags["name:en"] ?? name)}, ${q(tags["name:en"] ? name : null)}, ${q(kind)}, 'active', ${lat}, ${lng}, ${q(encodeGeohash(lat, lng))}, ${q(address)}, ${q(locality)}, ${q(tags["addr:state"] ?? null)}, ${q(country)}, ${q(citySlug)}, ${q(timezone)}, 'MuslimWorldLeague', 'shafi', ${q(element.type)}, ${element.id}, ${q(tags.website ?? tags["contact:website"] ?? null)}, ${q(tags.phone ?? tags["contact:phone"] ?? null)}, ${q(tags.wheelchair ?? null)}, ${now}, ${now})
+VALUES (${q(row.id)}, ${q(row.slug)}, ${q(row.name)}, ${q(row.nameLocal)}, ${q(row.kind)}, 'active', ${row.lat}, ${row.lng}, ${q(row.geohash6)}, ${q(row.address)}, ${q(row.locality)}, ${q(row.region)}, ${q(row.countryCode)}, ${q(row.citySlug)}, ${q(row.timezone)}, 'MuslimWorldLeague', 'shafi', ${q(row.osmType)}, ${row.osmId}, ${q(row.website)}, ${q(row.phone)}, ${q(row.wheelchair)}, ${now}, ${now})
 ON CONFLICT(osm_type, osm_id) DO UPDATE SET lat=excluded.lat, lng=excluded.lng, address=excluded.address, website=excluded.website, phone=excluded.phone, wheelchair=excluded.wheelchair, updated_at=excluded.updated_at;`;
   process.stdout.write(`${sql}\n`);
 }

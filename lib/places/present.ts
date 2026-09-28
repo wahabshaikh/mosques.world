@@ -1,6 +1,7 @@
 import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab } from "@/lib/prayer/times";
 import { formatTime12, toMinutes } from "@/lib/trust/facts";
 import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
+import { cardTag } from "./needs";
 import { coverTint } from "@/lib/utils";
 import type { DirectoryPlace } from "@/lib/db/queries";
 import type { ExplorePlace } from "@/components/mw/explore-view";
@@ -41,6 +42,7 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
     minutesUntil: iqamah ? iqamah.minutes - toMinutes(nowLocal) : null,
     verification: asVerification(place.verificationState),
     changeReported: hasOpenChange(summary),
+    tag: cardTag(place.amenityBits),
     verifiers,
     tint: coverTint(place.id).bg,
   };

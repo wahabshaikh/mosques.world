@@ -1,7 +1,7 @@
 import { TZDate } from "@date-fns/tz";
 import { civilDate, type PrayerDay, type PrayerKey } from "@/lib/prayer/times";
 import type { IqamahCell, NextRow } from "@/components/mw/prayer-table";
-import { formatTime12, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type JumuahValue } from "@/lib/trust/facts";
+import { AMENITIES, formatTime12, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type JumuahValue } from "@/lib/trust/facts";
 import type { FactView } from "@/lib/trust/read";
 import { relativeAge } from "@/lib/trust/summary";
 
@@ -114,6 +114,7 @@ export function updateData(input: {
   facts: FactView[];
   day: PrayerDay;
   trustLevel: number;
+  amenities?: boolean;
 }) {
   const { facts, day } = input;
   const current = (fact: FactView | undefined): UpdateCurrent | null =>
@@ -141,6 +142,13 @@ export function updateData(input: {
         current: current(facts.find((fact) => fact.key === `iqamah.${prayer}`)),
       };
     }),
+    amenities: input.amenities
+      ? AMENITIES.map((amenity) => ({
+          key: amenity.key as string,
+          label: amenity.label,
+          current: current(facts.find((fact) => fact.key === amenity.key)),
+        }))
+      : [],
     jumuah: facts
       .filter((fact) => fact.key === "jumuah.jamaah")
       .map((fact) => ({ qualifier: fact.qualifier, current: current(fact) }))

@@ -1,19 +1,28 @@
 import * as Sentry from "@sentry/cloudflare";
 import handler from "vinext/server/fetch-handler";
 import { asMail, MAIL_FROM } from "@/lib/email/send";
-import { isRecomputeMessage, nightly, recomputeFacts } from "@/lib/jobs";
+import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/lib/jobs";
+import { processPhoto } from "@/lib/media";
+import { weeklyOsmSync } from "@/lib/osm";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
 import { sentryOptions } from "@/lib/sentry";
 
 type Env = {
   DB: D1Database;
+  MEDIA: R2Bucket;
+  IMAGES?: ImagesBinding;
+  AI?: Ai;
   CACHE?: KVNamespace;
   EMAIL?: SendEmail;
   Q_RECOMPUTE?: Queue;
+  GOOGLE_MAPS_API_KEY?: string;
   PUBLIC_BASE_URL?: string;
   SENTRY_DSN?: string;
   ENVIRONMENT?: string;
 };
+
+/** Weekly OSM diff sync (new places only); must match wrangler.jsonc triggers. */
+const WEEKLY_CRON = "30 3 * * 1";
 
 const CITY_RECOUNT = `UPDATE city SET place_count = (
   SELECT COUNT(*) FROM place
@@ -43,7 +52,11 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     }
     return serve(request, env, ctx);
   },
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    if (controller.cron === WEEKLY_CRON) {
+      ctx.waitUntil(weeklyOsmSync(env.DB, fetch, Date.now()));
+      return;
+    }
     ctx.waitUntil(env.DB.prepare(CITY_RECOUNT).run());
     ctx.waitUntil(nightly(env));
   },
@@ -53,6 +66,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
         const mail = asMail(message.body);
         if (isRecomputeMessage(message.body)) {
           await recomputeFacts(env.DB, message.body.ids);
+        } else if (isPhotoMessage(message.body)) {
+          await processPhoto(env, message.body.id);
         } else if (mail && env.EMAIL) {
           await env.EMAIL.send({ from: MAIL_FROM, ...mail });
         } else if (env.CACHE) {

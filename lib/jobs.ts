@@ -1,3 +1,4 @@
+import { refreshGoogleLocations } from "@/lib/places/google";
 import { factsDueForRecompute, nightlyTrustStatement, recomputeFact, releaseDueHolds } from "@/lib/trust/store";
 
 /** Facts per queue message; a consumer batch (≤ 10 messages) then touches at most 250 facts. */
@@ -13,6 +14,12 @@ export function isRecomputeMessage(body: unknown): body is RecomputeMessage {
   return message.kind === "facts" && Array.isArray(message.ids) && message.ids.every((id) => typeof id === "string");
 }
 
+export type PhotoMessage = { kind: "photo"; id: string };
+
+export function isPhotoMessage(body: unknown): body is PhotoMessage {
+  return Boolean(body && typeof body === "object" && (body as PhotoMessage).kind === "photo" && typeof (body as PhotoMessage).id === "string");
+}
+
 export function chunk<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
@@ -23,8 +30,25 @@ export function chunk<T>(items: T[], size: number): T[][] {
  * Nightly trust maintenance (spec 5.4): trust levels in one UPDATE, due holds released, and facts
  * whose state drifts with time (decay, 60-day staleness) queued for recompute in small chunks.
  */
-export async function nightly(env: { DB: D1Database; Q_RECOMPUTE?: Queue }, now = Date.now()) {
+/** New accounts' places go public after 24 hours unless someone reported them (spec P3). */
+export function activatePendingStatement(db: D1Database, now: number) {
+  return db
+    .prepare(
+      `UPDATE place SET status = 'active', updated_at = ? WHERE status = 'pending' AND created_at <= ?
+       AND NOT EXISTS (SELECT 1 FROM report WHERE report.place_id = place.id AND report.status = 'open')`,
+    )
+    .bind(now, now - 24 * 60 * 60 * 1000);
+}
+
+export async function nightly(
+  env: { DB: D1Database; Q_RECOMPUTE?: Queue; CACHE?: KVNamespace; GOOGLE_MAPS_API_KEY?: string },
+  now = Date.now(),
+) {
   await nightlyTrustStatement(env.DB, now).run();
+  await activatePendingStatement(env.DB, now).run();
+  if (env.CACHE && env.GOOGLE_MAPS_API_KEY) {
+    await refreshGoogleLocations(env.DB, { apiKey: env.GOOGLE_MAPS_API_KEY, cache: env.CACHE, mocks: false }, now);
+  }
   const released = await releaseDueHolds(env.DB, now, 100);
   const ids = await factsDueForRecompute(env.DB, now, NIGHTLY_FACT_LIMIT);
   const messages = chunk(ids, RECOMPUTE_CHUNK).map((part) => ({ body: { kind: "facts", ids: part } satisfies RecomputeMessage }));

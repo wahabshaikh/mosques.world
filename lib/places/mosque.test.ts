@@ -104,5 +104,9 @@ describe("update dialog data", () => {
     expect(data.prayers.find((prayer) => prayer.key === "iqamah.fajr")?.current).toBeNull();
     expect(data.jumuah).toHaveLength(1);
     expect(data.dhuhrAdhan).toBe("12:57");
+    expect(data.amenities).toEqual([]);
+    const withAmenities = updateData({ place: { id: "p", slug: "s", name: "T" }, facts: [fact("amenity.parking", "verified", { v: true })], day, trustLevel: 0, amenities: true });
+    expect(withAmenities.amenities.find((item) => item.key === "amenity.parking")?.current?.value).toEqual({ v: true });
+    expect(withAmenities.amenities).toHaveLength(10);
   });
 });

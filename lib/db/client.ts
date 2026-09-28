@@ -12,6 +12,9 @@ export type AppEnv = {
   EMAIL_SINK?: string;
   ENVIRONMENT?: string;
   GOOGLE_MAPS_API_KEY?: string;
+  GOOGLE_PLACES_DAILY_CAP?: string;
+  IMAGES?: ImagesBinding;
+  AI?: Ai;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   BETTER_AUTH_SECRET?: string;

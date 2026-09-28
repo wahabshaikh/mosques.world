@@ -13,15 +13,17 @@ export const contributionInput = z.object({
   source: z.enum(VOTE_SOURCES).default("other"),
   changes: z
     .array(z.object({ key: z.string().max(40), qualifier: z.string().max(4).default(""), value: z.unknown() }))
-    .max(12)
+    .max(24)
     .default([]),
-  confirms: z.array(z.string().min(1).max(40)).max(12).default([]),
+  confirms: z.array(z.string().min(1).max(40)).max(24).default([]),
+  evidencePhotoId: z.string().min(1).max(40).nullish(),
 });
 
 export const reportInput = z.object({
   placeId: z.string().min(1).max(40),
   factKey: z.string().max(40).nullish(),
-  reason: z.enum(["timing", "other"]).default("timing"),
+  reason: z.enum(["timing", "closed", "duplicate", "wrong_location", "inappropriate_photo", "other"]).default("timing"),
+  photoId: z.string().max(40).nullish(),
   note: z.string().trim().min(3, "Tell us briefly what is wrong.").max(500),
 });
 
