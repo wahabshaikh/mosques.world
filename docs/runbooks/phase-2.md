@@ -31,7 +31,8 @@ mosque page shows adhan times and the waitlist.
 
 1. Apply the migration (it is additive): record a Time Travel bookmark, then
    `pnpm exec wrangler d1 migrations apply DB --remote`.
-2. Secrets: `BETTER_AUTH_SECRET` (32+ random bytes) is required. `GOOGLE_CLIENT_ID` and
+2. Secrets: `BETTER_AUTH_SECRET` (32+ random bytes) is required. It was not set in production until 28 Sep 2026
+   (now set; how to generate, set and rotate it: Phase 6 runbook, step 2). `GOOGLE_CLIENT_ID` and
    `GOOGLE_CLIENT_SECRET` enable "Continue with Google" (redirect URI
    `https://mosques.world/api/auth/callback/google`); without them only email OTP is offered.
    `TURNSTILE_SECRET_KEY` guards the OTP email endpoint. `DATAFAST_API_KEY` enables the server-side
