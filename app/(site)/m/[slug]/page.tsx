@@ -10,9 +10,11 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled, phase7Enabled } from "@/lib/phase";
 import { stewardCount } from "@/lib/stewards";
+import { eidSeason, specialDates, upcomingSpecial } from "@/lib/special";
 import { MobileActionBar } from "@/components/mw/mobile-action-bar";
+import { CalendarLink } from "@/components/mw/calendar-link";
 import { CheckinButton } from "@/components/mw/checkin-button";
 import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
 import { defaultPrayer } from "@/lib/checkins";
@@ -93,6 +95,9 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const mobile = profiles && (await phase5Enabled());
   const stewarding = mobile && (await phase6Enabled());
   const stewards = stewarding ? await stewardCount(appEnv().DB, place.id) : 0;
+  const seasons = stewarding && (await phase7Enabled());
+  const specials = seasons ? await upcomingSpecial(appEnv().DB, place.id, day.date) : [];
+  const eidTime = seasons && eidSeason(now, place.timezone);
   const database = appEnv().DB;
   const [facts, activity, stats] = contributions
     ? await Promise.all([
@@ -296,6 +301,16 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
                 History of these times
               </Link>
             ) : null}
+            {seasons ? (
+              <>
+                {" · "}
+                <Link href={`/m/${place.slug}/timetable`} className="font-semibold text-foreground underline">
+                  Monthly timetable
+                </Link>
+                {" · "}
+                <CalendarLink path={`/m/${place.slug}/calendar.ics`} label="Add to calendar" scope="place" />
+              </>
+            ) : null}
           </p>
         </section>
 
@@ -304,6 +319,45 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             <h2 className="mb-4 text-xl font-bold">Jumu&apos;ah</h2>
             <JumuahCards cards={jumuah} />
           </section>
+        ) : null}
+
+        {seasons && (specials.length > 0 || eidTime) ? (
+          <section id="special" className="mt-8 scroll-mt-24 border-t border-border pt-8" aria-labelledby="special-heading">
+            <h2 id="special-heading" className="mb-4 text-xl font-bold">
+              Eid &amp; special prayers
+            </h2>
+            {specials.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Eid times yet for this mosque.</p>
+            ) : (
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {specials.map((item) => (
+                  <li key={item.id} className="rounded-2xl border border-input p-4" data-special={item.kind}>
+                    <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{item.label}</p>
+                    <p className="mt-1 font-semibold">{specialDates(item)}</p>
+                    <ul className="mt-1 text-sm">
+                      {item.lines.map((line) => (
+                        <li key={line} className="tabular">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                    {item.notes ? <p className="mt-1 text-sm text-muted-foreground">{item.notes}</p> : null}
+                    {item.author ? <p className="mt-2 text-xs text-muted-foreground">Added by @{item.author}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href={`/m/${place.slug}/special`} className="mt-4 inline-block text-sm font-semibold underline">
+              Add Eid or Taraweeh times
+            </Link>
+          </section>
+        ) : null}
+        {seasons && specials.length === 0 && !eidTime ? (
+          <p className="mt-6 text-sm">
+            <Link href={`/m/${place.slug}/special`} className="font-semibold underline">
+              Add Eid or Taraweeh times
+            </Link>
+          </p>
         ) : null}
 
         {places ? (

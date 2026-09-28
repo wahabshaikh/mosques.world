@@ -22,7 +22,7 @@ type DeliverEnv = Pick<AppEnv, "DB" | "CACHE" | "EMAIL_SINK" | "Q_EMAIL" | "EMAI
 };
 
 /** The signing secret; the fixed development secret is only allowed on non-production hosts (as in lib/auth). */
-function secretOf(env: Pick<AppEnv, "BETTER_AUTH_SECRET">, host = ""): string {
+export function secretOf(env: Pick<AppEnv, "BETTER_AUTH_SECRET">, host = ""): string {
   if (env.BETTER_AUTH_SECRET) return env.BETTER_AUTH_SECRET;
   if (isNonProductionHost(host)) return DEV_SECRET;
   throw new Error("BETTER_AUTH_SECRET is not set");

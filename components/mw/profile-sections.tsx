@@ -158,6 +158,7 @@ const TYPE_STYLE: Record<string, { icon: LucideIcon; tint: string; ink: string }
   proposed: { icon: Clock, tint: "bg-warning-soft", ink: "text-warning" },
   promoted: { icon: Clock, tint: "bg-warning-soft", ink: "text-warning" },
   reverted: { icon: Clock, tint: "bg-warning-soft", ink: "text-warning" },
+  timetable_imported: { icon: CalendarDays, tint: "bg-warning-soft", ink: "text-warning" },
   place_added: { icon: MapPin, tint: "bg-[#ECEBF5] dark:bg-[#2B2A44]", ink: "text-[#4B4F9C] dark:text-[#B9B7F0]" },
   place_confirmed: { icon: MapPin, tint: "bg-[#ECEBF5] dark:bg-[#2B2A44]", ink: "text-[#4B4F9C] dark:text-[#B9B7F0]" },
   photo_added: { icon: Camera, tint: "bg-muted", ink: "text-foreground" },
@@ -182,6 +183,8 @@ function contributionText(row: ContributionRow): { what: string; detail: string 
       return { what: "Confirmed a new place", detail: null };
     case "photo_added":
       return { what: "Added a photo", detail: null };
+    case "timetable_imported":
+      return { what: "Imported a monthly timetable", detail: row.payload.rows ? `${row.payload.rows} times for ${row.payload.month}` : null };
     default:
       return { what: "Updated a place", detail: null };
   }

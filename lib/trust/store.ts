@@ -243,18 +243,25 @@ type SummaryRow = CandidateRow & { key: string; qualifier: string; state: FactSt
 /** Rebuilds `place.iqamah_summary_json`, `verification_state` and `last_verified_at`. */
 export async function refreshPlaceSummary(db: D1Database, placeId: string, now: number): Promise<PlaceSummary> {
   const since = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [factResult, candidateResult] = await db.batch([
-    db.prepare(`SELECT key, qualifier, state FROM fact WHERE place_id = ?`).bind(placeId),
+  const [factResult, candidateResult, timetableResult] = await db.batch([
+    db.prepare(`SELECT key, qualifier, state FROM fact WHERE place_id = ? AND key NOT LIKE 'timetable.%'`).bind(placeId),
     db
       .prepare(
         `SELECT fact_candidate.*, fact.key, fact.qualifier, fact.state, fact.last_confirmed_at,
           (SELECT COUNT(DISTINCT vote.user_id) FROM vote WHERE vote.candidate_id = fact_candidate.id AND vote.polarity > 0) AS backers
          FROM fact_candidate JOIN fact ON fact.id = fact_candidate.fact_id
-         WHERE fact.place_id = ?
+         WHERE fact.place_id = ? AND fact.key NOT LIKE 'timetable.%'
            AND (fact_candidate.status IN ('current', 'candidate')
              OR (fact_candidate.status = 'superseded' AND (fact_candidate.effective_to IS NULL OR fact_candidate.effective_to >= ?)))`,
       )
       .bind(placeId, since),
+    // Monthly-timetable values for the next two weeks ride along, so cards and offline times use them (spec P7).
+    db
+      .prepare(
+        `SELECT fact.key, fact.qualifier, fact_candidate.value_json FROM fact JOIN fact_candidate ON fact_candidate.id = fact.current_candidate_id
+         WHERE fact.place_id = ? AND fact.key LIKE 'timetable.%' AND fact.qualifier BETWEEN ? AND ?`,
+      )
+      .bind(placeId, isoDay(now - DAY_MS), isoDay(now + 15 * DAY_MS)),
   ]);
   const facts = (factResult?.results ?? []) as Array<{ key: string; qualifier: string; state: FactState }>;
   const rows = (candidateResult?.results ?? []) as SummaryRow[];
@@ -298,6 +305,12 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
     }
   }
   summary.jumuah.sort((a, b) => Number(a.q) - Number(b.q));
+  for (const row of (timetableResult?.results ?? []) as Array<{ key: string; qualifier: string; value_json: string }>) {
+    const time = (JSON.parse(row.value_json) as { t?: string }).t;
+    if (!time) continue;
+    summary.tt ??= {};
+    (summary.tt[row.qualifier] ??= {})[row.key.slice("timetable.".length) as keyof PlaceSummary["iqamah"]] = time;
+  }
 
   const states = IQAMAH_KEYS.map((key) => facts.find((item) => item.key === key)?.state ?? "unknown");
   const verification = placeVerification(states);
@@ -305,12 +318,18 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
     (latest, entry) => (entry?.at && (!latest || entry.at > latest) ? entry.at : latest),
     null,
   );
-  const hasAny = Object.keys(summary.iqamah).length > 0 || summary.jumuah.length > 0;
+  const hasAny = Object.keys(summary.iqamah).length > 0 || summary.jumuah.length > 0 || Boolean(summary.tt);
   await db
     .prepare(`UPDATE place SET iqamah_summary_json = ?, verification_state = ?, last_verified_at = ?, amenity_bits = ? WHERE id = ?`)
     .bind(hasAny ? JSON.stringify(summary) : null, verification, lastVerified, amenityBits, placeId)
     .run();
   return summary;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function isoDay(at: number): string {
+  return new Date(at).toISOString().slice(0, 10);
 }
 
 async function getCandidate(db: D1Database, candidateId: string) {
@@ -734,9 +753,11 @@ export async function releaseDueHolds(db: D1Database, now: number, limit = 100):
 export async function factsDueForRecompute(db: D1Database, now: number, limit = 1000): Promise<string[]> {
   const rows = await db
     .prepare(
-      `SELECT id FROM fact WHERE state IN ('verified', 'unverified', 'disputed') AND updated_at < ? ORDER BY updated_at LIMIT ?`,
+      `SELECT id FROM fact WHERE state IN ('verified', 'unverified', 'disputed') AND updated_at < ?
+         AND NOT (key LIKE 'timetable.%' AND qualifier < ?) ORDER BY updated_at LIMIT ?`,
     )
-    .bind(now - 20 * 60 * 60 * 1000, limit)
+    // Timetable values for days that have passed never need recomputing.
+    .bind(now - 20 * 60 * 60 * 1000, isoDay(now - DAY_MS), limit)
     .all<{ id: string }>();
   return (rows.results ?? []).map((row) => row.id);
 }

@@ -1,5 +1,5 @@
 import { refreshGoogleLocations } from "@/lib/places/google";
-import { factsDueForRecompute, nightlyTrustStatement, recomputeFact, releaseDueHolds } from "@/lib/trust/store";
+import { factsDueForRecompute, nightlyTrustStatement, recomputeFact, refreshPlaceSummary, releaseDueHolds } from "@/lib/trust/store";
 
 /** Facts per queue message; a consumer batch (≤ 10 messages) then touches at most 250 facts. */
 export const RECOMPUTE_CHUNK = 25;
@@ -49,6 +49,15 @@ export async function nightly(
   if (env.CACHE && env.GOOGLE_MAPS_API_KEY) {
     await refreshGoogleLocations(env.DB, { apiKey: env.GOOGLE_MAPS_API_KEY, cache: env.CACHE, mocks: false }, now);
   }
+  // Places with monthly timetables: slide their two-week window in the summary forward (spec P7).
+  const today = new Date(now).toISOString().slice(0, 10);
+  const soon = new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const timetabled = await env.DB.prepare(
+    `SELECT DISTINCT place_id FROM fact WHERE key LIKE 'timetable.%' AND qualifier BETWEEN ? AND ? LIMIT 200`,
+  )
+    .bind(today, soon)
+    .all<{ place_id: string }>();
+  for (const row of timetabled.results ?? []) await refreshPlaceSummary(env.DB, row.place_id, now);
   const released = await releaseDueHolds(env.DB, now, 100);
   const ids = await factsDueForRecompute(env.DB, now, NIGHTLY_FACT_LIMIT);
   const messages = chunk(ids, RECOMPUTE_CHUNK).map((part) => ({ body: { kind: "facts", ids: part } satisfies RecomputeMessage }));

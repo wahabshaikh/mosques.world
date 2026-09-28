@@ -151,9 +151,10 @@ export async function stewardQueue(db: D1Database, userId: string, slug?: string
        FROM fact JOIN fact_candidate ON fact_candidate.fact_id = fact.id
        WHERE fact.place_id IN (${list.map(() => "?").join(", ")})
          AND (fact_candidate.status = 'held' OR (fact.state IN ('disputed', 'stale') AND fact_candidate.status IN ('current', 'candidate')))
+         AND NOT (fact.key LIKE 'timetable.%' AND fact.qualifier < ?)
        ORDER BY fact.key LIMIT 500`,
     )
-    .bind(...list.map((place) => place.id))
+    .bind(...list.map((place) => place.id), new Date().toISOString().slice(0, 10))
     .all<ItemRow>();
   const byPlace = new Map<string, ItemRow[]>();
   for (const row of rows.results ?? []) byPlace.set(row.place_id, [...(byPlace.get(row.place_id) ?? []), row]);

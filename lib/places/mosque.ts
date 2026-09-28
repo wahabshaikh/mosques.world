@@ -32,7 +32,9 @@ export function statusFor(fact: FactView, now: number): Pick<IqamahCell, "status
 export function iqamahCells(facts: FactView[], day: PrayerDay, now: number): Partial<Record<PrayerKey, IqamahCell>> {
   const cells: Partial<Record<PrayerKey, IqamahCell>> = {};
   for (const prayer of IQAMAH_PRAYERS) {
-    const fact = facts.find((item) => item.key === `iqamah.${prayer}`);
+    // Today's value from a monthly timetable wins over the standing iqamah (spec P7).
+    const dated = facts.find((item) => item.key === `timetable.${prayer}` && item.qualifier === day.date && item.current);
+    const fact = dated ?? facts.find((item) => item.key === `iqamah.${prayer}`);
     const row = day.rows.find((item) => item.key === prayer);
     const shown = fact?.shown;
     if (!fact || !row || !shown) continue;
@@ -56,7 +58,7 @@ export function nextRows(day: PrayerDay, cells: Partial<Record<PrayerKey, Iqamah
     .filter((row) => row.key !== "sunrise")
     .map((row) => {
       const cell = cells[row.key];
-      const fact = facts.find((item) => item.key === `iqamah.${row.key}`);
+      const fact = facts.find((item) => item.factId && item.key === cell?.factKey) ?? facts.find((item) => item.key === `iqamah.${row.key}`);
       const confirmed = fact?.shown?.lastConfirmedAt ?? null;
       return {
         key: row.key,
