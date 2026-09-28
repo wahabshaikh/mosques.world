@@ -1,3 +1,5 @@
+import { scheduleUserStats } from "@/lib/profile/stats";
+import { isNonProductionHost } from "@/lib/places/present";
 import { eq } from "drizzle-orm";
 import { serverGoal } from "@/lib/analytics-server";
 import { contributionInput, effectiveFromProblem, resultMessage } from "@/lib/contribute";
@@ -93,6 +95,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error instanceof TrustError) return jsonError(error.message, error.status);
     throw error;
   }
+  await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
   if (results.some((result) => result.outcome?.supersededId)) await serverGoal(env, request, "dispute_resolved", { place_id: found.id });
   return Response.json({
     results: results.map((result) => ({

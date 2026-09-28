@@ -80,4 +80,18 @@ describe("mergePlaces", () => {
     await expect(mergePlaces(d1, { sourceId: "keep", targetId: "keep", moderatorId: "a", now: NOW })).rejects.toThrow(MergeError);
     await expect(mergePlaces(d1, { sourceId: "nope", targetId: "keep", moderatorId: "a", now: NOW })).rejects.toThrow("not found");
   });
+
+  it("moves check-ins and saves, dropping same-day duplicates", async () => {
+    user("a");
+    sqlite.exec(`INSERT INTO checkin (id, user_id, place_id, prayer, local_date, created_at) VALUES
+      ('k1', 'a', 'keep', 'asr', '2026-09-01', 1), ('d1', 'a', 'dupe', 'asr', '2026-09-01', 2), ('d2', 'a', 'dupe', 'isha', '2026-09-01', 3)`);
+    sqlite.exec(`INSERT INTO saved_place (user_id, place_id, created_at) VALUES ('a', 'keep', 0), ('a', 'dupe', 0)`);
+    await mergePlaces(d1, { sourceId: "dupe", targetId: "keep", moderatorId: "a", now: NOW });
+    expect(sqlite.prepare(`SELECT id, place_id FROM checkin ORDER BY id`).all()).toEqual([
+      { id: "d2", place_id: "keep" },
+      { id: "k1", place_id: "keep" },
+    ]);
+    expect(sqlite.prepare(`SELECT place_id FROM saved_place`).all()).toEqual([{ place_id: "keep" }]);
+    expect(sqlite.prepare(`SELECT place_id, count FROM user_place_stat`).all()).toEqual([{ place_id: "keep", count: 2 }]);
+  });
 });

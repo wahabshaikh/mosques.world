@@ -1,4 +1,5 @@
 import { CircleAlert, ShieldCheck } from "lucide-react";
+import { CHECKIN_PRAYER_LABELS, type CheckinPrayer } from "@/lib/checkin-options";
 import type { JumuahCard, TrustTone } from "@/lib/places/mosque";
 import { avatarColor, initials } from "@/lib/people";
 import { describeValue, factLabel } from "@/lib/trust/facts";
@@ -85,6 +86,8 @@ function activityText(item: ActivityView): string {
       return `restored the previous ${label} time`;
     case "photo_added":
       return "added a photo";
+    case "prayed":
+      return `prayed ${CHECKIN_PRAYER_LABELS[item.payload.prayer as CheckinPrayer] ?? ""} here`.replace("  ", " ");
     case "place_added":
       return "added this place";
     case "place_confirmed":

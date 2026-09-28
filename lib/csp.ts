@@ -15,7 +15,7 @@ const SENTRY_INGEST = [
   "https://*.ingest.de.sentry.io",
 ];
 
-export function contentSecurityPolicy(nonProd: boolean): string {
+export function contentSecurityPolicy(nonProd: boolean, embeddable = false): string {
   const scriptSrc = [
     "script-src 'self' 'unsafe-inline'",
     nonProd ? "'unsafe-eval'" : "",
@@ -48,6 +48,6 @@ export function contentSecurityPolicy(nonProd: boolean): string {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    embeddable ? "frame-ancestors *" : "frame-ancestors 'none'",
   ].join("; ");
 }

@@ -26,6 +26,15 @@ export default function PrivacyPage() {
         When you search for a place to add, your search text is sent to Google Places; we keep only Google&apos;s place
         identifier.
       </p>
+      <h2 className="text-lg font-bold">Check-ins, your map and saved places</h2>
+      <p>
+        When you tap &ldquo;I prayed here&rdquo; we store the mosque, the prayer and the date. If you choose to verify with
+        your location, your device sends its position once; we compute the distance to the mosque, keep only whether you were
+        within 150 m (and that distance in metres), and never store your coordinates. Your profile map at
+        mosques.world/@username is public by default. In <strong>Settings → Privacy</strong> you can show only your countries,
+        make check-ins private, make your whole profile private (name and contributions only), or delete any check-in.
+        Saved places are visible only to you.
+      </p>
       <h2 className="text-lg font-bold">Your choices</h2>
       <p>
         In <strong>Settings → Account</strong> you can download everything we hold about you as JSON, or delete your account.

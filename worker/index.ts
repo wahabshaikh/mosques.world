@@ -4,6 +4,7 @@ import { asMail, MAIL_FROM } from "@/lib/email/send";
 import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/lib/jobs";
 import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
+import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
 import { sentryOptions } from "@/lib/sentry";
 
@@ -66,6 +67,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
         const mail = asMail(message.body);
         if (isRecomputeMessage(message.body)) {
           await recomputeFacts(env.DB, message.body.ids);
+        } else if (isUserStatsMessage(message.body)) {
+          await recomputeUserStats(env.DB, message.body.id);
         } else if (isPhotoMessage(message.body)) {
           await processPhoto(env, message.body.id);
         } else if (mail && env.EMAIL) {

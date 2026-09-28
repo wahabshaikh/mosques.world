@@ -75,6 +75,18 @@ export async function mergePlaces(db: D1Database, input: { sourceId: string; tar
     db.prepare(`UPDATE activity SET place_id = ? WHERE place_id = ?`).bind(targetId, sourceId),
     db.prepare(`UPDATE report SET place_id = ?, target_id = CASE WHEN target_type = 'place' THEN ? ELSE target_id END WHERE place_id = ?`).bind(targetId, targetId, sourceId),
     db.prepare(`UPDATE waitlist SET place_id = ? WHERE place_id = ?`).bind(targetId, sourceId),
+    // Check-ins and saves follow the place; a person's duplicate for the same day and prayer is dropped.
+    db.prepare(`UPDATE OR IGNORE checkin SET place_id = ? WHERE place_id = ?`).bind(targetId, sourceId),
+    db.prepare(`DELETE FROM checkin WHERE place_id = ?`).bind(sourceId),
+    db.prepare(`UPDATE OR IGNORE saved_place SET place_id = ? WHERE place_id = ?`).bind(targetId, sourceId),
+    db.prepare(`DELETE FROM saved_place WHERE place_id = ?`).bind(sourceId),
+    db.prepare(`DELETE FROM user_place_stat WHERE place_id IN (?, ?)`).bind(sourceId, targetId),
+    db
+      .prepare(
+        `INSERT INTO user_place_stat (user_id, place_id, first_at, last_at, count)
+         SELECT user_id, place_id, MIN(created_at), MAX(created_at), COUNT(*) FROM checkin WHERE place_id = ? GROUP BY user_id`,
+      )
+      .bind(targetId),
     db.prepare(`UPDATE place_duplicate_candidate SET status = 'merged' WHERE (a_id = ? AND b_id = ?) OR (a_id = ? AND b_id = ?)`).bind(sourceId, targetId, targetId, sourceId),
     db.prepare(`UPDATE place_slug_history SET place_id = ? WHERE place_id = ?`).bind(targetId, sourceId),
     db.prepare(`INSERT INTO place_slug_history (old_slug, place_id, created_at) VALUES (?, ?, ?) ON CONFLICT (old_slug) DO UPDATE SET place_id = excluded.place_id`).bind(source.slug, targetId, now),

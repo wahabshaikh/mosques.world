@@ -14,9 +14,15 @@ type ViewerContext = {
   viewer: Viewer;
   loaded: boolean;
   votes: Record<string, 1 | -1>;
+  saved: boolean;
+  setSaved: (saved: boolean) => void;
+  /** An action the viewer started before signing in (`?intent=`), for components to resume. */
+  intent: string | null;
   vote: (candidateId: string, polarity: 1 | -1, factKey: string) => Promise<void>;
   signInHref: (intent?: string) => string;
 };
+
+type MeBody = { user: Viewer; votes: Record<string, 1 | -1>; saved?: boolean };
 
 const Context = createContext<ViewerContext | null>(null);
 
@@ -37,6 +43,8 @@ export function ViewerProvider({ placeId, children }: { placeId: string; childre
   const [viewer, setViewer] = useState<Viewer>(null);
   const [loaded, setLoaded] = useState(false);
   const [votes, setVotes] = useState<Record<string, 1 | -1>>({});
+  const [saved, setSaved] = useState(false);
+  const [intent, setIntent] = useState<string | null>(null);
   const replayed = useRef(false);
 
   const signInHref = useCallback(
@@ -78,11 +86,12 @@ export function ViewerProvider({ placeId, children }: { placeId: string; childre
   useEffect(() => {
     let cancelled = false;
     void fetch(`/api/v1/places/${placeId}/me`)
-      .then((response) => (response.ok ? (response.json() as Promise<{ user: Viewer; votes: Record<string, 1 | -1> }>) : null))
-      .then((body: { user: Viewer; votes: Record<string, 1 | -1> } | null) => {
+      .then((response) => (response.ok ? (response.json() as Promise<MeBody>) : null))
+      .then((body: MeBody | null) => {
         if (cancelled) return;
         setViewer(body?.user ?? null);
         setVotes(body?.votes ?? {});
+        setSaved(body?.saved ?? false);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
@@ -96,12 +105,13 @@ export function ViewerProvider({ placeId, children }: { placeId: string; childre
     if (!loaded || replayed.current || !intent) return;
     replayed.current = true;
     router.replace(pathname, { scroll: false });
+    if (viewer) setIntent(intent);
     const [kind, candidateId, polarity] = intent.split(":");
     if (kind !== "vote" || !candidateId || !viewer) return;
     void vote(candidateId, polarity === "-1" ? -1 : 1, "intent");
   }, [loaded, params, pathname, router, viewer, vote]);
 
-  return <Context.Provider value={{ viewer, loaded, votes, vote, signInHref }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ viewer, loaded, votes, saved, setSaved, intent, vote, signInHref }}>{children}</Context.Provider>;
 }
 
 export type DisputeItem = {

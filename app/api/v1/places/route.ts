@@ -1,3 +1,5 @@
+import { scheduleUserStats } from "@/lib/profile/stats";
+import { isNonProductionHost } from "@/lib/places/present";
 import { placesInBbox } from "@/lib/db/queries";
 import { firstIssue } from "@/lib/account";
 import { appEnv } from "@/lib/db/client";
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
     for (const item of values) {
       await submitValue(env.DB, { actor, placeId: created.id, key: item.key, qualifier: "", value: item.value, effectiveFrom, source: "observed", now });
     }
+    await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
     return Response.json({ slug: created.slug, status: created.status, id: created.id });
   } catch (error) {
     if (error instanceof PlaceError) return jsonError(error.message, error.status);
