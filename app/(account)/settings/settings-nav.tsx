@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { phase4Enabled } from "@/lib/phase";
+import { phase4Enabled, phase6Enabled } from "@/lib/phase";
 import { cn } from "@/lib/utils";
 
 export async function SettingsShell({ active, title, children }: { active: string; title: string; children: React.ReactNode }) {
   const ITEMS = [
     ["Profile", "/settings/profile"],
     ...((await phase4Enabled().catch(() => false)) ? [["Privacy", "/settings/privacy"] as const] : []),
+    ...((await phase6Enabled().catch(() => false)) ? [["Notifications", "/settings/notifications"] as const] : []),
     ["Account", "/settings/account"],
   ] as const;
   return (

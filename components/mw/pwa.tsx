@@ -38,6 +38,8 @@ export function Pwa() {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
     }
     if (!navigator.onLine) track("offline_open");
+    const from = new URLSearchParams(window.location.search).get("from");
+    if (from === "push" || from === "email") track("notification_opened", { channel: from });
     let visits = Number(read(VISITS) ?? "0");
     try {
       if (!window.sessionStorage.getItem(VISITS)) {

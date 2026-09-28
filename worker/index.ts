@@ -5,10 +5,19 @@ import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/l
 import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
+import { flagsOnForSite, PHASE6_FLAGS } from "@/lib/flags";
+import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { sentryOptions } from "@/lib/sentry";
 
 type Env = {
   DB: D1Database;
+  FLAGS?: KVNamespace;
+  Q_EMAIL?: Queue;
+  BETTER_AUTH_SECRET?: string;
+  EMAIL_SINK?: string;
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_SUBJECT?: string;
   MEDIA: R2Bucket;
   IMAGES?: ImagesBinding;
   AI?: Ai;
@@ -41,12 +50,23 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     return handler.fetch(request, env, ctx);
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const notifications = await flagsOnForSite(env, PHASE6_FLAGS);
+    const deliveryEnv = { ...env, CACHE: env.CACHE as KVNamespace, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" };
     if (controller.cron === WEEKLY_CRON) {
       ctx.waitUntil(weeklyOsmSync(env.DB, fetch, Date.now()));
+      if (notifications) {
+        ctx.waitUntil(
+          weeklyDigestStatement(env.DB, Date.now())
+            .run()
+            .then(() => deliverPending(deliveryEnv, { host: "", limit: 300 })),
+        );
+      }
       return;
     }
     ctx.waitUntil(env.DB.prepare(CITY_RECOUNT).run());
     ctx.waitUntil(nightly(env));
+    // Safety net for the outbox: anything the queue missed goes out with the nightly run.
+    if (notifications) ctx.waitUntil(deliverPending(deliveryEnv, { host: "", limit: 200 }));
   },
   async queue(batch: MessageBatch, env: Env) {
     for (const message of batch.messages) {
@@ -54,6 +74,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
         const mail = asMail(message.body);
         if (isRecomputeMessage(message.body)) {
           await recomputeFacts(env.DB, message.body.ids);
+        } else if (isDeliverMessage(message.body)) {
+          await deliverPending({ ...env, CACHE: env.CACHE as KVNamespace, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" }, { host: "", limit: 100 });
         } else if (isUserStatsMessage(message.body)) {
           await recomputeUserStats(env.DB, message.body.id);
         } else if (isPhotoMessage(message.body)) {

@@ -1,7 +1,7 @@
 /* mosques.world service worker (spec P5): app-shell caching and offline saved mosques.
  * Hashed build assets are cache-first; pages and the saved-times feed are network-first with a cache
  * fallback, so nothing stale is shown while online. Mutations, auth and test endpoints are never touched. */
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `mw-static-${VERSION}`;
 const PAGES = `mw-pages-${VERSION}`;
 const DATA = `mw-data-${VERSION}`;
@@ -101,4 +101,36 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   // Sent on sign-out so one person's pages never show for the next.
   if (event.data === "clear-user-caches") event.waitUntil(Promise.all([caches.delete(PAGES), caches.delete(DATA)]));
+});
+
+// Web Push (spec P6): show the notification; tapping it opens the page it is about.
+self.addEventListener("push", (event) => {
+  let data = { title: "mosques.world", body: "", url: "/notifications" };
+  try {
+    data = { ...data, ...(event.data ? event.data.json() : {}) };
+  } catch {
+    data.body = event.data ? event.data.text() : "";
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "/notifications", self.location.origin);
+  target.searchParams.set("from", "push");
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      for (const client of windows) {
+        if (client.url === target.toString() && "focus" in client) return client.focus();
+      }
+      return self.clients.openWindow(target.toString());
+    }),
+  );
 });

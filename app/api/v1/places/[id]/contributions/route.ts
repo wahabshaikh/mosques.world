@@ -1,3 +1,4 @@
+import { afterContribution } from "@/lib/notify";
 import { scheduleUserStats } from "@/lib/profile/stats";
 import { isNonProductionHost } from "@/lib/places/present";
 import { eq } from "drizzle-orm";
@@ -5,7 +6,7 @@ import { serverGoal } from "@/lib/analytics-server";
 import { contributionInput, effectiveFromProblem, resultMessage } from "@/lib/contribute";
 import { appEnv, db } from "@/lib/db/client";
 import { place } from "@/lib/db/schema";
-import { phase2EnabledFor } from "@/lib/phase";
+import { phase2EnabledFor, phase6EnabledFor } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { dailyUsage, limitProblem, writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
@@ -97,8 +98,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
   if (results.some((result) => result.outcome?.supersededId)) await serverGoal(env, request, "dispute_resolved", { place_id: found.id });
+  await afterContribution(env, request, await phase6EnabledFor(request));
   return Response.json({
     results: results.map((result) => ({
+      candidateId: result.candidateId,
       key: result.key,
       qualifier: result.qualifier,
       label: factLabel(result.key, result.qualifier),

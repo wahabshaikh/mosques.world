@@ -4,6 +4,7 @@ export const PHASE2_FLAG = "phase2.contributions";
 export const PHASE3_FLAG = "phase3.places";
 export const PHASE4_FLAG = "phase4.profiles";
 export const PHASE5_FLAG = "phase5.mobile";
+export const PHASE6_FLAG = "phase6.stewards";
 
 const TTL_MS = 60_000;
 const cache = new Map<string, { value: string | null; at: number }>();
@@ -55,3 +56,19 @@ export async function flagEnabled(
 ): Promise<boolean> {
   return flagDecision(await readFlag(kv, name), input);
 }
+
+/** For crons and queues, which have no request: whether all flags are on for the public site's host. */
+export async function flagsOnForSite(env: { FLAGS?: KVNamespace; PUBLIC_BASE_URL?: string }, flags: string[]): Promise<boolean> {
+  let host = "mosques.world";
+  try {
+    host = new URL(env.PUBLIC_BASE_URL ?? "https://mosques.world").hostname;
+  } catch {
+    // Keep the production default.
+  }
+  for (const flag of flags) {
+    if (!(await flagEnabled(env.FLAGS, flag, { host, bucketKey: host }))) return false;
+  }
+  return true;
+}
+
+export const PHASE6_FLAGS = [PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAG];

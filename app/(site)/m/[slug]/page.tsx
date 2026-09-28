@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Countdown, PrayerTable, type NextRow } from "@/components/mw/prayer-table";
@@ -9,7 +10,8 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled } from "@/lib/phase";
+import { stewardCount } from "@/lib/stewards";
 import { MobileActionBar } from "@/components/mw/mobile-action-bar";
 import { CheckinButton } from "@/components/mw/checkin-button";
 import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
@@ -89,6 +91,8 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const places = contributions && (await phase3Enabled());
   const profiles = places && (await phase4Enabled());
   const mobile = profiles && (await phase5Enabled());
+  const stewarding = mobile && (await phase6Enabled());
+  const stewards = stewarding ? await stewardCount(appEnv().DB, place.id) : 0;
   const database = appEnv().DB;
   const [facts, activity, stats] = contributions
     ? await Promise.all([
@@ -237,6 +241,11 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             />
             <p className="border-b border-border pb-6 text-[15px] font-semibold">
               Kept up to date by {stats?.contributors ?? 0} {stats?.contributors === 1 ? "contributor" : "contributors"}
+              {stewards > 0 ? (
+                <span className="mt-1 flex items-center gap-1.5 text-primary" data-testid="steward-badge">
+                  <ShieldCheck className="size-4" aria-hidden="true" /> Looked after by {stewards} {stewards === 1 ? "steward" : "stewards"}
+                </span>
+              ) : null}
             </p>
           </div>
         ) : (
@@ -380,6 +389,13 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               </dl>
               <p className="mt-2 text-xs text-muted-foreground">Powered by Google</p>
             </div>
+          ) : null}
+          {stewarding ? (
+            <p className="mt-6">
+              <Link href={`/m/${place.slug}/steward`} className="font-semibold underline">
+                Are you involved with this mosque?
+              </Link>
+            </p>
           ) : null}
           {contributions ? (
             <p className="mt-6">

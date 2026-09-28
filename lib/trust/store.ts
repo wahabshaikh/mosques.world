@@ -1,4 +1,5 @@
 import { ulid } from "@/lib/id";
+import { changeText, disputeText, isTimeKey, savedChangeStatement, stewardAlertStatement } from "@/lib/notifications";
 import {
   asTrustLevel,
   confirmationsNeeded,
@@ -125,7 +126,14 @@ function toEngine(rows: CandidateRow[], votes: VoteRow[]): EngineCandidate[] {
 export type RecomputeResult = FactOutcome & { factId: string; placeId: string; key: string };
 
 /** Re-evaluates one fact, applies promotions, and refreshes the place's denormalised summary. */
-export async function recomputeFact(db: D1Database, factId: string, now: number, actorId: string | null = null): Promise<RecomputeResult> {
+export async function recomputeFact(
+  db: D1Database,
+  factId: string,
+  now: number,
+  actorId: string | null = null,
+  /** Whoever caused this recompute; they are not notified about their own change. */
+  triggeredBy: string | null = actorId,
+): Promise<RecomputeResult> {
   const { fact, rows, votes } = await loadFact(db, factId);
   const candidates = toEngine(rows, votes);
   const outcome = evaluateFact(candidates, now);
@@ -178,6 +186,31 @@ export async function recomputeFact(db: D1Database, factId: string, now: number,
         replaced: outcome.supersededId !== null,
       }),
     );
+  }
+
+  const changed = Boolean(outcome.promotedId && outcome.supersededId && isTimeKey(fact.key));
+  const newDispute = outcome.state === "disputed" && fact.state !== "disputed" && isTimeKey(fact.key);
+  if (changed || newDispute) {
+    const place = await db.prepare(`SELECT name, slug FROM place WHERE id = ?`).bind(fact.place_id).first<{ name: string; slug: string }>();
+    if (place && changed) {
+      const before = rows.find((row) => row.id === outcome.supersededId);
+      const after = rows.find((row) => row.id === outcome.promotedId);
+      const text = changeText({
+        key: fact.key,
+        qualifier: fact.qualifier,
+        placeName: place.name,
+        before: before ? JSON.parse(before.value_json) : null,
+        after: after ? JSON.parse(after.value_json) : null,
+      });
+      statements.push(savedChangeStatement(db, { placeId: fact.place_id, slug: place.slug, ...text, exclude: triggeredBy, now }));
+    }
+    if (place && newDispute) {
+      const challenger = rows.find((row) => row.id !== outcome.currentId && row.status === "candidate" && (outcome.scores[row.id] ?? 0) > 0);
+      if (challenger) {
+        const text = disputeText({ key: fact.key, qualifier: fact.qualifier, placeName: place.name, challenger: JSON.parse(challenger.value_json) });
+        statements.push(stewardAlertStatement(db, { placeId: fact.place_id, ...text, exclude: triggeredBy, now }));
+      }
+    }
   }
 
   statements.push(
@@ -324,11 +357,16 @@ export async function castVote(
   if (candidate.status === "rejected" || candidate.status === "superseded") {
     throw new TrustError("That value is no longer open for votes.", 409);
   }
-  const previous = await db
-    .prepare(`SELECT polarity FROM vote WHERE candidate_id = ? AND user_id = ?`)
-    .bind(candidate.id, actor.id)
-    .first<{ polarity: number }>();
+  const [previous, steward] = await Promise.all([
+    db.prepare(`SELECT polarity FROM vote WHERE candidate_id = ? AND user_id = ?`).bind(candidate.id, actor.id).first<{ polarity: number }>(),
+    // Approved stewards of this place vote with +2 (spec P6).
+    db
+      .prepare(`SELECT 1 AS found FROM steward WHERE place_id = ? AND user_id = ? AND status = 'approved'`)
+      .bind(candidate.place_id, actor.id)
+      .first<{ found: number }>(),
+  ]);
   const weight = voteWeight({
+    steward: Boolean(steward),
     trustLevel: actor.trustLevel,
     source: input.source,
     evidenceApproved: input.evidence?.approved,
@@ -361,7 +399,7 @@ export async function castVote(
     }
   }
   let held = candidate.status === "held";
-  if (held && input.polarity > 0 && actor.trustLevel >= 1 && actor.id !== candidate.created_by) {
+  if (held && input.polarity > 0 && (actor.trustLevel >= 1 || steward) && actor.id !== candidate.created_by) {
     held = false;
     statements.push(
       db.prepare(`UPDATE fact_candidate SET status = 'candidate' WHERE id = ?`).bind(candidate.id),
@@ -382,7 +420,7 @@ export async function castVote(
   await refreshActorTrust(db, actor.id, now);
   const base = { factId: candidate.fact_id, placeId: candidate.place_id, key: candidate.key, qualifier: candidate.qualifier, candidateId: candidate.id };
   if (held) return { ...base, status: "held", state: candidate.fact_state, needed: 0, outcome: null };
-  const outcome = await recomputeFact(db, candidate.fact_id, now, null);
+  const outcome = await recomputeFact(db, candidate.fact_id, now, null, actor.id);
   const live = outcome.currentId === candidate.id;
   const score = outcome.scores[candidate.id] ?? 0;
   const backers = outcome.supporters[candidate.id] ?? 0;

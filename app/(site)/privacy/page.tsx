@@ -36,12 +36,17 @@ export default function PrivacyPage() {
         Saved places are visible only to you. &ldquo;I&apos;m here&rdquo; quick verify works the same way: your position is
         sent with each answer only to check you are within 150 m, and is never stored.
       </p>
+      <h2 className="text-lg font-bold">Stewards</h2>
+      <p>
+        If you ask to look after a mosque, the role, explanation and contact you give are seen only by moderators, who use them
+        to check your request. Approved stewards are shown as a count on the mosque page, not by name.
+      </p>
       <h2 className="text-lg font-bold">App and notifications</h2>
       <p>
         If you install mosques.world, your saved mosques and their times for the next 7 days are kept on your device so they
         work offline; signing out clears them. If you allow notifications, we store your browser&apos;s push subscription (an
-        address your browser gives us) to tell you when a saved mosque changes. You can turn this off in your browser at any
-        time.
+        address your browser gives us) to tell you when a saved mosque changes. Notifications also appear in your in-app inbox.
+        Choose what you get in Settings → Notifications; every email has a one-click unsubscribe link.
       </p>
       <h2 className="text-lg font-bold">Your choices</h2>
       <p>

@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { appEnv } from "@/lib/db/client";
-import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG } from "@/lib/flags";
+import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAGS } from "@/lib/flags";
 
 function flagInput(source: Headers) {
   const host = (source.get("host") ?? "").split(":")[0] ?? "";
@@ -56,3 +56,15 @@ export async function phase5Enabled(): Promise<boolean> {
 export async function phase5EnabledFor(request: Request): Promise<boolean> {
   return allOn([PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG], request.headers);
 }
+
+const PHASE6 = PHASE6_FLAGS;
+
+/** Phase 6 (stewards, notifications) sits behind `phase6.stewards` and needs Phases 2–5. */
+export async function phase6Enabled(): Promise<boolean> {
+  return allOn(PHASE6, new Headers(await headers()));
+}
+
+export async function phase6EnabledFor(request: Request): Promise<boolean> {
+  return allOn(PHASE6, request.headers);
+}
+
