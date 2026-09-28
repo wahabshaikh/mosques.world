@@ -1,4 +1,13 @@
-const CLOUDFLARE_INSIGHTS_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js";
+/**
+ * Cloudflare Web Analytics injects the beacon from a versioned path such as
+ * `/beacon.min.js/v31edd…`. A CSP path without a trailing slash only matches exactly,
+ * so allow the exact file plus the `/beacon.min.js/` prefix, not the whole host.
+ * The beacon reports to https://cloudflareinsights.com/cdn-cgi/rum (see connect-src).
+ */
+const CLOUDFLARE_INSIGHTS_SCRIPTS = [
+  "https://static.cloudflareinsights.com/beacon.min.js",
+  "https://static.cloudflareinsights.com/beacon.min.js/",
+];
 
 const SENTRY_INGEST = [
   "https://*.ingest.sentry.io",
@@ -12,7 +21,7 @@ export function contentSecurityPolicy(nonProd: boolean): string {
     nonProd ? "'unsafe-eval'" : "",
     "https://datafa.st",
     "https://challenges.cloudflare.com",
-    CLOUDFLARE_INSIGHTS_SCRIPT,
+    ...CLOUDFLARE_INSIGHTS_SCRIPTS,
   ]
     .filter(Boolean)
     .join(" ");
