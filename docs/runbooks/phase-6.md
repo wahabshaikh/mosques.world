@@ -26,7 +26,7 @@
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0007 is additive).
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0008 is additive).
 2. Secrets: `BETTER_AUTH_SECRET` (already set; also signs unsubscribe links), `VAPID_PUBLIC_KEY` (var),
    `VAPID_PRIVATE_KEY` (secret, the private key's `d`), optional `VAPID_SUBJECT` (default `mailto:hello@mosques.world`).
    Generate a key pair with `npx web-push generate-vapid-keys` or WebCrypto (P-256). Without VAPID keys, push is skipped.
@@ -42,4 +42,4 @@
 ## Rollback
 
 Flag `phase6.stewards` off (within 60 s): no delivery, no steward UI; steward vote weight stops only when stewards are
-revoked (it is data, not a flag). Migration 0007 is additive.
+revoked (it is data, not a flag). Migration 0008 is additive.

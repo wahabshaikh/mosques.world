@@ -30,7 +30,7 @@
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0008 is additive).
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0009 is additive).
 2. Workers AI: accept the Llama 3.2 Vision licence once for the account (send one request with `prompt: "agree"` to
    `@cf/meta/llama-3.2-11b-vision-instruct`). Each import makes one AI call on the 1600 px variant.
 
@@ -44,4 +44,4 @@
 ## Rollback
 
 Flag `phase7.timetables` off. Timetable facts stay in D1 but are ignored by the summary only after the next refresh;
-to hide them immediately, run the nightly job or `refreshPlaceSummary` for affected places. Migration 0008 is additive.
+to hide them immediately, run the nightly job or `refreshPlaceSummary` for affected places. Migration 0009 is additive.

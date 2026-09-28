@@ -29,7 +29,7 @@
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0005 is additive: new tables, the
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0006 is additive: new tables, the
    `user (created_at)` index and the badge rows).
 2. Nothing else to configure: the profile map needs no tile provider (`/map/land-110m.json` is static, 27 KB gz).
 3. To regenerate land assets: download `world-atlas@2/land-110m.json` and run `pnpm tsx scripts/build-land.ts <file>`.
@@ -45,5 +45,5 @@
 
 ## Rollback
 
-Flag `phase4.profiles` off (within 60 s). Previous Worker version if needed. Migration 0005 is additive; earlier code
+Flag `phase4.profiles` off (within 60 s). Previous Worker version if needed. Migration 0006 is additive; earlier code
 ignores the new tables.
