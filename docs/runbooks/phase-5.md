@@ -27,7 +27,7 @@ off on mosques.world. The service worker registers only while the flag is on.
 
 ## Before turning it on in production
 
-1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0006 adds `push_subscription`).
+1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0007 adds `push_subscription`).
 2. Optional: `VAPID_PUBLIC_KEY` (Web Push application server key; keep the private key for Phase 6). Without it the
    "tell me when my saved mosques change" prompt is hidden.
 
@@ -47,4 +47,4 @@ checks Lighthouse used) and is skipped on WebKit.
 
 Flag `phase5.mobile` off (within 60 s): the worker stops registering; existing workers keep serving network-first,
 so nothing goes stale. To remove it completely, ship a `sw.js` that calls `self.registration.unregister()`.
-Migration 0006 is additive.
+Migration 0007 is additive.

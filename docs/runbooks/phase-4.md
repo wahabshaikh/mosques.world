@@ -45,5 +45,5 @@
 
 ## Rollback
 
-Flag `phase4.profiles` off (within 60 s). Previous Worker version if needed. Migration 0005 is additive; earlier code
+Flag `phase4.profiles` off (within 60 s). Previous Worker version if needed. Migration 0006 is additive; earlier code
 ignores the new tables.

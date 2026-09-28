@@ -42,4 +42,4 @@
 ## Rollback
 
 Flag `phase6.stewards` off (within 60 s): no delivery, no steward UI; steward vote weight stops only when stewards are
-revoked (it is data, not a flag). Migration 0007 is additive.
+revoked (it is data, not a flag). Migration 0008 is additive.
