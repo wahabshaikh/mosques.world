@@ -33,6 +33,10 @@ export async function POST(request: Request) {
     database.prepare(`DELETE FROM user_stat WHERE user_id = ?`).bind(user.id),
     database.prepare(`DELETE FROM user_badge WHERE user_id = ?`).bind(user.id),
     database.prepare(`DELETE FROM saved_place WHERE user_id = ?`).bind(user.id),
+    database.prepare(`DELETE FROM notification WHERE user_id = ?`).bind(user.id),
+    database.prepare(`DELETE FROM notification_pref WHERE user_id = ?`).bind(user.id),
+    database.prepare(`DELETE FROM push_subscription WHERE user_id = ?`).bind(user.id),
+    database.prepare(`DELETE FROM steward WHERE user_id = ?`).bind(user.id),
     database
       .prepare(
         `UPDATE user SET name = 'Former member', email = ?, email_verified = 0, image = NULL, username = NULL,

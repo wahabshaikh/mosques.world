@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Globe, LogOut, Menu, Settings, Shield, UserRound } from "lucide-react";
+import { Bell, Bookmark, Globe, LogOut, Menu, Settings, Shield, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -12,11 +12,20 @@ type MenuUser = { id: string; name: string; username?: string | null; role?: str
  * Header account menu. Deliberately free of the better-auth client and Radix so every page stays
  * inside the JS budget: one fetch for the session and a small disclosure menu.
  */
-export function AccountMenu({ profiles = false }: { profiles?: boolean }) {
+export function AccountMenu({ profiles = false, notifications = false }: { profiles?: boolean; notifications?: boolean }) {
   const pathname = usePathname();
   const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!notifications || !user?.username) return;
+    void fetch("/api/v1/notifications?count=1")
+      .then((response) => (response.ok ? (response.json() as Promise<{ unread: number }>) : null))
+      .then((body) => setUnread(body?.unread ?? 0))
+      .catch(() => undefined);
+  }, [notifications, user?.username]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,9 +77,15 @@ export function AccountMenu({ profiles = false }: { profiles?: boolean }) {
         aria-expanded={open}
         aria-controls="account-menu"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-11 items-center gap-2 rounded-full border border-border pr-1 pl-3 hover:shadow-md"
+        className="relative inline-flex h-11 items-center gap-2 rounded-full border border-border pr-1 pl-3 hover:shadow-md"
       >
         <Menu className="size-4" />
+        {unread > 0 ? (
+          <span className="absolute -top-0.5 -left-0.5 flex min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground" data-testid="unread-count">
+            {unread > 9 ? "9+" : unread}
+            <span className="sr-only"> unread notifications</span>
+          </span>
+        ) : null}
         <span
           className="inline-flex size-8 items-center justify-center rounded-full text-xs font-bold text-white"
           style={{ background: avatarColor(user.id) }}
@@ -101,6 +116,20 @@ export function AccountMenu({ profiles = false }: { profiles?: boolean }) {
                     <Bookmark className="size-4" /> Saved
                   </Link>
                 </li>
+                {notifications ? (
+                  <>
+                    <li>
+                      <Link className={item} href="/notifications">
+                        <Bell className="size-4" /> Notifications{unread > 0 ? ` (${unread})` : ""}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link className={item} href="/steward">
+                        <ShieldCheck className="size-4" /> Steward
+                      </Link>
+                    </li>
+                  </>
+                ) : null}
               </>
             ) : null}
             <li>

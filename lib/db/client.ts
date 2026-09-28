@@ -15,6 +15,8 @@ export type AppEnv = {
   GOOGLE_PLACES_DAILY_CAP?: string;
   /** Web Push application server key (public half); push itself is sent in Phase 6. */
   VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
+  VAPID_SUBJECT?: string;
   IMAGES?: ImagesBinding;
   AI?: Ai;
   GOOGLE_CLIENT_ID?: string;

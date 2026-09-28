@@ -1,7 +1,8 @@
+import { afterContribution } from "@/lib/notify";
 import { z } from "zod";
 import { resultMessage } from "@/lib/contribute";
 import { appEnv } from "@/lib/db/client";
-import { phase5EnabledFor } from "@/lib/phase";
+import { phase5EnabledFor, phase6EnabledFor } from "@/lib/phase";
 import { recomputeUserStats } from "@/lib/profile/stats";
 import { dailyUsage, limitProblem, writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
   try {
     const result = await applyAnswer(env.DB, { actor: actorOf(user), placeId: present.place.id, answer: parsed.data.answer, today: present.day.date, now });
     const stats = await recomputeUserStats(env.DB, user.id, now);
+    await afterContribution(env, request, await phase6EnabledFor(request));
     return Response.json({
       status: result.status,
       state: result.state,

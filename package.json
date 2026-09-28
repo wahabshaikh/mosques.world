@@ -19,6 +19,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^2.0.0",
     "@date-fns/tz": "^1.2.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.2.6",
     "@radix-ui/react-dialog": "^1.1.23",

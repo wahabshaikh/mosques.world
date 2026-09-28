@@ -40,6 +40,12 @@ export default function GuidelinesPage() {
         We describe facilities and times. Do not rate or rank mosques, add sectarian labels, or post personal information about
         anyone. Usernames must not impersonate a mosque, imam or another person.
       </p>
+      <h2 className="pt-2 text-lg font-bold">Stewards</h2>
+      <p>
+        Imams, committee members and regular volunteers can ask to look after a mosque. A moderator checks each request. A
+        steward&apos;s confirmations count extra at that mosque, so please only confirm what the mosque has actually decided,
+        and let the community&apos;s reports reach you rather than overriding them. Moderators can remove steward status.
+      </p>
       <h2 className="pt-2 text-lg font-bold">Moderation</h2>
       <p>
         Moderators can hold, reject or revert changes and suspend accounts that add false times, spam or abuse. Every moderator

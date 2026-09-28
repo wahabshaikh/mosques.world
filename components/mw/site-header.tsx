@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { phase2Enabled, phase3Enabled, phase4Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled, phase4Enabled, phase6Enabled } from "@/lib/phase";
 import { AccountMenu } from "./account-menu";
 import { LogoMark } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
@@ -8,6 +8,7 @@ export async function SiteHeader({ compact = false }: { compact?: boolean }) {
   const accounts = await phase2Enabled().catch(() => false);
   const adding = accounts && (await phase3Enabled().catch(() => false));
   const profiles = adding && (await phase4Enabled().catch(() => false));
+  const notifications = profiles && (await phase6Enabled().catch(() => false));
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-4 px-4 lg:h-20 lg:px-6">
@@ -31,7 +32,7 @@ export async function SiteHeader({ compact = false }: { compact?: boolean }) {
               About
             </Link>
           )}
-          {accounts ? <AccountMenu profiles={profiles} /> : null}
+          {accounts ? <AccountMenu profiles={profiles} notifications={notifications} /> : null}
         </div>
       </div>
     </header>

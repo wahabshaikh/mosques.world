@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;
   const database = appEnv().DB;
-  const [profile, accounts, candidates, votes, activity, reports, waitlist, checkins, saved, badges] = await database.batch([
+  const [profile, accounts, candidates, votes, activity, reports, waitlist, checkins, saved, badges, stewards, prefs, notifications] = await database.batch([
     database.prepare(`SELECT * FROM user WHERE id = ?`).bind(user.id),
     database.prepare(`SELECT provider_id, account_id, created_at FROM account WHERE user_id = ?`).bind(user.id),
     database
@@ -27,6 +27,9 @@ export async function GET(request: Request) {
     database.prepare(`SELECT place_id, prayer, local_date, geo_verified, distance_m, created_at FROM checkin WHERE user_id = ?`).bind(user.id),
     database.prepare(`SELECT place_id, created_at FROM saved_place WHERE user_id = ?`).bind(user.id),
     database.prepare(`SELECT badge_key, awarded_at FROM user_badge WHERE user_id = ?`).bind(user.id),
+    database.prepare(`SELECT place_id, status, evidence, contact, created_at, decided_at FROM steward WHERE user_id = ?`).bind(user.id),
+    database.prepare(`SELECT channel, topic, enabled FROM notification_pref WHERE user_id = ?`).bind(user.id),
+    database.prepare(`SELECT topic, title, body, created_at, read_at FROM notification WHERE user_id = ? ORDER BY created_at DESC LIMIT 500`).bind(user.id),
   ]);
   const body = {
     exportedAt: new Date().toISOString(),
@@ -40,6 +43,9 @@ export async function GET(request: Request) {
     checkins: checkins?.results ?? [],
     savedPlaces: saved?.results ?? [],
     badges: badges?.results ?? [],
+    stewardRequests: stewards?.results ?? [],
+    notificationSettings: prefs?.results ?? [],
+    notifications: notifications?.results ?? [],
   };
   return new Response(JSON.stringify(body, null, 2), {
     headers: {
