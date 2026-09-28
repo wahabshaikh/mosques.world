@@ -33,7 +33,15 @@ export default function PrivacyPage() {
         within 150 m (and that distance in metres), and never store your coordinates. Your profile map at
         mosques.world/@username is public by default. In <strong>Settings → Privacy</strong> you can show only your countries,
         make check-ins private, make your whole profile private (name and contributions only), or delete any check-in.
-        Saved places are visible only to you.
+        Saved places are visible only to you. &ldquo;I&apos;m here&rdquo; quick verify works the same way: your position is
+        sent with each answer only to check you are within 150 m, and is never stored.
+      </p>
+      <h2 className="text-lg font-bold">App and notifications</h2>
+      <p>
+        If you install mosques.world, your saved mosques and their times for the next 7 days are kept on your device so they
+        work offline; signing out clears them. If you allow notifications, we store your browser&apos;s push subscription (an
+        address your browser gives us) to tell you when a saved mosque changes. You can turn this off in your browser at any
+        time.
       </p>
       <h2 className="text-lg font-bold">Your choices</h2>
       <p>

@@ -33,11 +33,11 @@ function nextKeyAt(day: PrayerDay, nowIso: string, extras?: PrayerTableExtras): 
   return salah.find((row) => new Date(extras?.iqamah[row.key]?.at ?? row.at).getTime() > now)?.key ?? "fajr";
 }
 
-function minutesUntil(atIso: string, nowIso: string): number {
+export function minutesUntil(atIso: string, nowIso: string): number {
   return Math.max(0, Math.round((new Date(atIso).getTime() - new Date(nowIso).getTime()) / 60000));
 }
 
-function untilLabel(minutes: number): string {
+export function untilLabel(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   return minutes % 60 === 0 ? `${hours}h` : `${hours}h ${minutes % 60}m`;

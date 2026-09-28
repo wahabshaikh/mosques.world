@@ -315,6 +315,8 @@ export async function castVote(
     now: number;
     /** A timetable photo backing the vote; it adds ×1.5 once approved (applied on approval). */
     evidence?: { photoId: string; approved: boolean };
+    /** The voter was confirmed within 150 m of the place (quick verify, spec P5): weight ×1.5. */
+    geoVerified?: boolean;
   },
 ): Promise<VoteResult> {
   const { actor, now } = input;
@@ -326,16 +328,22 @@ export async function castVote(
     .prepare(`SELECT polarity FROM vote WHERE candidate_id = ? AND user_id = ?`)
     .bind(candidate.id, actor.id)
     .first<{ polarity: number }>();
-  const weight = voteWeight({ trustLevel: actor.trustLevel, source: input.source, evidenceApproved: input.evidence?.approved });
+  const weight = voteWeight({
+    trustLevel: actor.trustLevel,
+    source: input.source,
+    evidenceApproved: input.evidence?.approved,
+    geoVerified: input.geoVerified,
+  });
   const statements: D1PreparedStatement[] = [
     db
       .prepare(
-        `INSERT INTO vote (id, candidate_id, user_id, polarity, source, weight, evidence_photo_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO vote (id, candidate_id, user_id, polarity, source, weight, geo_verified, evidence_photo_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (candidate_id, user_id) DO UPDATE SET polarity = excluded.polarity, source = excluded.source,
-           weight = excluded.weight, evidence_photo_id = excluded.evidence_photo_id, created_at = excluded.created_at`,
+           weight = excluded.weight, geo_verified = excluded.geo_verified, evidence_photo_id = excluded.evidence_photo_id,
+           created_at = excluded.created_at`,
       )
-      .bind(ulid(now), candidate.id, actor.id, input.polarity, input.source, weight, input.evidence?.photoId ?? null, now),
+      .bind(ulid(now), candidate.id, actor.id, input.polarity, input.source, weight, input.geoVerified ? 1 : 0, input.evidence?.photoId ?? null, now),
   ];
   if (input.polarity > 0) {
     statements.push(
@@ -434,6 +442,7 @@ export async function submitValue(
     source: VoteSource;
     now: number;
     evidence?: { photoId: string; approved: boolean };
+    geoVerified?: boolean;
   },
 ): Promise<VoteResult> {
   const { actor, now } = input;
@@ -447,7 +456,7 @@ export async function submitValue(
   ]);
   const same = sameResult?.results?.[0] as CandidateRow | undefined;
   if (same) {
-    return castVote(db, { actor, candidateId: same.id, polarity: 1, source: input.source, now, evidence: input.evidence });
+    return castVote(db, { actor, candidateId: same.id, polarity: 1, source: input.source, now, evidence: input.evidence, geoVerified: input.geoVerified });
   }
 
   const exact = await db
@@ -504,7 +513,7 @@ export async function submitValue(
     }),
   );
   await db.batch(statements);
-  return castVote(db, { actor, candidateId, polarity: 1, source: input.source, now, evidence: input.evidence });
+  return castVote(db, { actor, candidateId, polarity: 1, source: input.source, now, evidence: input.evidence, geoVerified: input.geoVerified });
 }
 
 function auditStatement(

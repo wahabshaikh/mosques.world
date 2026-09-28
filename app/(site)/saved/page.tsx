@@ -6,7 +6,8 @@ import { notFound } from "next/navigation";
 import { UnsaveButton } from "@/components/mw/unsave-button";
 import { savedPlaces } from "@/lib/db/queries";
 import { isNonProductionHost, readNow, toCard } from "@/lib/places/present";
-import { phase4Enabled } from "@/lib/phase";
+import { phase4Enabled, phase5Enabled } from "@/lib/phase";
+import { SavedWeek } from "@/components/mw/saved-week";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function SavedPage() {
   const host = headerList.get("host")?.split(":")[0] ?? "";
   const now = readNow(headerList.get("x-mw-now"), isNonProductionHost(host));
   const cards = (await savedPlaces(user.id)).map((place) => toCard(place, now));
+  const offline = await phase5Enabled();
   return (
     <div className="mx-auto max-w-[800px] px-4 py-10 lg:px-6">
       <h1 className="text-3xl font-bold tracking-tight">Saved</h1>
@@ -62,6 +64,7 @@ export default async function SavedPage() {
           ))}
         </ul>
       )}
+      {offline && cards.length > 0 ? <SavedWeek /> : null}
     </div>
   );
 }

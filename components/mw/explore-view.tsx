@@ -438,6 +438,35 @@ export function ExploreView({
           />
         </aside>
       </div>
+      {mapMode ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 rounded-t-3xl bg-background pt-2 pb-20 shadow-[0_-6px_24px_rgba(0,0,0,0.12)] lg:hidden"
+          data-testid="map-sheet"
+        >
+          <span className="mx-auto block h-[5px] w-10 rounded-full bg-border" aria-hidden="true" />
+          <p className="px-4 pt-2 text-sm font-bold">
+            {cards.length} {cards.length === 1 ? "place" : "places"} on the map
+          </p>
+          <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-3 pb-1">
+            {cards.slice(0, 30).map((place) => (
+              <li key={place.id} className="w-64 shrink-0 snap-start">
+                <Link href={`/m/${place.slug}`} className="flex items-center gap-3 rounded-2xl border border-input p-2.5">
+                  <span className="size-12 shrink-0 rounded-xl" style={{ background: place.tint }} aria-hidden="true" />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-bold">{place.name}</span>
+                    <span className="tabular text-xs">
+                      <strong>
+                        {place.nextLabel} {place.nextTime}
+                      </strong>{" "}
+                      <span className="text-muted-foreground">{place.nextKind}</span>
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <button
         type="button"
         className="fixed right-4 bottom-4 z-30 rounded-full bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"

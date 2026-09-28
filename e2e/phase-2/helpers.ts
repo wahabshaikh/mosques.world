@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Browser, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
 
 export const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
 const origin = new URL(baseURL).origin;
@@ -47,8 +47,13 @@ export async function signUp(page: Page, person: ReturnType<typeof identity>, ne
   await page.waitForURL((url) => !url.pathname.startsWith("/onboarding"));
 }
 
-export async function newUser(browser: Browser, prefix: string, fixture: { trustLevel?: number; ageDays?: number; role?: string } = {}) {
-  const context = await browser.newContext({ baseURL });
+export async function newUser(
+  browser: Browser,
+  prefix: string,
+  fixture: { trustLevel?: number; ageDays?: number; role?: string } = {},
+  options: BrowserContextOptions = {},
+) {
+  const context = await browser.newContext({ ...options, baseURL });
   const page = await context.newPage();
   const person = identity(prefix);
   await signUp(page, person);

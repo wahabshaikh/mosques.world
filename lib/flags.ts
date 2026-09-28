@@ -3,6 +3,7 @@ import { isNonProductionHost } from "@/lib/places/present";
 export const PHASE2_FLAG = "phase2.contributions";
 export const PHASE3_FLAG = "phase3.places";
 export const PHASE4_FLAG = "phase4.profiles";
+export const PHASE5_FLAG = "phase5.mobile";
 
 const TTL_MS = 60_000;
 const cache = new Map<string, { value: string | null; at: number }>();
