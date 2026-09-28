@@ -28,7 +28,8 @@ off on mosques.world. The service worker registers only while the flag is on.
 ## Before turning it on in production
 
 1. Time Travel bookmark, then `pnpm exec wrangler d1 migrations apply DB --remote` (0007 adds `push_subscription`).
-2. Optional: `VAPID_PUBLIC_KEY` (Web Push application server key; keep the private key for Phase 6). Without it the
+2. `VAPID_PUBLIC_KEY` (Web Push application server key) is read at request time and stored as a Worker secret, set
+   together with `VAPID_PRIVATE_KEY` (used from Phase 6); see the Phase 6 runbook, step 2. Without it the
    "tell me when my saved mosques change" prompt is hidden.
 
 ## Load limits

@@ -16,7 +16,15 @@ export const metadata: Metadata = {
   description: "Find a mosque nearby and see today's calculated adhan times.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "mosques.world", statusBarStyle: "default" },
-  icons: { apple: "/icons/apple-touch-icon.png" },
+  // Listing `icons` replaces the file-based app/icon.svg link, so name every icon here. /favicon.ico is a real
+  // file in public/ (scripts/build-icons.mjs) for browsers and crawlers that request it directly.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = { themeColor: "#0B6E4F" };
