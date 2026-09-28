@@ -1,8 +1,13 @@
 /**
  * Renders the PWA icons from the logo mark with the bundled Chromium:
  *   node scripts/build-icons.mjs
- * Writes public/icons/icon-{192,512}.png, maskable-512.png (logo inside the 80% safe zone) and apple-touch-icon.png.
+ * Writes public/icons/icon-{192,512}.png, maskable-512.png (logo inside the 80% safe zone), apple-touch-icon.png and
+ * public/favicon.ico (16/32/48 px PNGs of app/icon.svg; browsers request /favicon.ico when a page has no icon link).
+ * CHROMIUM_PATH overrides the browser binary.
  */
+import { Buffer } from "node:buffer";
+import { readFileSync, writeFileSync } from "node:fs";
+import process from "node:process";
 import { chromium } from "@playwright/test";
 
 const mark = (scale) => `
@@ -17,7 +22,7 @@ const icons = [
   { file: "apple-touch-icon.png", size: 180, rx: 0, scale: 0.9 },
   { file: "maskable-512.png", size: 512, rx: 0, scale: 0.72 },
 ];
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium" });
 const page = await browser.newPage();
 for (const icon of icons) {
   await page.setViewportSize({ width: icon.size, height: icon.size });
@@ -27,4 +32,28 @@ for (const icon of icons) {
   );
   await page.screenshot({ path: `public/icons/${icon.file}`, omitBackground: true });
 }
+// favicon.ico: an ICO container holding PNG images (supported by every current browser).
+const svg = readFileSync("app/icon.svg", "utf8");
+const pngs = [];
+for (const size of [16, 32, 48]) {
+  await page.setViewportSize({ width: size, height: size });
+  await page.setContent(`<html><body style="margin:0;background:transparent">${svg.replace("<svg ", `<svg width="${size}" height="${size}" `)}</body></html>`);
+  pngs.push({ size, data: await page.screenshot({ omitBackground: true }) });
+}
+const header = Buffer.alloc(6 + 16 * pngs.length);
+header.writeUInt16LE(0, 0);
+header.writeUInt16LE(1, 2);
+header.writeUInt16LE(pngs.length, 4);
+let offset = header.length;
+pngs.forEach(({ size, data }, i) => {
+  const entry = 6 + 16 * i;
+  header.writeUInt8(size, entry);
+  header.writeUInt8(size, entry + 1);
+  header.writeUInt16LE(1, entry + 4);
+  header.writeUInt16LE(32, entry + 6);
+  header.writeUInt32LE(data.length, entry + 8);
+  header.writeUInt32LE(offset, entry + 12);
+  offset += data.length;
+});
+writeFileSync("public/favicon.ico", Buffer.concat([header, ...pngs.map((p) => p.data)]));
 await browser.close();
