@@ -8,6 +8,10 @@ import { track } from "@/lib/analytics";
 import { formatDistance } from "@/lib/geo/distance";
 import type { PlaceKindFilter } from "@/lib/places/view";
 import type { ExploreSort } from "@/lib/places/present";
+import { NEED_FILTERS, type NeedSlug } from "@/lib/places/needs";
+import { FiltersDialog, NeedIcon } from "./filters-dialog";
+
+const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
 
@@ -27,6 +31,7 @@ export type ExplorePlace = {
   verification: "none" | "partial" | "verified" | "needs_check";
   changeReported: boolean;
   verifiers: number;
+  tag: string | null;
   tint: string;
 };
 
@@ -43,6 +48,8 @@ export function ExploreView({
   sort = "distance",
   verifiedOnly = false,
   community = false,
+  needs = [],
+  amenities = false,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -56,6 +63,8 @@ export function ExploreView({
   sort?: ExploreSort;
   verifiedOnly?: boolean;
   community?: boolean;
+  needs?: NeedSlug[];
+  amenities?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -135,12 +144,29 @@ export function ExploreView({
     };
   }, [challenge, turnstileSiteKey]);
 
-  function withFilters(params: URLSearchParams, overrides: { sort?: ExploreSort; verified?: boolean } = {}) {
+  function withFilters(params: URLSearchParams, overrides: { sort?: ExploreSort; verified?: boolean; needs?: NeedSlug[] } = {}) {
     const nextSort = overrides.sort ?? sort;
     const nextVerified = overrides.verified ?? verifiedOnly;
+    const nextNeeds = overrides.needs ?? needs;
     if (nextSort !== "distance") params.set("sort", nextSort);
     if (nextVerified) params.set("verified", "1");
+    if (nextNeeds.length) params.set("needs", nextNeeds.join(","));
     return params;
+  }
+
+  function applyFilters(next: { kind: PlaceKindFilter; needs: NeedSlug[]; verified: boolean }) {
+    const params = new URLSearchParams({ where, lat: String(lat), lng: String(lng), z: String(zoom) });
+    if (next.kind !== "all") params.set("kind", next.kind);
+    withFilters(params, { verified: next.verified, needs: next.needs });
+    if (!next.verified) params.delete("verified");
+    if (!next.needs.length) params.delete("needs");
+    for (const need of next.needs.filter((item) => !needs.includes(item))) track("filter_applied", { amenity: need });
+    track("search", { has_where: Boolean(where), filters: [next.kind, ...next.needs].join(",") });
+    router.push(`/search?${params.toString()}`);
+  }
+
+  function toggleNeed(slug: NeedSlug) {
+    applyFilters({ kind, verified: verifiedOnly, needs: needs.includes(slug) ? needs.filter((item) => item !== slug) : [...needs, slug] });
   }
 
   function currentParams() {
@@ -250,6 +276,26 @@ export function ExploreView({
                 Has verified times
               </FilterChip>
             ) : null}
+            {amenities
+              ? CATEGORY_NEEDS.map((slug) => {
+                  const filter = NEED_FILTERS.find((item) => item.slug === slug);
+                  return filter ? (
+                    <FilterChip key={slug} active={needs.includes(slug)} onClick={() => toggleNeed(slug)} icon={<NeedIcon slug={slug} />}>
+                      {filter.label}
+                    </FilterChip>
+                  ) : null;
+                })
+              : null}
+            {amenities ? (
+              <FiltersDialog
+                kind={kind}
+                needs={needs}
+                verified={verifiedOnly}
+                community={community}
+                bboxQuery={`lat=${lat}&lng=${lng}&z=${zoom}`}
+                onApply={applyFilters}
+              />
+            ) : null}
           </div>
         </div>
       </div>
@@ -305,6 +351,14 @@ export function ExploreView({
               <Link href="/search?where=London&lat=51.5074&lng=-0.1278&z=11" className="font-semibold text-primary">
                 Browse London
               </Link>
+              {amenities ? (
+                <>
+                  {" "}or{" "}
+                  <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
+                    add a place here
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : (
             <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -343,7 +397,10 @@ export function ExploreView({
                         <span className="tabular text-base font-extrabold">
                           {place.nextLabel} {place.nextTime}
                         </span>{" "}
-                        <span className="text-muted-foreground">{place.nextKind === "iqamah" ? "iqamah" : "· adhan"}</span>
+                        <span className="text-muted-foreground">
+                          {place.nextKind === "iqamah" ? "iqamah" : "· adhan"}
+                          {place.tag ? ` · ${place.tag}` : ""}
+                        </span>
                       </p>
                     </div>
                   </Link>
@@ -430,7 +487,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold",
+        "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-semibold",
         active ? "border-foreground bg-foreground text-background" : "border-border bg-card",
       )}
     >

@@ -18,6 +18,7 @@ export const RESERVED_USERNAMES = new Set([
   "moderator",
   "mosques",
   "mosquesworld",
+  "mosques.world",
   "og",
   "onboarding",
   "privacy",

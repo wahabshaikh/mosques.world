@@ -3,7 +3,8 @@ import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
-import { phase2Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { parseNeeds } from "@/lib/places/amenities";
 import { asSort, isNonProductionHost, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
 
@@ -33,7 +34,9 @@ export async function ExplorePage({
   const community = await phase2Enabled();
   const sort = community ? asSort(one("sort")) : "distance";
   const verifiedOnly = community && one("verified") === "1";
-  const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly });
+  const amenitiesOn = community && (await phase3Enabled());
+  const needs = amenitiesOn ? parseNeeds(params.needs) : [];
+  const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
   const cards = sortCards(
     places.map((place) => toCard(place, now)),
     sort,
@@ -69,6 +72,8 @@ export async function ExplorePage({
       sort={sort}
       verifiedOnly={verifiedOnly}
       community={community}
+      needs={needs}
+      amenities={amenitiesOn}
     />
   );
 }

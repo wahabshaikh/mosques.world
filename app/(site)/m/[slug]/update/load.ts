@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { appEnv } from "@/lib/db/client";
 import { placeBySlug } from "@/lib/db/queries";
-import { phase2Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled } from "@/lib/phase";
 import { updateData } from "@/lib/places/mosque";
 import { madhabOf } from "@/lib/places/present";
 import { getPrayerDay } from "@/lib/prayer/times";
@@ -22,5 +22,5 @@ export async function loadUpdate(slug: string) {
     highLat: place.highLatRule,
   });
   const facts = await placeFacts(appEnv().DB, place.id, day.date);
-  return updateData({ place, facts, day, trustLevel: user.trustLevel });
+  return updateData({ place, facts, day, trustLevel: user.trustLevel, amenities: await phase3Enabled() });
 }

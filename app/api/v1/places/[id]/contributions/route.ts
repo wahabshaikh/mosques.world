@@ -60,6 +60,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   });
   if (problem) return jsonError(problem, 429);
 
+  let evidence: { photoId: string; approved: boolean } | undefined;
+  if (input.evidencePhotoId) {
+    const photo = await env.DB.prepare(`SELECT id, status FROM photo WHERE id = ? AND uploaded_by = ? AND place_id = ? AND category = 'timetable'`)
+      .bind(input.evidencePhotoId, user.id, found.id)
+      .first<{ id: string; status: string }>();
+    if (!photo || photo.status === "rejected") return jsonError("That timetable photo can't be used.", 400);
+    evidence = { photoId: photo.id, approved: photo.status === "approved" };
+  }
   const actor = actorOf(user);
   const results: VoteResult[] = [];
   try {
@@ -74,11 +82,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           effectiveFrom: input.effectiveFrom,
           source: input.source,
           now,
+          evidence,
         }),
       );
     }
     for (const candidateId of input.confirms) {
-      results.push(await castVote(env.DB, { actor, candidateId, polarity: 1, source: input.source, now }));
+      results.push(await castVote(env.DB, { actor, candidateId, polarity: 1, source: input.source, now, evidence }));
     }
   } catch (error) {
     if (error instanceof TrustError) return jsonError(error.message, error.status);

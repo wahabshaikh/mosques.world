@@ -1,6 +1,7 @@
 import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type { HighLatRule, AsrMadhab } from "@/lib/prayer/times";
 import { haversineKm, type Bbox } from "@/lib/geo/distance";
+import { needMasks, type NeedSlug } from "@/lib/places/amenities";
 import { ftsMatch } from "@/lib/places/view";
 import { appEnv, db } from "./client";
 import { calcDefault, city, place, type PlaceRow } from "./schema";
@@ -31,7 +32,7 @@ export async function placesInBbox(
   bbox: Bbox,
   kind: "all" | "mosque" | "prayer_room",
   origin: { lat: number; lng: number },
-  options: { verifiedOnly?: boolean } = {},
+  options: { verifiedOnly?: boolean; needs?: NeedSlug[] } = {},
 ): Promise<DirectoryPlace[]> {
   const filters = [
     eq(place.status, "active"),
@@ -42,6 +43,11 @@ export async function placesInBbox(
   ];
   if (kind !== "all") filters.push(eq(place.kind, kind));
   if (options.verifiedOnly) filters.push(inArray(place.verificationState, ["verified", "partial"]));
+  if (options.needs?.length) {
+    const masks = needMasks(options.needs);
+    if (masks.all) filters.push(sql`(${place.amenityBits} & ${masks.all}) = ${masks.all}`);
+    for (const mask of masks.any) filters.push(sql`(${place.amenityBits} & ${mask}) != 0`);
+  }
   const rows = await db()
     .select({ place, highLat: calcDefault.highLatRule })
     .from(place)
@@ -167,4 +173,29 @@ export async function sitemapEntries(): Promise<Array<{ path: string }>> {
     ]),
     ...(places.results ?? []).map((row) => ({ path: `/m/${row.slug}` })),
   ];
+}
+
+/**
+ * Where a /m/:slug request should go: the place itself, or a 308 target for renamed slugs and
+ * merged places (spec 4.2 slugs, P3 merge). Follows at most three hops.
+ */
+export async function resolvePlaceSlug(slug: string): Promise<{ place: DirectoryPlace } | { redirect: string } | null> {
+  let current = slug;
+  for (let hop = 0; hop < 3; hop += 1) {
+    const found = await placeBySlug(current);
+    if (found && found.status === "merged" && found.mergedIntoId) {
+      const target = await appEnv().DB.prepare(`SELECT slug FROM place WHERE id = ?`).bind(found.mergedIntoId).first<{ slug: string }>();
+      if (!target) return null;
+      current = target.slug;
+      continue;
+    }
+    if (found) return current === slug ? { place: found } : { redirect: current };
+    const history = await appEnv()
+      .DB.prepare(`SELECT place.slug FROM place_slug_history JOIN place ON place.id = place_slug_history.place_id WHERE place_slug_history.old_slug = ?`)
+      .bind(current)
+      .first<{ slug: string }>();
+    if (!history) return null;
+    current = history.slug;
+  }
+  return current === slug ? null : { redirect: current };
 }

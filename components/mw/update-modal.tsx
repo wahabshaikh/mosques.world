@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { UpdateTimes, type UpdateData } from "./update-times";
+import { UpdateTimes, type UpdateData, type UpdateTab } from "./update-times";
 
-export function UpdateModal({ data }: { data: UpdateData }) {
+export function UpdateModal({ data, initialTab }: { data: UpdateData; initialTab?: UpdateTab }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const [desktop, setDesktop] = useState(true);
@@ -35,7 +35,7 @@ export function UpdateModal({ data }: { data: UpdateData }) {
         <DrawerContent className="h-[94vh]">
           <DrawerTitle className="px-6 pt-3 text-center text-base font-extrabold">{title}</DrawerTitle>
           <DrawerDescription className="sr-only">{description}</DrawerDescription>
-          <UpdateTimes data={data} onDone={close} />
+          <UpdateTimes data={data} onDone={close} initialTab={initialTab} />
         </DrawerContent>
       </Drawer>
     );
@@ -47,7 +47,7 @@ export function UpdateModal({ data }: { data: UpdateData }) {
           <DialogTitle className="text-base font-extrabold">{title}</DialogTitle>
         </div>
         <DialogDescription className="sr-only">{description}</DialogDescription>
-        <UpdateTimes data={data} onDone={close} />
+        <UpdateTimes data={data} onDone={close} initialTab={initialTab} />
       </DialogContent>
     </Dialog>
   );

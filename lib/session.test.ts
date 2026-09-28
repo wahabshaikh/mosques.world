@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { env } from "@/lib/testing/cloudflare-workers";
 import { createTestD1 } from "@/lib/testing/d1";
 import { captchaRequired, getAuth, googleEnabled, originFor } from "./auth";
-import { phase2EnabledFor } from "./phase";
+import { phase2EnabledFor, phase3EnabledFor } from "./phase";
 import { actorOf, apiModerator, apiUser, isModerator, jsonError, safeNext, sameOrigin, signInPath, userFromHeaders } from "./session";
 
 function resetEnv(values: Record<string, unknown>) {
@@ -71,5 +71,7 @@ describe("auth configuration", () => {
     resetEnv({ FLAGS: undefined });
     expect(await phase2EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
     expect(await phase2EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
+    expect(await phase3EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
+    expect(await phase3EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
   });
 });

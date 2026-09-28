@@ -19,7 +19,7 @@ import {
   type FactState,
   type TrustLevel,
 } from "./engine";
-import { IQAMAH_KEYS, JUMUAH_KEY, valueHash, type VoteSource } from "./facts";
+import { amenityBit, IQAMAH_KEYS, isAmenityKey, JUMUAH_KEY, valueHash, type VoteSource } from "./facts";
 import type { PlaceSummary, SummaryEntry } from "./summary";
 
 /**
@@ -232,9 +232,14 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
     const id = `${row.key}|${row.qualifier}`;
     groups.set(id, [...(groups.get(id) ?? []), row]);
   }
+  let amenityBits = 0;
   for (const group of groups.values()) {
     const current = group.find((row) => row.status === "current");
     if (!current) continue;
+    if (isAmenityKey(current.key)) {
+      if ((JSON.parse(current.value_json) as { v?: unknown }).v === true) amenityBits |= amenityBit(current.key);
+      continue;
+    }
     const previous = displayedOn(
       group
         .filter((row) => row.status === "superseded")
@@ -269,8 +274,8 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
   );
   const hasAny = Object.keys(summary.iqamah).length > 0 || summary.jumuah.length > 0;
   await db
-    .prepare(`UPDATE place SET iqamah_summary_json = ?, verification_state = ?, last_verified_at = ? WHERE id = ?`)
-    .bind(hasAny ? JSON.stringify(summary) : null, verification, lastVerified, placeId)
+    .prepare(`UPDATE place SET iqamah_summary_json = ?, verification_state = ?, last_verified_at = ?, amenity_bits = ? WHERE id = ?`)
+    .bind(hasAny ? JSON.stringify(summary) : null, verification, lastVerified, amenityBits, placeId)
     .run();
   return summary;
 }
@@ -302,7 +307,15 @@ export type VoteResult = {
 
 export async function castVote(
   db: D1Database,
-  input: { actor: Actor; candidateId: string; polarity: 1 | -1; source: VoteSource; now: number },
+  input: {
+    actor: Actor;
+    candidateId: string;
+    polarity: 1 | -1;
+    source: VoteSource;
+    now: number;
+    /** A timetable photo backing the vote; it adds ×1.5 once approved (applied on approval). */
+    evidence?: { photoId: string; approved: boolean };
+  },
 ): Promise<VoteResult> {
   const { actor, now } = input;
   const candidate = await getCandidate(db, input.candidateId);
@@ -313,16 +326,16 @@ export async function castVote(
     .prepare(`SELECT polarity FROM vote WHERE candidate_id = ? AND user_id = ?`)
     .bind(candidate.id, actor.id)
     .first<{ polarity: number }>();
-  const weight = voteWeight({ trustLevel: actor.trustLevel, source: input.source });
+  const weight = voteWeight({ trustLevel: actor.trustLevel, source: input.source, evidenceApproved: input.evidence?.approved });
   const statements: D1PreparedStatement[] = [
     db
       .prepare(
-        `INSERT INTO vote (id, candidate_id, user_id, polarity, source, weight, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO vote (id, candidate_id, user_id, polarity, source, weight, evidence_photo_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (candidate_id, user_id) DO UPDATE SET polarity = excluded.polarity, source = excluded.source,
-           weight = excluded.weight, created_at = excluded.created_at`,
+           weight = excluded.weight, evidence_photo_id = excluded.evidence_photo_id, created_at = excluded.created_at`,
       )
-      .bind(ulid(now), candidate.id, actor.id, input.polarity, input.source, weight, now),
+      .bind(ulid(now), candidate.id, actor.id, input.polarity, input.source, weight, input.evidence?.photoId ?? null, now),
   ];
   if (input.polarity > 0) {
     statements.push(
@@ -420,6 +433,7 @@ export async function submitValue(
     effectiveFrom: string;
     source: VoteSource;
     now: number;
+    evidence?: { photoId: string; approved: boolean };
   },
 ): Promise<VoteResult> {
   const { actor, now } = input;
@@ -433,7 +447,7 @@ export async function submitValue(
   ]);
   const same = sameResult?.results?.[0] as CandidateRow | undefined;
   if (same) {
-    return castVote(db, { actor, candidateId: same.id, polarity: 1, source: input.source, now });
+    return castVote(db, { actor, candidateId: same.id, polarity: 1, source: input.source, now, evidence: input.evidence });
   }
 
   const exact = await db
@@ -490,7 +504,7 @@ export async function submitValue(
     }),
   );
   await db.batch(statements);
-  return castVote(db, { actor, candidateId, polarity: 1, source: input.source, now });
+  return castVote(db, { actor, candidateId, polarity: 1, source: input.source, now, evidence: input.evidence });
 }
 
 function auditStatement(

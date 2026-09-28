@@ -332,3 +332,15 @@ describe("vote results", () => {
     expect(second).toMatchObject({ status: "live", state: "verified", needed: 0 });
   });
 });
+
+describe("amenities", () => {
+  it("keeps amenity_bits in step with current amenity values", async () => {
+    const a = addUser("a", 1);
+    await propose(a, "amenity.women_section", { v: true, note: "First floor" });
+    await propose(a, "amenity.parking", { v: false });
+    await propose(a, "amenity.step_free", { v: true });
+    const bits = sqlite.prepare(`SELECT amenity_bits, iqamah_summary_json FROM place`).get() as { amenity_bits: number; iqamah_summary_json: string | null };
+    expect(bits.amenity_bits).toBe(1 | 8);
+    expect(bits.iqamah_summary_json).toBeNull();
+  });
+});

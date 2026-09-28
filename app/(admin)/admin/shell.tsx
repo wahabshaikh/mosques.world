@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 const ITEMS = [
   ["Queue", "/admin/queue"],
   ["Reports", "/admin/reports"],
+  ["Places", "/admin/places/merge"],
   ["Users", "/admin/users"],
   ["Audit log", "/admin/audit"],
 ] as const;

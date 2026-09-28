@@ -12,12 +12,19 @@ export default function ReportDialog({
   facts,
   open,
   onOpenChange,
+  reasons = false,
+  photoId,
 }: {
   placeId: string;
   facts: Array<{ key: string; label: string }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Phase 3: closed, duplicate and wrong-location reports alongside timing ones. */
+  reasons?: boolean;
+  /** Reporting one photo (inappropriate_photo). */
+  photoId?: string;
 }) {
+  const [reason, setReason] = useState(photoId ? "inappropriate_photo" : "timing");
   const [factKey, setFactKey] = useState(facts[0]?.key ?? "");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +32,9 @@ export default function ReportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6 pt-16">
-        <DialogTitle className="text-lg font-bold">Report a timing problem</DialogTitle>
+        <DialogTitle className="text-lg font-bold">
+          {photoId ? "Report this photo" : reasons ? "Report a problem" : "Report a timing problem"}
+        </DialogTitle>
         <DialogDescription className="mt-1 text-sm text-muted-foreground">
           A moderator will look at it. If you know the new time, use Update timings instead so others can confirm it.
         </DialogDescription>
@@ -38,7 +47,13 @@ export default function ReportDialog({
             const response = await fetch("/api/v1/reports", {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ placeId, factKey: factKey || null, reason: "timing", note }),
+              body: JSON.stringify({
+                placeId,
+                factKey: reason === "timing" ? factKey || null : null,
+                reason,
+                note,
+                photoId: photoId ?? null,
+              }),
             });
             setPending(false);
             const body = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -46,27 +61,45 @@ export default function ReportDialog({
               setError(body?.error ?? "Could not send the report.");
               return;
             }
-            track("report_created", { place_id: placeId });
+            track("report_created", { place_id: placeId, reason });
             toast.success("Thanks, a moderator will take a look.");
             onOpenChange(false);
             setNote("");
           }}
         >
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            Which time?
-            <select
-              value={factKey}
-              onChange={(event) => setFactKey(event.target.value)}
-              className="h-11 rounded-[12px] border border-input bg-background px-3 font-normal"
-            >
-              {facts.map((fact) => (
-                <option key={fact.key} value={fact.key}>
-                  {fact.label}
-                </option>
-              ))}
-              <option value="">Something else</option>
-            </select>
-          </label>
+          {reasons && !photoId ? (
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              What&apos;s the problem?
+              <select
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                className="h-11 rounded-[12px] border border-input bg-background px-3 font-normal"
+              >
+                <option value="timing">A time is wrong</option>
+                <option value="closed">This place has closed</option>
+                <option value="duplicate">It&apos;s listed twice</option>
+                <option value="wrong_location">The pin is in the wrong place</option>
+                <option value="other">Something else</option>
+              </select>
+            </label>
+          ) : null}
+          {reason === "timing" ? (
+            <label className="flex flex-col gap-1 text-sm font-semibold">
+              Which time?
+              <select
+                value={factKey}
+                onChange={(event) => setFactKey(event.target.value)}
+                className="h-11 rounded-[12px] border border-input bg-background px-3 font-normal"
+              >
+                {facts.map((fact) => (
+                  <option key={fact.key} value={fact.key}>
+                    {fact.label}
+                  </option>
+                ))}
+                <option value="">Something else</option>
+              </select>
+            </label>
+          ) : null}
           <label className="flex flex-col gap-1 text-sm font-semibold">
             What&apos;s wrong?
             <textarea

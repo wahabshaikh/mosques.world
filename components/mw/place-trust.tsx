@@ -73,7 +73,8 @@ function activityText(item: ActivityView): string {
   const value = key ? describeValue(key, item.payload.value) : "";
   switch (item.type) {
     case "proposed":
-      return item.payload.held ? `suggested ${label} ${value} (awaiting review)` : `reported ${label} iqamah is ${value}`;
+      if (item.payload.held) return `suggested ${label} ${value} (awaiting review)`;
+      return key.startsWith("iqamah.") || key.startsWith("jumuah.") ? `reported ${label} iqamah is ${value}` : `reported ${label}: ${value}`;
     case "confirmed":
       return `confirmed ${label} ${value}`;
     case "disputed":
@@ -82,6 +83,12 @@ function activityText(item: ActivityView): string {
       return item.payload.replaced ? `updated ${label} to ${value} after community confirmation` : `added ${label} ${value}`;
     case "reverted":
       return `restored the previous ${label} time`;
+    case "photo_added":
+      return "added a photo";
+    case "place_added":
+      return "added this place";
+    case "place_confirmed":
+      return "confirmed this place exists";
     default:
       return "updated this place";
   }

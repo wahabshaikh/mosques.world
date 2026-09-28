@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
 /**
@@ -59,7 +59,14 @@ class Statement {
   }
 }
 
-export function createTestD1(migrations = ["0001_phase1.sql", "0003_phase2.sql"]) {
+/** Every migration in /migrations except the launch-city seed, in order. */
+function schemaMigrations(): string[] {
+  return readdirSync(new URL("../../migrations/", import.meta.url))
+    .filter((file) => file.endsWith(".sql") && !file.includes("seed"))
+    .sort();
+}
+
+export function createTestD1(migrations = schemaMigrations()) {
   const database = new DatabaseSync(":memory:");
   for (const file of migrations) {
     database.exec(readFileSync(new URL(`../../migrations/${file}`, import.meta.url), "utf8"));

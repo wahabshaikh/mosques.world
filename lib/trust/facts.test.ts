@@ -29,7 +29,8 @@ describe("fact values", () => {
     expect(validateFactValue("jumuah.jamaah", "1", { t: "1pm" }).ok).toBe(false);
     expect(validateFactValue("asr_madhab", "", { v: "hanafi" }).ok).toBe(true);
     expect(validateFactValue("asr_madhab", "", { v: "maliki" }).ok).toBe(false);
-    expect(isFactKey("amenity.parking")).toBe(false);
+    expect(isFactKey("amenity.parking")).toBe(true);
+    expect(isFactKey("amenity.pool")).toBe(false);
   });
 
   it("hashes canonical JSON regardless of key order", async () => {
@@ -67,5 +68,29 @@ describe("fact values", () => {
     expect(ordinal(3)).toBe("3rd");
     expect(ordinal(4)).toBe("4th");
     expect(languageName("en")).toBe("English");
+  });
+});
+
+describe("phase 3 fact keys", () => {
+  it("validates amenity, info and closure values", async () => {
+    const { validateFactValue, describeValue, factLabel, amenityBit, isAmenityKey } = await import("./facts");
+    expect(validateFactValue("amenity.women_section", "", { v: true, note: "First floor" })).toEqual({ ok: true, value: { v: true, note: "First floor" } });
+    expect(validateFactValue("amenity.women_section", "", { v: "yes" }).ok).toBe(false);
+    expect(validateFactValue("info.phone", "", { v: "+44 20 7650 3000" }).ok).toBe(true);
+    expect(validateFactValue("info.website", "", { v: "javascript:alert(1)" }).ok).toBe(false);
+    expect(validateFactValue("info.languages", "", { v: ["en", "bn"] }).ok).toBe(true);
+    expect(validateFactValue("status.closed", "", { v: true, reason: "Demolished" }).ok).toBe(true);
+    expect(validateFactValue("status.closed", "", { v: 1 }).ok).toBe(false);
+    expect(describeValue("amenity.parking", { v: false })).toBe("no");
+    expect(describeValue("amenity.parking", {})).toBe("—");
+    expect(describeValue("info.languages", { v: ["en"] })).toBe("English");
+    expect(describeValue("info.phone", { v: "123" })).toBe("123");
+    expect(describeValue("info.phone", null)).toBe("—");
+    expect(factLabel("amenity.step_free")).toBe("Step-free access");
+    expect(factLabel("status.closed")).toBe("Closed");
+    expect(["info.phone", "info.website", "info.languages"].map((key) => factLabel(key))).toEqual(["Phone", "Website", "Languages"]);
+    expect(amenityBit("amenity.step_free")).toBe(8);
+    expect(amenityBit("nope")).toBe(0);
+    expect(isAmenityKey("amenity.toilets")).toBe(true);
   });
 });

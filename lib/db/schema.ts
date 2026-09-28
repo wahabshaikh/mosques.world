@@ -28,6 +28,12 @@ export const place = sqliteTable(
     verificationState: text("verification_state").notNull().default("none"),
     lastVerifiedAt: integer("last_verified_at"),
     iqamahSummaryJson: text("iqamah_summary_json"),
+    mergedIntoId: text("merged_into_id"),
+    googlePlaceId: text("google_place_id"),
+    googleLatlngFetchedAt: integer("google_latlng_fetched_at"),
+    createdBy: text("created_by"),
+    amenityBits: integer("amenity_bits").notNull().default(0),
+    accessNotes: text("access_notes"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
@@ -42,6 +48,7 @@ export const city = sqliteTable("city", {
   lng: real("lng").notNull(),
   placeCount: integer("place_count").notNull().default(0),
   bboxJson: text("bbox_json"),
+  osmSyncedAt: integer("osm_synced_at"),
 });
 
 export const calcDefault = sqliteTable("calc_default", {
@@ -227,6 +234,34 @@ export const report = sqliteTable("report", {
   resolvedAt: integer("resolved_at"),
 });
 
+export const photo = sqliteTable("photo", {
+  id: text("id").primaryKey(),
+  placeId: text("place_id"),
+  purpose: text("purpose").notNull().default("place"),
+  r2Key: text("r2_key"),
+  variantKeysJson: text("variant_keys_json"),
+  category: text("category").notNull().default("other"),
+  width: integer("width"),
+  height: integer("height"),
+  blurhash: text("blurhash"),
+  status: text("status").notNull().default("processing"),
+  aiLabelsJson: text("ai_labels_json"),
+  uploadedBy: text("uploaded_by").notNull(),
+  createdAt: integer("created_at").notNull(),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: integer("reviewed_at"),
+});
+
+export const placeDuplicateCandidate = sqliteTable("place_duplicate_candidate", {
+  aId: text("a_id").notNull(),
+  bId: text("b_id").notNull(),
+  distanceM: integer("distance_m").notNull(),
+  nameSimilarity: real("name_similarity").notNull(),
+  status: text("status").notNull().default("open"),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type PhotoRow = typeof photo.$inferSelect;
 export type UserRow = typeof user.$inferSelect;
 export type PlaceRow = typeof place.$inferSelect;
 export type CityRow = typeof city.$inferSelect;
