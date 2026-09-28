@@ -68,7 +68,6 @@
   // queue names; non-production hosts do not enqueue onto them.
   "previews": {
     "images": { "binding": "IMAGES" },
-    "ai": { "binding": "AI" },
     "vars": {
       "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
       "EMAIL_SINK": "1",
