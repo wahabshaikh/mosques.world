@@ -30,6 +30,8 @@ const taken = new Set<string>();
 const now = Date.now();
 
 for (const element of body.elements) {
+  // Keep the phase-3 row parser; the database's osm_exclusion trigger from the
+  // dedupe migration skips excluded OSM elements on this INSERT/upsert.
   const row = osmPlaceRow(element, { country, citySlug, cityName, taken, now });
   if (!row) continue;
   const sql = `INSERT INTO place (id, slug, name, name_local, kind, status, lat, lng, geohash6, address, locality, region, country_code, city_slug, timezone, calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, created_at, updated_at)

@@ -7,6 +7,7 @@ import { weeklyOsmSync } from "@/lib/osm";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
 import { flagsOnForSite, PHASE6_FLAGS } from "@/lib/flags";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
+import { placeSlugRedirect } from "@/lib/places/slug-redirect";
 import { sentryOptions } from "@/lib/sentry";
 
 type Env = {
@@ -40,6 +41,18 @@ const CITY_RECOUNT = `UPDATE city SET place_count = (
     AND place.status = 'active'
 )`;
 
+/** Renders the app; a `/m/<old-slug>` 404 becomes a 301 when the slug is in place_slug_history. */
+async function serve(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const response = await handler.fetch(request, env, ctx);
+  if (response.status !== 404 || (request.method !== "GET" && request.method !== "HEAD")) return response;
+  try {
+    return (await placeSlugRedirect(env.DB, request.url)) ?? response;
+  } catch (error) {
+    Sentry.captureException(error);
+    return response;
+  }
+}
+
 export default Sentry.withSentry((env) => sentryOptions(env), {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -47,7 +60,7 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
       url.hostname = "mosques.world";
       return Promise.resolve(Response.redirect(url, 308));
     }
-    return handler.fetch(request, env, ctx);
+    return serve(request, env, ctx);
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
     const notifications = await flagsOnForSite(env, PHASE6_FLAGS);
