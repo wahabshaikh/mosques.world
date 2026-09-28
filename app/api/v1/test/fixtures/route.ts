@@ -24,6 +24,8 @@ const input = z.object({
   deletePlace: z.string().optional(),
   /** Returns a person's raw check-in rows, so tests can assert what is (and isn't) stored. */
   checkinsOf: z.string().email().optional(),
+  /** Returns a person's votes (with geo_verified) for quick-verify assertions. */
+  votesOf: z.string().email().optional(),
 });
 
 /** Preview/local only (same gate as the email sink): E2E fixtures for trust levels and clean places. */
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Bad fixture" }, { status: 400 });
   const database = env.DB;
   const now = Date.now();
-  const { user, resetPlace, places, deletePlace, checkinsOf } = parsed.data;
+  const { user, resetPlace, places, deletePlace, checkinsOf, votesOf } = parsed.data;
   if (places) {
     await env.CACHE.put("test:places:autocomplete", JSON.stringify(places.autocomplete), { expirationTtl: 3600 });
     for (const details of places.details) {
@@ -85,6 +87,17 @@ export async function POST(request: Request) {
       database.prepare(`DELETE FROM activity WHERE place_id = ?`).bind(place.id),
     ]);
     await refreshPlaceSummary(database, place.id, now);
+  }
+  if (votesOf) {
+    const rows = await database
+      .prepare(
+        `SELECT vote.polarity, vote.geo_verified, vote.weight, fact.key FROM vote JOIN user ON user.id = vote.user_id
+         JOIN fact_candidate ON fact_candidate.id = vote.candidate_id JOIN fact ON fact.id = fact_candidate.fact_id
+         WHERE user.email = ? ORDER BY vote.created_at`,
+      )
+      .bind(votesOf.toLowerCase())
+      .all();
+    return Response.json({ ok: true, votes: rows.results ?? [] });
   }
   if (checkinsOf) {
     const rows = await database

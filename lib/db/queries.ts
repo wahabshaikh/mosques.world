@@ -71,6 +71,18 @@ export async function placeBySlug(slug: string): Promise<DirectoryPlace | null> 
   return withMeta(row.place, row.highLat);
 }
 
+export async function placeById(id: string): Promise<DirectoryPlace | null> {
+  const rows = await db()
+    .select({ place, highLat: calcDefault.highLatRule })
+    .from(place)
+    .leftJoin(calcDefault, eq(place.countryCode, calcDefault.countryCode))
+    .where(eq(place.id, id))
+    .limit(1);
+  const row = rows[0];
+  if (!row || row.place.status === "hidden") return null;
+  return withMeta(row.place, row.highLat);
+}
+
 /** A person's saved places, newest first (spec P4 `/saved`). */
 export async function savedPlaces(userId: string): Promise<DirectoryPlace[]> {
   const rows = await db()

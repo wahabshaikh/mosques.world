@@ -126,6 +126,7 @@ export function AccountMenu({ profiles = false }: { profiles?: boolean }) {
                 className={`${item} w-full`}
                 onClick={async () => {
                   await fetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+                  navigator.serviceWorker?.controller?.postMessage("clear-user-caches");
                   window.location.assign("/");
                 }}
               >

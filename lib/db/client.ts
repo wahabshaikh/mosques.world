@@ -13,6 +13,8 @@ export type AppEnv = {
   ENVIRONMENT?: string;
   GOOGLE_MAPS_API_KEY?: string;
   GOOGLE_PLACES_DAILY_CAP?: string;
+  /** Web Push application server key (public half); push itself is sent in Phase 6. */
+  VAPID_PUBLIC_KEY?: string;
   IMAGES?: ImagesBinding;
   AI?: Ai;
   GOOGLE_CLIENT_ID?: string;

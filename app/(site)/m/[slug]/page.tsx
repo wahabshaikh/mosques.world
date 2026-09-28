@@ -9,7 +9,8 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { phase2Enabled, phase3Enabled, phase4Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled } from "@/lib/phase";
+import { MobileActionBar } from "@/components/mw/mobile-action-bar";
 import { CheckinButton } from "@/components/mw/checkin-button";
 import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
 import { defaultPrayer } from "@/lib/checkins";
@@ -87,6 +88,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const contributions = await phase2Enabled();
   const places = contributions && (await phase3Enabled());
   const profiles = places && (await phase4Enabled());
+  const mobile = profiles && (await phase5Enabled());
   const database = appEnv().DB;
   const [facts, activity, stats] = contributions
     ? await Promise.all([
@@ -161,7 +163,10 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
     .join(" · ");
 
   const content = (
-    <article data-place-id={place.id} className="mx-auto grid max-w-[1120px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16 lg:px-6">
+    <article
+      data-place-id={place.id}
+      className={`mx-auto grid max-w-[1120px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16 lg:px-6 ${mobile ? "pb-28 lg:pb-8" : ""}`}
+    >
       <TrackView goal="mosque_view" props={{ country: place.countryCode }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="min-w-0">
@@ -429,6 +434,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           </section>
         ) : null}
       </aside>
+      {mobile && !closed ? <MobileActionBar rows={rows} initialNow={now.toISOString()} placeId={place.id} /> : null}
     </article>
   );
 
