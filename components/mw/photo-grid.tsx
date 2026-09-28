@@ -26,6 +26,7 @@ export function PhotoGrid({
   placeId,
   canAdd,
   turnstileSiteKey,
+  text = (source: string, vars?: Record<string, string | number>) => source.replace(/\{(\w+)\}/g, (match, name: string) => String(vars?.[name] ?? match)),
 }: {
   photos: PhotoView[];
   total: number;
@@ -34,6 +35,8 @@ export function PhotoGrid({
   placeId: string;
   canAdd: boolean;
   turnstileSiteKey?: string;
+  /** Localizes the button labels (spec P8); English by default. */
+  text?: (source: string, vars?: Record<string, string | number>) => string;
 }) {
   if (photos.length === 0) {
     return (
@@ -42,7 +45,7 @@ export function PhotoGrid({
         <span className="sr-only">No photos yet</span>
         {canAdd ? (
           <div className="absolute right-4 bottom-4">
-            <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label="Add photos" />
+            <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label={text("Add photos")} />
           </div>
         ) : null}
       </div>
@@ -75,9 +78,9 @@ export function PhotoGrid({
         ))}
       </div>
       <div className="absolute right-4 bottom-4 flex gap-2">
-        {canAdd ? <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label="Add" /> : null}
+        {canAdd ? <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label={text("Add")} /> : null}
         <Link href={`/m/${slug}/photos`} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-foreground bg-background px-3.5 text-sm font-semibold">
-          <Camera className="size-4" aria-hidden="true" /> {total === 1 ? "Show the photo" : `Show all ${total} photos`}
+          <Camera className="size-4" aria-hidden="true" /> {total === 1 ? text("Show the photo") : text("Show all {n} photos", { n: total })}
         </Link>
       </div>
     </div>

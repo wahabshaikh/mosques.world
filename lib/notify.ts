@@ -116,7 +116,7 @@ async function mark(db: D1Database, column: "email_status" | "push_status", resu
 }
 
 /** Sends pending emails and pushes, oldest first, at most `limit` of each per call. */
-export async function deliverPending(env: DeliverEnv, input: { host: string; origin?: string; limit?: number }) {
+export async function deliverPending(env: DeliverEnv, input: { host: string; origin?: string; limit?: number; now?: number }) {
   const limit = input.limit ?? 50;
   // Links point at the site that queued them: preview/localhost use their own origin.
   const base = input.origin && isNonProductionHost(input.host) ? input.origin : env.PUBLIC_BASE_URL || "https://mosques.world";
@@ -130,7 +130,7 @@ export async function deliverPending(env: DeliverEnv, input: { host: string; ori
       .all<Pending>();
 
   // Anything older than three days is stale news (e.g. written while the flag was off): never send it late.
-  const cutoff = Date.now() - 72 * 60 * 60 * 1000;
+  const cutoff = (input.now ?? Date.now()) - 72 * 60 * 60 * 1000;
   await env.DB.batch([
     env.DB.prepare(`UPDATE notification SET email_status = 'expired' WHERE email_status = 'pending' AND created_at < ?`).bind(cutoff),
     env.DB.prepare(`UPDATE notification SET push_status = 'expired' WHERE push_status = 'pending' AND created_at < ?`).bind(cutoff),

@@ -136,11 +136,11 @@ export function TimetableImport({ placeId, slug, initialMonth }: { placeId: stri
                 <caption className="sr-only">Iqamah times to import for {month}</caption>
                 <thead className="bg-muted text-xs text-muted-foreground uppercase">
                   <tr>
-                    <th scope="col" className="px-2 py-2 text-left">
+                    <th scope="col" className="px-2 py-2 text-start">
                       Day
                     </th>
                     {PRAYERS.map((prayer) => (
-                      <th key={prayer} scope="col" className="px-2 py-2 text-left">
+                      <th key={prayer} scope="col" className="px-2 py-2 text-start">
                         {LABELS[prayer]}
                       </th>
                     ))}
@@ -149,7 +149,7 @@ export function TimetableImport({ placeId, slug, initialMonth }: { placeId: stri
                 <tbody>
                   {dates.map((date) => (
                     <tr key={date} className="border-t border-border">
-                      <th scope="row" className="px-2 py-1 text-left font-semibold">
+                      <th scope="row" className="px-2 py-1 text-start font-semibold">
                         {Number(date.slice(8))}
                       </th>
                       {PRAYERS.map((prayer) => (

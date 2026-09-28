@@ -23,7 +23,7 @@
   --destructive: #b42318;
   --ring: #0b6e4f;
   --info: #2f6fdb;
-  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Noto Naskh Arabic", ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {
@@ -86,6 +86,17 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Arabic and Urdu UI text uses Noto Naskh Arabic (fetched only when Arabic glyphs appear, via
+   unicode-range); names written in Arabic script use Amiri, 2px larger (spec 3, Phase 8). */
+html[dir="rtl"] body {
+  line-height: 1.7;
+}
+
+.font-arabic {
+  font-family: "Amiri", "Noto Naskh Arabic", serif;
+  font-size: calc(1em + 2px);
 }
 
 :focus-visible {

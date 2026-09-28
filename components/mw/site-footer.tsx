@@ -1,24 +1,38 @@
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/mw/language-switcher";
+import type { MessageKey } from "@/lib/i18n/messages/en";
+import { getTranslator } from "@/lib/i18n/server";
+import { phase8Enabled } from "@/lib/phase";
 
-const links = [
-  ["About", "/about"],
-  ["Guidelines", "/guidelines"],
-  ["Privacy", "/privacy"],
-  ["Terms", "/terms"],
-  ["Attribution", "/attribution"],
-] as const;
+const links: Array<[MessageKey, string]> = [
+  ["footer.about", "/about"],
+  ["footer.guidelines", "/guidelines"],
+  ["footer.privacy", "/privacy"],
+  ["footer.terms", "/terms"],
+  ["footer.attribution", "/attribution"],
+];
 
-export function SiteFooter() {
+const open: Array<[MessageKey, string]> = [
+  ["footer.openData", "/open-data"],
+  ["footer.developers", "/developers"],
+];
+
+export async function SiteFooter() {
+  const l = await getTranslator();
+  const global = await phase8Enabled().catch(() => false);
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-[1120px] flex-col gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <p>© {new Date().getFullYear()} mosques.world · Prayer times you can trust.</p>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2">
-          {links.map(([label, href]) => (
-            <Link key={href} href={href} className="hover:text-foreground">
-              {label}
+        <p>
+          © {new Date().getFullYear()} mosques.world · {l.t("footer.tagline")}
+        </p>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {[...links, ...(global ? open : [])].map(([key, href]) => (
+            <Link key={href} href={l.href(href)} className="hover:text-foreground">
+              {l.t(key)}
             </Link>
           ))}
+          {global ? <LanguageSwitcher locale={l.locale} label={l.t("footer.language")} /> : null}
         </nav>
       </div>
     </footer>

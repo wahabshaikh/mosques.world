@@ -1,9 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { contentSecurityPolicy } from "@/lib/csp";
+import { appEnv } from "@/lib/db/client";
+import { flagEnabled, PHASE8_FLAG } from "@/lib/flags";
+import { DEFAULT_LOCALE, splitLocale, type Locale } from "@/lib/i18n/config";
 
 type CfFields = { latitude?: string | number; longitude?: string | number };
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const host = request.nextUrl.hostname;
   if (host === "www.mosques.world") {
     const url = request.nextUrl.clone();
@@ -11,21 +14,34 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  // `/{locale}/…` (spec P8) renders the same page in another language; `/en/…` is the unprefixed URL.
+  const split = splitLocale(request.nextUrl.pathname);
+  if (split?.locale === DEFAULT_LOCALE) {
+    const url = request.nextUrl.clone();
+    url.pathname = split.path;
+    return NextResponse.redirect(url, 308);
+  }
+  let locale: Locale | null = null;
+  if (split && (await localesOn(request, host))) locale = split.locale;
+
   // Profiles live at app/(site)/u/[username] because `@folders` are parallel-route slots; `/@name`
   // is the canonical URL and `/u/name` 308-redirects to it (spec 4.2).
-  const rawPath = request.nextUrl.pathname;
+  const rawPath = locale && split ? split.path : request.nextUrl.pathname;
   const profilePath = rawPath.replace(/^\/%40/i, "/@");
   const rewritten = request.headers.get("x-mw-profile") === "1";
   const legacy = /^\/u\/([^/]+)(\/map)?\/?$/.exec(rawPath);
   if (legacy && !rewritten) {
     const url = request.nextUrl.clone();
-    url.pathname = `/@${legacy[1]}${legacy[2] ?? ""}`;
+    url.pathname = `${locale ? `/${locale}` : ""}/@${legacy[1]}${legacy[2] ?? ""}`;
     return NextResponse.redirect(url, 308);
   }
   const profile = /^\/@([^/]+)(\/map)?\/?$/.exec(profilePath);
 
   const cf = (request as NextRequest & { cf?: CfFields }).cf;
   const headers = new Headers(request.headers);
+  headers.delete("x-mw-locale");
+  headers.delete("x-mw-path");
+  if (locale) headers.set("x-mw-locale", locale);
   const nonProd = host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
   if (!nonProd) {
     headers.delete("x-mw-latitude");
@@ -43,6 +59,10 @@ export function middleware(request: NextRequest) {
     headers.set("x-mw-profile", "1");
     const url = request.nextUrl.clone();
     url.pathname = `/u/${profile[1]}${profile[2] ?? ""}`;
+    response = NextResponse.rewrite(url, { request: { headers } });
+  } else if (locale) {
+    const url = request.nextUrl.clone();
+    url.pathname = rawPath;
     response = NextResponse.rewrite(url, { request: { headers } });
   } else {
     response = NextResponse.next({ request: { headers } });
@@ -68,6 +88,15 @@ export function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "private, no-store");
   }
   return response;
+}
+
+/** Localized routes are dark-launched with Phase 8; while off, `/ar/…` is simply not found. */
+async function localesOn(request: NextRequest, host: string): Promise<boolean> {
+  try {
+    return await flagEnabled(appEnv().FLAGS, PHASE8_FLAG, { host, bucketKey: request.headers.get("cf-connecting-ip") ?? host });
+  } catch {
+    return false;
+  }
 }
 
 export const config = {

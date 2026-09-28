@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
 import { minutesUntil, untilLabel, type NextRow } from "./prayer-table";
+import { useText } from "./text";
 
 /** Sticky bottom bar on phones (spec 3.5 MobileActionBar): next iqamah + countdown · "I'm here". */
 export function MobileActionBar({ rows, initialNow, placeId }: { rows: NextRow[]; initialNow: string; placeId: string }) {
   const [now, setNow] = useState(initialNow);
+  const text = useText();
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date().toISOString()), 30_000);
     return () => window.clearInterval(timer);
@@ -22,7 +24,13 @@ export function MobileActionBar({ rows, initialNow, placeId }: { rows: NextRow[]
             {next.label} · {next.iqamah ?? next.adhan}
           </span>
           <span className="text-xs text-muted-foreground">
-            {next.iqamah ? "Iqamah" : "Adhan"} in {untilLabel(minutesUntil(next.iqamahAt ?? next.adhanAt, now))}
+            {text(next.iqamah ? "Iqamah in {time}" : "Adhan in {time}", {
+              time: untilLabel(minutesUntil(next.iqamahAt ?? next.adhanAt, now), {
+                minutes: text("{n} min"),
+                hours: text("{h}h"),
+                hoursMinutes: text("{h}h {m}m"),
+              }),
+            })}
           </span>
         </span>
       ) : (
@@ -33,7 +41,7 @@ export function MobileActionBar({ rows, initialNow, placeId }: { rows: NextRow[]
         onClick={() => track("im_here_tapped", { from: "action_bar" })}
         className="inline-flex h-12 shrink-0 items-center rounded-[12px] bg-primary px-5 font-bold text-primary-foreground"
       >
-        I&apos;m here
+        {text("I'm here")}
       </Link>
     </div>
   );

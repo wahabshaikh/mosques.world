@@ -6,6 +6,7 @@ export const PHASE4_FLAG = "phase4.profiles";
 export const PHASE5_FLAG = "phase5.mobile";
 export const PHASE6_FLAG = "phase6.stewards";
 export const PHASE7_FLAG = "phase7.timetables";
+export const PHASE8_FLAG = "phase8.global";
 
 const TTL_MS = 60_000;
 const cache = new Map<string, { value: string | null; at: number }>();
@@ -74,3 +75,6 @@ export async function flagsOnForSite(env: { FLAGS?: KVNamespace; PUBLIC_BASE_URL
 
 export const PHASE6_FLAGS = [PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAG];
 export const PHASE7_FLAGS = [...PHASE6_FLAGS, PHASE7_FLAG];
+
+/** Phase 8 (languages, public API, open data) builds on Phase 1 only (spec dependency map). */
+export const PHASE8_FLAGS = [PHASE8_FLAG];

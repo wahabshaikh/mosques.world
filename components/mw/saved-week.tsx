@@ -72,7 +72,7 @@ export function SavedWeek() {
               {days.length > 1 ? (
                 <details className="mt-3 text-sm">
                   <summary className="cursor-pointer font-semibold">Next {days.length - 1} days</summary>
-                  <table className="mt-2 w-full text-left tabular">
+                  <table className="mt-2 w-full text-start tabular">
                     <thead>
                       <tr className="text-xs text-muted-foreground">
                         <th className="py-1 font-semibold">Day</th>

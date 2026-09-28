@@ -123,7 +123,7 @@ export function SignInForm({ next, google, turnstileSiteKey }: { next: string; g
           </Button>
           <button
             type="button"
-            className="text-left text-sm underline"
+            className="text-start text-sm underline"
             onClick={() => {
               setStep("email");
               setOtp("");

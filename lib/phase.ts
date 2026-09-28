@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { appEnv } from "@/lib/db/client";
-import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAGS, PHASE7_FLAGS } from "@/lib/flags";
+import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAGS, PHASE7_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
 
 function flagInput(source: Headers) {
   const host = (source.get("host") ?? "").split(":")[0] ?? "";
@@ -68,7 +68,6 @@ export async function phase6EnabledFor(request: Request): Promise<boolean> {
   return allOn(PHASE6, request.headers);
 }
 
-
 /** Phase 7 (timetables, special prayers, calendar feeds) sits behind `phase7.timetables` and needs Phases 2–6. */
 export async function phase7Enabled(): Promise<boolean> {
   return allOn(PHASE7_FLAGS, new Headers(await headers()));
@@ -76,4 +75,13 @@ export async function phase7Enabled(): Promise<boolean> {
 
 export async function phase7EnabledFor(request: Request): Promise<boolean> {
   return allOn(PHASE7_FLAGS, request.headers);
+}
+
+/** Phase 8 (languages, public read API, open data) sits behind `phase8.global`. */
+export async function phase8Enabled(): Promise<boolean> {
+  return allOn(PHASE8_FLAGS, new Headers(await headers()));
+}
+
+export async function phase8EnabledFor(request: Request): Promise<boolean> {
+  return allOn(PHASE8_FLAGS, request.headers);
 }
