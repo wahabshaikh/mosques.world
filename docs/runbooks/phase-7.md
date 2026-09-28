@@ -44,4 +44,4 @@
 ## Rollback
 
 Flag `phase7.timetables` off. Timetable facts stay in D1 but are ignored by the summary only after the next refresh;
-to hide them immediately, run the nightly job or `refreshPlaceSummary` for affected places. Migration 0008 is additive.
+to hide them immediately, run the nightly job or `refreshPlaceSummary` for affected places. Migration 0009 is additive.
