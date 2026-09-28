@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
 import { usesEmailSink } from "@/lib/email/send";
+import { periodOf, runExport } from "@/lib/open-data";
 import { refreshPlaceSummary } from "@/lib/trust/store";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,8 @@ const input = z.object({
   votesOf: z.string().email().optional(),
   /** Stands in for the timetable vision model: the rows it "reads" from any photo. */
   timetable: z.array(z.record(z.string(), z.unknown())).max(31).optional(),
+  /** Runs this month's open-data export inline (the queue does it in production). */
+  openDataExport: z.literal(true).optional(),
 });
 
 /** Preview/local only (same gate as the email sink): E2E fixtures for trust levels and clean places. */
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Bad fixture" }, { status: 400 });
   const database = env.DB;
   const now = Date.now();
-  const { user, resetPlace, places, deletePlace, checkinsOf, votesOf, timetable } = parsed.data;
+  const { user, resetPlace, places, deletePlace, checkinsOf, votesOf, timetable, openDataExport } = parsed.data;
   if (timetable) await env.CACHE.put("test:timetable:extract", JSON.stringify(timetable), { expirationTtl: 3600 });
   if (places) {
     await env.CACHE.put("test:places:autocomplete", JSON.stringify(places.autocomplete), { expirationTtl: 3600 });
@@ -93,6 +96,11 @@ export async function POST(request: Request) {
       database.prepare(`DELETE FROM special_prayer WHERE place_id = ?`).bind(place.id),
     ]);
     await refreshPlaceSummary(database, place.id, now);
+  }
+  if (openDataExport) {
+    const period = periodOf(now);
+    await runExport(env, { period, now, base: new URL(request.url).origin, force: true });
+    return Response.json({ ok: true, period });
   }
   if (votesOf) {
     const rows = await database

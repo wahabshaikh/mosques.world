@@ -40,7 +40,8 @@
   },
   "ratelimits": [
     { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
-    { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+    { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
   ],
   "d1_databases": [
     {
@@ -91,7 +92,8 @@
     },
     "ratelimits": [
       { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
-      { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+      { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
     ],
     "d1_databases": [
       {
@@ -138,7 +140,8 @@
       },
       "ratelimits": [
         { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
-        { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+        { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
       ],
       "d1_databases": [
         {

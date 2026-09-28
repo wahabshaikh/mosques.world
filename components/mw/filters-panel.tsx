@@ -90,7 +90,7 @@ export default function FiltersPanel({
                     type="button"
                     aria-pressed={draft.kind === value}
                     onClick={() => setDraft((current) => ({ ...current, kind: value }))}
-                    className={cn("py-3 text-sm font-semibold", index > 0 && "border-l border-border-strong", draft.kind === value && "bg-secondary text-secondary-foreground")}
+                    className={cn("py-3 text-sm font-semibold", index > 0 && "border-s border-border-strong", draft.kind === value && "bg-secondary text-secondary-foreground")}
                   >
                     {label}
                   </button>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { phase4Enabled, phase6Enabled } from "@/lib/phase";
+import { phase4Enabled, phase6Enabled, phase8Enabled } from "@/lib/phase";
 import { cn } from "@/lib/utils";
 
 export async function SettingsShell({ active, title, children }: { active: string; title: string; children: React.ReactNode }) {
@@ -7,6 +7,7 @@ export async function SettingsShell({ active, title, children }: { active: strin
     ["Profile", "/settings/profile"],
     ...((await phase4Enabled().catch(() => false)) ? [["Privacy", "/settings/privacy"] as const] : []),
     ...((await phase6Enabled().catch(() => false)) ? [["Notifications", "/settings/notifications"] as const] : []),
+    ...((await phase8Enabled().catch(() => false)) ? [["API keys", "/settings/developers"] as const] : []),
     ["Account", "/settings/account"],
   ] as const;
   return (

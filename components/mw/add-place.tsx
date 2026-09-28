@@ -180,7 +180,7 @@ export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng:
             <ul className="absolute top-full right-0 left-0 z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg" aria-label="Places">
               {suggestions.map((item) => (
                 <li key={item.placeId}>
-                  <button type="button" className="flex w-full flex-col px-4 py-3 text-left hover:bg-muted" onClick={() => void choose(item)}>
+                  <button type="button" className="flex w-full flex-col px-4 py-3 text-start hover:bg-muted" onClick={() => void choose(item)}>
                     <span className="text-sm font-semibold">{item.label}</span>
                     {item.secondary ? <span className="text-xs text-muted-foreground">{item.secondary}</span> : null}
                   </button>
@@ -241,7 +241,7 @@ export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng:
                     type="button"
                     aria-pressed={draft.kind === value}
                     onClick={() => update({ kind: value })}
-                    className={cn("py-3 text-sm font-semibold", index > 0 && "border-l border-border-strong", draft.kind === value && "bg-secondary text-secondary-foreground")}
+                    className={cn("py-3 text-sm font-semibold", index > 0 && "border-s border-border-strong", draft.kind === value && "bg-secondary text-secondary-foreground")}
                   >
                     {label}
                   </button>

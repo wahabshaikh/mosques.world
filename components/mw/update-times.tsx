@@ -287,7 +287,7 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
                         type="button"
                         role="radio"
                         aria-checked={choice === value}
-                        className={cn("px-3.5 py-2 text-[13px] font-bold", index > 0 && "border-l border-border-strong", choice === value && on)}
+                        className={cn("px-3.5 py-2 text-[13px] font-bold", index > 0 && "border-s border-border-strong", choice === value && on)}
                         onClick={() => setAmenities((all) => ({ ...all, [amenity.key]: value }))}
                       >
                         {label}
@@ -501,7 +501,7 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
         >
           Reset
         </button>
-        <span className="hidden max-w-[220px] text-right text-[13px] text-muted-foreground sm:block" data-testid="update-helper">
+        <span className="hidden max-w-[220px] text-end text-[13px] text-muted-foreground sm:block" data-testid="update-helper">
           {helper}
         </span>
         <Button type="button" variant="secondary" disabled={pending || changes.length + confirms.length === 0} onClick={() => void submit()}>

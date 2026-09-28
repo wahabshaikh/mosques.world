@@ -17,6 +17,12 @@ importers:
       '@fontsource-variable/plus-jakarta-sans':
         specifier: ^5.2.6
         version: 5.3.0
+      '@fontsource/amiri':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/noto-naskh-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@radix-ui/react-dialog':
         specifier: ^1.1.23
         version: 1.1.23(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -999,6 +1005,12 @@ packages:
 
   '@fontsource-variable/plus-jakarta-sans@5.3.0':
     resolution: {integrity: sha512-/l/4r0yyWK9JzAlmA0LiYgGgmJe/Gswt4jTJEzr5QhJfwMbvJZDmYWyW0M4X7yCK69BajMVlV/Lx8g7WDc1+sw==}
+
+  '@fontsource/amiri@5.3.0':
+    resolution: {integrity: sha512-i4SWJnVIphj8556EdVzNrEG/Qu82k6JXjXTtSUIohx3tHmo2GHw1Kv60TWo+xjk7Yf1Etb2Gskh0lUFclTKyUw==}
+
+  '@fontsource/noto-naskh-arabic@5.3.0':
+    resolution: {integrity: sha512-S/GDgQ6mh/PKo4mz5+eXNYbEarvpI7yh6eCdOz8tTVbeM7+OUiacIEscaYEibr/+egDtGbO2ZB00sjy1bJC1kQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -4512,6 +4524,10 @@ snapshots:
       levn: 0.4.1
 
   '@fontsource-variable/plus-jakarta-sans@5.3.0': {}
+
+  '@fontsource/amiri@5.3.0': {}
+
+  '@fontsource/noto-naskh-arabic@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

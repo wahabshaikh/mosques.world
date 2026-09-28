@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 import { useViewer } from "./place-actions";
+import { useText } from "./text";
 
 const action = "inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold underline underline-offset-2 hover:bg-muted";
 
@@ -29,9 +30,10 @@ export async function shareLink(input: { title: string; url: string }): Promise<
 }
 
 export function ShareButton({ title, path }: { title: string; path: string }) {
+  const text = useText();
   return (
     <button type="button" className={action} onClick={() => void shareLink({ title, url: new URL(path, window.location.origin).toString() })}>
-      <Share className="size-4" aria-hidden="true" /> Share
+      <Share className="size-4" aria-hidden="true" /> {text("Share")}
     </button>
   );
 }
@@ -39,6 +41,7 @@ export function ShareButton({ title, path }: { title: string; path: string }) {
 /** Save to `/saved` (spec P4); signed-out viewers are sent to sign in first. */
 export function SaveButton({ placeId }: { placeId: string }) {
   const { viewer, loaded, saved, setSaved, signInHref } = useViewer();
+  const text = useText();
   const [pending, setPending] = useState(false);
   return (
     <button
@@ -66,10 +69,10 @@ export function SaveButton({ placeId }: { placeId: string }) {
         }
         setSaved(next);
         if (next) track("place_saved");
-        toast.success(next ? "Saved. Find it any time in Saved." : "Removed from Saved.");
+        toast.success(text(next ? "Saved. Find it any time in Saved." : "Removed from Saved."));
       }}
     >
-      <Bookmark className="size-4" fill={saved ? "currentColor" : "none"} aria-hidden="true" /> {saved ? "Saved" : "Save"}
+      <Bookmark className="size-4" fill={saved ? "currentColor" : "none"} aria-hidden="true" /> {text(saved ? "Saved" : "Save")}
     </button>
   );
 }

@@ -125,10 +125,12 @@ export function ActivityFeed({ items, now }: { items: ActivityView[]; now: numbe
             {item.actorId ? initials(item.handle) : "MW"}
           </span>
           <span className="flex flex-col gap-0.5">
-            <span className="text-sm">
+            <span className="text-sm" dir="auto">
               <strong>{item.handle}</strong> {activityText(item)}
             </span>
-            <span className="text-xs text-muted-foreground">{relativeAge(item.createdAt, now)}</span>
+            <span className="text-xs text-muted-foreground" dir="auto">
+              {relativeAge(item.createdAt, now)}
+            </span>
           </span>
         </li>
       ))}

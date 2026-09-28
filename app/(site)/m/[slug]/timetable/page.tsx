@@ -126,7 +126,7 @@ export default async function TimetablePage({ params, searchParams }: { params: 
         </nav>
       </div>
       <div className="mt-6 overflow-x-auto rounded-2xl border border-border">
-        <table className="w-full min-w-[720px] text-left text-sm tabular" data-testid="timetable">
+        <table className="w-full min-w-[720px] text-start text-sm tabular" data-testid="timetable">
           <caption className="sr-only">
             Adhan and iqamah times for {place.name}, {monthLabel(month)}
           </caption>

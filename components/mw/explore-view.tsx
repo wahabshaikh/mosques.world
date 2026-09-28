@@ -246,7 +246,7 @@ export function ExploreView({
                     <li key={`${item.label}-${item.lat}`}>
                       <button
                         type="button"
-                        className="block w-full px-4 py-3 text-left text-sm hover:bg-muted"
+                        className="block w-full px-4 py-3 text-start text-sm hover:bg-muted"
                         onClick={() => goTo(item)}
                       >
                         {item.label}
@@ -329,7 +329,7 @@ export function ExploreView({
           {showGeoPrompt ? (
             <button
               type="button"
-              className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-left text-sm"
+              className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm"
               onClick={() => {
                 navigator.geolocation.getCurrentPosition((position) => {
                   track("geolocation_granted", {});

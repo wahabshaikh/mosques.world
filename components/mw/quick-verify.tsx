@@ -248,7 +248,7 @@ export function QuickVerify({ placeHint, username, vapidKey }: { placeHint: stri
                 key={place.id}
                 type="button"
                 onClick={() => void start(place.id)}
-                className="flex items-center justify-between rounded-[14px] border border-[#1F1D1A] p-4 text-left"
+                className="flex items-center justify-between rounded-[14px] border border-[#1F1D1A] p-4 text-start"
               >
                 <span className="font-bold">{place.name}</span>
                 <span className="text-sm text-[#5E5A53]">{place.distanceM} m</span>

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
+import { useText } from "./text";
 
 export function WaitlistForm({ placeId }: { placeId: string }) {
   const [email, setEmail] = useState("");
+  const text = useText();
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -39,12 +41,12 @@ export function WaitlistForm({ placeId }: { placeId: string }) {
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="Email for iqamah updates"
+          placeholder={text("Email for iqamah updates")}
           className="h-11 w-full rounded-[12px] border border-input bg-background px-3"
         />
       </label>
       <Button type="submit" disabled={pending}>
-        Get notified
+        {text("Get notified")}
       </Button>
       {message ? <p className="text-sm text-muted-foreground sm:basis-full">{message}</p> : null}
     </form>

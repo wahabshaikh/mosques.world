@@ -5,7 +5,8 @@ import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/l
 import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
-import { flagsOnForSite, PHASE6_FLAGS } from "@/lib/flags";
+import { flagsOnForSite, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
+import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { sentryOptions } from "@/lib/sentry";
 
@@ -65,6 +66,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     }
     ctx.waitUntil(env.DB.prepare(CITY_RECOUNT).run());
     ctx.waitUntil(nightly(env));
+    // Monthly open-data export (spec P8), run from the queue so it has a consumer's time budget.
+    if (await flagsOnForSite(env, PHASE8_FLAGS)) ctx.waitUntil(queueMonthlyExport(env, Date.now()));
     // Safety net for the outbox: anything the queue missed goes out with the nightly run.
     if (notifications) ctx.waitUntil(deliverPending(deliveryEnv, { host: "", limit: 200 }));
   },
@@ -78,6 +81,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
           await deliverPending({ ...env, CACHE: env.CACHE as KVNamespace, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" }, { host: "", limit: 100 });
         } else if (isUserStatsMessage(message.body)) {
           await recomputeUserStats(env.DB, message.body.id);
+        } else if (isExportMessage(message.body)) {
+          await runExport(env, { period: message.body.period, now: Date.now(), base: env.PUBLIC_BASE_URL ?? "https://mosques.world" });
         } else if (isPhotoMessage(message.body)) {
           await processPhoto(env, message.body.id);
         } else if (mail && env.EMAIL) {

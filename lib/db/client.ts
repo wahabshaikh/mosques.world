@@ -34,6 +34,8 @@ export type AppEnv = {
   Q_MEDIA?: Queue;
   RL_WRITE?: RateLimit;
   RL_AUTH?: RateLimit;
+  /** Public read API: requests per minute per key (spec P8). */
+  RL_API?: RateLimit;
 };
 
 export function appEnv(): AppEnv {

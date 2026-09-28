@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { avatarColor, initials } from "@/lib/people";
+import { useText } from "./text";
 
 type MenuUser = { id: string; name: string; username?: string | null; role?: string | null };
 
@@ -14,6 +15,7 @@ type MenuUser = { id: string; name: string; username?: string | null; role?: str
  */
 export function AccountMenu({ profiles = false, notifications = false }: { profiles?: boolean; notifications?: boolean }) {
   const pathname = usePathname();
+  const text = useText();
   const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -62,7 +64,7 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
         href={`/sign-in?next=${encodeURIComponent(pathname || "/")}`}
         className="inline-flex h-11 items-center rounded-full border border-border px-4 text-sm font-semibold hover:bg-muted"
       >
-        Sign in
+        {text("Sign in")}
       </Link>
     );
   }

@@ -37,7 +37,7 @@ export function HomeCityField({ value, onChange }: { value: HomeCity | null; onC
             <li key={item.label}>
               <button
                 type="button"
-                className="block w-full px-4 py-3 text-left text-sm hover:bg-muted"
+                className="block w-full px-4 py-3 text-start text-sm hover:bg-muted"
                 onClick={() => {
                   setQuery(item.label);
                   onChange({ label: item.label, country: item.country ?? null });

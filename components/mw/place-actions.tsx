@@ -7,6 +7,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useR
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import { useText } from "./text";
 
 type Viewer = { username: string | null; trustLevel: number; role: string } | null;
 
@@ -186,6 +187,7 @@ const ReportDialog = lazy(() => import("./report-dialog"));
 export function ReportProblem({ placeId, facts, reasons = false }: { placeId: string; facts: Array<{ key: string; label: string }>; reasons?: boolean }) {
   const { viewer, loaded, signInHref } = useViewer();
   const [open, setOpen] = useState(false);
+  const text = useText();
   return (
     <>
       <button
@@ -199,7 +201,7 @@ export function ReportProblem({ placeId, facts, reasons = false }: { placeId: st
           setOpen(true);
         }}
       >
-        <Flag className="size-4" aria-hidden="true" /> {reasons ? "Report a problem" : "Report a timing change"}
+        <Flag className="size-4" aria-hidden="true" /> {text(reasons ? "Report a problem" : "Report a timing change")}
       </button>
       {open ? (
         <Suspense fallback={null}>

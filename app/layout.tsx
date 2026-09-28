@@ -1,5 +1,8 @@
 import "@/app/globals.css";
 import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource/noto-naskh-arabic/arabic-400.css";
+import "@fontsource/noto-naskh-arabic/arabic-700.css";
+import "@fontsource/amiri/arabic-400.css";
 import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
@@ -9,6 +12,10 @@ import { Pwa } from "@/components/mw/pwa";
 import { phase5Enabled } from "@/lib/phase";
 import { Toaster } from "@/components/ui/sonner";
 import { appEnv } from "@/lib/db/client";
+import { direction } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { clientMessages } from "@/lib/i18n/client-messages";
+import { TextProvider } from "@/components/mw/text";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.PUBLIC_BASE_URL ?? "https://mosques.world"),
@@ -23,6 +30,7 @@ export const viewport: Viewport = { themeColor: "#0B6E4F" };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const pwa = await phase5Enabled().catch(() => false);
+  const locale = await getLocale();
   let websiteId: string | undefined;
   try {
     websiteId = appEnv().DATAFAST_WEBSITE_ID;
@@ -30,11 +38,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     websiteId = process.env.DATAFAST_WEBSITE_ID;
   }
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={direction(locale)} suppressHydrationWarning>
       <body>
         <HoistMetadata />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <TextProvider messages={clientMessages(locale)}>{children}</TextProvider>
           <Toaster />
           {pwa ? <Pwa /> : null}
           <ConsentBanner websiteId={websiteId} />
