@@ -5,6 +5,13 @@ export type IqamahPrayer = (typeof IQAMAH_PRAYERS)[number];
 export const IQAMAH_KEYS = IQAMAH_PRAYERS.map((prayer) => `iqamah.${prayer}` as const);
 export type IqamahKey = (typeof IQAMAH_KEYS)[number];
 export const JUMUAH_KEY = "jumuah.jamaah";
+/** Per-date iqamah from a monthly timetable (spec P7); the qualifier is the local date YYYY-MM-DD. */
+export const TIMETABLE_KEYS = IQAMAH_PRAYERS.map((prayer) => `timetable.${prayer}` as const);
+export type TimetableKey = (typeof TIMETABLE_KEYS)[number];
+
+export function isTimetableKey(key: string): key is TimetableKey {
+  return (TIMETABLE_KEYS as readonly string[]).includes(key);
+}
 export const ASR_MADHAB_KEY = "asr_madhab";
 /** Amenity registry (spec 5.3). `bit` is the place.amenity_bits position; never reorder or reuse. */
 export const AMENITIES = [
@@ -24,7 +31,7 @@ export const AMENITY_KEYS = AMENITIES.map((amenity) => amenity.key);
 export const INFO_KEYS = ["info.phone", "info.website", "info.languages"] as const;
 export const CLOSED_KEY = "status.closed";
 
-export const FACT_KEYS = [...IQAMAH_KEYS, JUMUAH_KEY, ASR_MADHAB_KEY, ...AMENITY_KEYS, ...INFO_KEYS, CLOSED_KEY] as const;
+export const FACT_KEYS = [...IQAMAH_KEYS, ...TIMETABLE_KEYS, JUMUAH_KEY, ASR_MADHAB_KEY, ...AMENITY_KEYS, ...INFO_KEYS, CLOSED_KEY] as const;
 
 export function isAmenityKey(key: string): key is AmenityKey {
   return (AMENITY_KEYS as readonly string[]).includes(key);
@@ -46,6 +53,8 @@ export const iqamahValue = z.union([
   z.object({ rule: z.literal("after_adhan"), min: z.number().int().min(0).max(90) }).strict(),
 ]);
 export type IqamahValue = z.infer<typeof iqamahValue>;
+/** Timetable boards list clock times, so per-date values are always fixed times. */
+export const timetableValue = z.object({ t: hm }).strict();
 
 export const jumuahValue = z
   .object({
@@ -79,6 +88,11 @@ export function validateFactValue(key: string, qualifier: string, value: unknown
     if (!/^[1-6]$/.test(qualifier)) return { ok: false, error: "Jumu'ah needs a jamā'ah number from 1 to 6" };
     const parsed = jumuahValue.safeParse(value);
     return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "Enter a valid Jumu'ah time" };
+  }
+  if (isTimetableKey(key)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(qualifier)) return { ok: false, error: "A timetable value needs its date" };
+    const parsed = timetableValue.safeParse(value);
+    return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "Enter a valid time" };
   }
   if (qualifier !== "") return { ok: false, error: "This fact has no qualifier" };
   if (isAmenityKey(key)) {
@@ -164,6 +178,12 @@ export function describeValue(key: string, value: unknown): string {
 }
 
 export function factLabel(key: string, qualifier = ""): string {
+  if (isTimetableKey(key)) {
+    const prayer = key.slice("timetable.".length);
+    const [year, month, day] = qualifier.split("-").map(Number);
+    const date = year ? new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1)).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }) : "";
+    return `${prayer.charAt(0).toUpperCase()}${prayer.slice(1)} on ${date}`.trim();
+  }
   if (key.startsWith("iqamah.")) {
     const prayer = key.slice("iqamah.".length);
     return `${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}`;

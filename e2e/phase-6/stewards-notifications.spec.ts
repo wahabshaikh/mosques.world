@@ -146,7 +146,11 @@ test.describe("phase 6 stewards and notifications", () => {
     await visit(member.page, "/settings/notifications");
     const row = member.page.locator('[data-topic="saved_changes"]');
     await expect(row.getByLabel("Email")).toBeChecked();
-    await row.getByLabel("Email").uncheck();
+    // The toggle is optimistic, so wait for the save to land before reloading.
+    await Promise.all([
+      member.page.waitForResponse((response) => response.url().includes("/api/v1/notifications/prefs") && response.ok()),
+      row.getByLabel("Email").uncheck(),
+    ]);
     await member.page.reload();
     await expect(member.page.locator('[data-topic="saved_changes"]').getByLabel("Email")).not.toBeChecked();
     expect(await seriousViolations(member.page)).toEqual([]);

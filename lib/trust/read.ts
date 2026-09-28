@@ -75,14 +75,15 @@ const FACT_ROWS = `SELECT fact.id AS fact_id, fact.key, fact.qualifier, fact.sta
   LEFT JOIN user ON user.id = fact_candidate.created_by
   WHERE fact.place_id = ?`;
 
-/** Current, displayed and challenging values for every fact of a place. */
+/** Current, displayed and challenging values for every fact of a place (timetable values for `date` only). */
 export async function placeFacts(db: D1Database, placeId: string, date: string): Promise<FactView[]> {
   const result = await db
     .prepare(
-      `${FACT_ROWS} AND (fact_candidate.status IN ('current', 'candidate')
+      `${FACT_ROWS} AND (fact.key NOT LIKE 'timetable.%' OR fact.qualifier = ?)
+         AND (fact_candidate.status IN ('current', 'candidate')
          OR (fact_candidate.status = 'superseded' AND (fact_candidate.effective_to IS NULL OR fact_candidate.effective_to >= ?)))`,
     )
-    .bind(placeId, date)
+    .bind(placeId, date, date)
     .all<Row>();
   const groups = new Map<string, Row[]>();
   for (const row of result.results ?? []) groups.set(row.fact_id, [...(groups.get(row.fact_id) ?? []), row]);

@@ -216,9 +216,9 @@ export async function profileBadges(db: D1Database, userId: string, stat: UserSt
 }
 
 export const CONTRIBUTION_FILTERS = {
-  all: { label: "All", types: ["confirmed", "proposed", "promoted", "reverted", "place_added", "place_confirmed", "photo_added"] },
+  all: { label: "All", types: ["confirmed", "proposed", "promoted", "reverted", "place_added", "place_confirmed", "photo_added", "timetable_imported"] },
   verifications: { label: "Verifications", types: ["confirmed"] },
-  timings: { label: "Timing updates", types: ["proposed", "promoted", "reverted"] },
+  timings: { label: "Timing updates", types: ["proposed", "promoted", "reverted", "timetable_imported"] },
   places: { label: "Places", types: ["place_added", "place_confirmed"] },
   photos: { label: "Photos", types: ["photo_added"] },
 } as const;
@@ -232,7 +232,7 @@ export function asContributionFilter(value: string | undefined): ContributionFil
 export type ContributionRow = {
   id: string;
   type: string;
-  payload: { key?: string; qualifier?: string; value?: unknown; held?: boolean; replaced?: boolean };
+  payload: { key?: string; qualifier?: string; value?: unknown; held?: boolean; replaced?: boolean; month?: string; rows?: number };
   placeSlug: string | null;
   placeName: string | null;
   createdAt: number;

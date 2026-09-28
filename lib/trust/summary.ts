@@ -22,13 +22,15 @@ export type SummaryEntry = {
 export type PlaceSummary = {
   iqamah: Partial<Record<IqamahPrayer, SummaryEntry>>;
   jumuah: Array<SummaryEntry & { q: string }>;
+  /** Monthly-timetable iqamahs for the next ~2 weeks: date → prayer → HH:MM (spec P7). */
+  tt?: Record<string, Partial<Record<IqamahPrayer, string>>>;
 };
 
 export function parseSummary(json: string | null | undefined): PlaceSummary | null {
   if (!json) return null;
   try {
     const parsed = JSON.parse(json) as Partial<PlaceSummary>;
-    return { iqamah: parsed.iqamah ?? {}, jumuah: parsed.jumuah ?? [] };
+    return { iqamah: parsed.iqamah ?? {}, jumuah: parsed.jumuah ?? [], ...(parsed.tt ? { tt: parsed.tt } : {}) };
   } catch {
     return null;
   }
@@ -64,6 +66,12 @@ export function iqamahToday(summary: PlaceSummary | null, day: PrayerDay): Parti
   for (const prayer of IQAMAH_PRAYERS) {
     const entry = summary.iqamah[prayer];
     const adhan = day.rows.find((row) => row.key === prayer)?.adhan;
+    const dated = summary.tt?.[day.date]?.[prayer];
+    if (dated && adhan) {
+      // A monthly timetable's value for this exact date wins over the standing iqamah.
+      result[prayer] = { prayer, time: dated, label: formatTime12(dated), state: entry?.s ?? "unverified", people: entry?.n ?? 0, at: entry?.at ?? null, challenger: null };
+      continue;
+    }
     if (!entry || !adhan) continue;
     const parsed = iqamahValue.safeParse(valueOn(entry, day.date));
     if (!parsed.success) continue;

@@ -68,6 +68,14 @@ export function JumuahCards({ cards }: { cards: JumuahCard[] }) {
   );
 }
 
+const SPECIAL_NAMES: Record<string, string> = { eid_fitr: "Eid al-Fitr", eid_adha: "Eid al-Adha", taraweeh: "Taraweeh", tahajjud: "Tahajjud" };
+
+function monthName(month: string | undefined): string {
+  if (!month) return "monthly";
+  const [year, index] = month.split("-").map(Number);
+  return new Date(Date.UTC(year ?? 2000, (index ?? 1) - 1, 1)).toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" });
+}
+
 function activityText(item: ActivityView): string {
   const key = item.payload.key ?? "";
   const label = key ? factLabel(key, item.payload.qualifier) : "a time";
@@ -86,6 +94,10 @@ function activityText(item: ActivityView): string {
       return `restored the previous ${label} time`;
     case "photo_added":
       return "added a photo";
+    case "special_added":
+      return `added ${SPECIAL_NAMES[(item.payload as { kind?: string }).kind ?? ""] ?? "special prayer"} times`;
+    case "timetable_imported":
+      return `imported the ${monthName((item.payload as { month?: string }).month)} timetable`;
     case "prayed":
       return `prayed ${CHECKIN_PRAYER_LABELS[item.payload.prayer as CheckinPrayer] ?? ""} here`.replace("  ", " ");
     case "place_added":
