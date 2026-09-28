@@ -121,7 +121,7 @@ export type ActivityView = {
   type: string;
   handle: string;
   actorId: string | null;
-  payload: { key?: string; qualifier?: string; value?: unknown; replaced?: boolean; held?: boolean };
+  payload: { key?: string; qualifier?: string; value?: unknown; replaced?: boolean; held?: boolean; prayer?: string };
   createdAt: number;
 };
 

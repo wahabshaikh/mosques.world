@@ -22,6 +22,8 @@ const input = z.object({
     })
     .optional(),
   deletePlace: z.string().optional(),
+  /** Returns a person's raw check-in rows, so tests can assert what is (and isn't) stored. */
+  checkinsOf: z.string().email().optional(),
 });
 
 /** Preview/local only (same gate as the email sink): E2E fixtures for trust levels and clean places. */
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Bad fixture" }, { status: 400 });
   const database = env.DB;
   const now = Date.now();
-  const { user, resetPlace, places, deletePlace } = parsed.data;
+  const { user, resetPlace, places, deletePlace, checkinsOf } = parsed.data;
   if (places) {
     await env.CACHE.put("test:places:autocomplete", JSON.stringify(places.autocomplete), { expirationTtl: 3600 });
     for (const details of places.details) {
@@ -52,6 +54,9 @@ export async function POST(request: Request) {
         database.prepare(`DELETE FROM photo WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM place_slug_history WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM report WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM checkin WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM saved_place WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM user_place_stat WHERE place_id = ?`).bind(row.id),
         database.prepare(`UPDATE place SET merged_into_id = NULL WHERE merged_into_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM place WHERE id = ?`).bind(row.id),
       ]);
@@ -80,6 +85,13 @@ export async function POST(request: Request) {
       database.prepare(`DELETE FROM activity WHERE place_id = ?`).bind(place.id),
     ]);
     await refreshPlaceSummary(database, place.id, now);
+  }
+  if (checkinsOf) {
+    const rows = await database
+      .prepare(`SELECT checkin.* FROM checkin JOIN user ON user.id = checkin.user_id WHERE user.email = ? ORDER BY checkin.created_at`)
+      .bind(checkinsOf.toLowerCase())
+      .all();
+    return Response.json({ ok: true, checkins: rows.results ?? [] });
   }
   return Response.json({ ok: true });
 }

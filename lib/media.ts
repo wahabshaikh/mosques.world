@@ -1,4 +1,5 @@
 import { encode } from "blurhash";
+import { recomputeUserStats } from "@/lib/profile/stats";
 import { ulid } from "@/lib/id";
 import { decodePng } from "@/lib/og/png-decode";
 import { recomputeFact } from "@/lib/trust/store";
@@ -132,6 +133,8 @@ async function afterApproval(db: D1Database, photo: Pick<PhotoRow, "id" | "place
     await db.prepare(`UPDATE user SET avatar_key = ? WHERE id = ?`).bind(photo.id, photo.uploaded_by).run();
     return;
   }
+  // Photo counts feed profile stats and the Timetable keeper badge.
+  await recomputeUserStats(db, photo.uploaded_by, now).catch(() => undefined);
   if (photo.place_id) {
     await db
       .prepare(`INSERT INTO activity (id, actor_id, place_id, type, payload_json, created_at) VALUES (?, ?, ?, 'photo_added', ?, ?)`)

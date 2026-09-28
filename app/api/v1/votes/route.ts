@@ -1,3 +1,5 @@
+import { scheduleUserStats } from "@/lib/profile/stats";
+import { isNonProductionHost } from "@/lib/places/present";
 import { serverGoal } from "@/lib/analytics-server";
 import { resultMessage, voteInput } from "@/lib/contribute";
 import { appEnv } from "@/lib/db/client";
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
   if (problem) return jsonError(problem, 429);
   try {
     const result = await castVote(env.DB, { actor: actorOf(user), ...parsed.data, now });
+    await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
     if (result.outcome?.supersededId) await serverGoal(env, request, "dispute_resolved", { fact_key: result.key });
     const label = factLabel(result.key, result.qualifier);
     return Response.json({

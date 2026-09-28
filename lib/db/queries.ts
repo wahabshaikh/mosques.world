@@ -4,7 +4,7 @@ import { haversineKm, type Bbox } from "@/lib/geo/distance";
 import { needMasks, type NeedSlug } from "@/lib/places/amenities";
 import { ftsMatch } from "@/lib/places/view";
 import { appEnv, db } from "./client";
-import { calcDefault, city, place, type PlaceRow } from "./schema";
+import { calcDefault, city, place, savedPlace, type PlaceRow } from "./schema";
 
 export type DirectoryPlace = PlaceRow & { highLatRule: HighLatRule; distanceKm: number | null };
 
@@ -69,6 +69,19 @@ export async function placeBySlug(slug: string): Promise<DirectoryPlace | null> 
   const row = rows[0];
   if (!row || row.place.status === "hidden") return null;
   return withMeta(row.place, row.highLat);
+}
+
+/** A person's saved places, newest first (spec P4 `/saved`). */
+export async function savedPlaces(userId: string): Promise<DirectoryPlace[]> {
+  const rows = await db()
+    .select({ place, highLat: calcDefault.highLatRule })
+    .from(savedPlace)
+    .innerJoin(place, eq(place.id, savedPlace.placeId))
+    .leftJoin(calcDefault, eq(place.countryCode, calcDefault.countryCode))
+    .where(and(eq(savedPlace.userId, userId), inArray(place.status, ["active", "pending", "closed"])))
+    .orderBy(sql`${savedPlace.createdAt} DESC`)
+    .limit(200);
+  return rows.map((row) => withMeta(row.place, row.highLat));
 }
 
 export async function placesInCity(countryCode: string, citySlug: string): Promise<DirectoryPlace[]> {

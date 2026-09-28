@@ -9,7 +9,10 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { phase2Enabled, phase3Enabled, phase4Enabled } from "@/lib/phase";
+import { CheckinButton } from "@/components/mw/checkin-button";
+import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
+import { defaultPrayer } from "@/lib/checkins";
 import { currentUser, isModerator } from "@/lib/session";
 import { placesContext } from "@/lib/places/context";
 import { liveFields } from "@/lib/places/google";
@@ -83,6 +86,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const nowMs = now.getTime();
   const contributions = await phase2Enabled();
   const places = contributions && (await phase3Enabled());
+  const profiles = places && (await phase4Enabled());
   const database = appEnv().DB;
   const [facts, activity, stats] = contributions
     ? await Promise.all([
@@ -166,7 +170,15 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             {place.locality ?? place.citySlug}
           </Link>
         </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight">{place.name}</h1>
+        <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <h1 className="min-w-0 text-3xl font-bold tracking-tight">{place.name}</h1>
+          {profiles ? (
+            <div className="-ml-3 flex shrink-0 gap-1 sm:-mr-3 sm:ml-0">
+              <ShareButton title={place.name} path={`/m/${place.slug}`} />
+              <SaveButton placeId={place.id} />
+            </div>
+          ) : null}
+        </div>
         {place.nameLocal ? <p className="text-lg text-muted-foreground">{place.nameLocal}</p> : null}
         <p className="mt-2 text-sm text-muted-foreground">
           {summaryLine}
@@ -388,6 +400,9 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             <a href={apple} className="text-center text-sm underline">
               Apple Maps
             </a>
+            {profiles && !closed ? (
+              <CheckinButton placeId={place.id} placeName={place.name} defaultPrayer={defaultPrayer(day, now)} jumuah={day.jumuah} today={day.date} />
+            ) : null}
           </div>
         </div>
         {contributions ? (

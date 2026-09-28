@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Settings, Shield, UserRound } from "lucide-react";
+import { Bookmark, Globe, LogOut, Menu, Settings, Shield, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -12,7 +12,7 @@ type MenuUser = { id: string; name: string; username?: string | null; role?: str
  * Header account menu. Deliberately free of the better-auth client and Radix so every page stays
  * inside the JS budget: one fetch for the session and a small disclosure menu.
  */
-export function AccountMenu() {
+export function AccountMenu({ profiles = false }: { profiles?: boolean }) {
   const pathname = usePathname();
   const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
@@ -88,6 +88,20 @@ export function AccountMenu() {
                   <UserRound className="size-4" /> Choose a username
                 </Link>
               </li>
+            ) : null}
+            {profiles && user.username ? (
+              <>
+                <li>
+                  <Link className={item} href={`/@${user.username}`}>
+                    <Globe className="size-4" /> Your map and profile
+                  </Link>
+                </li>
+                <li>
+                  <Link className={item} href="/saved">
+                    <Bookmark className="size-4" /> Saved
+                  </Link>
+                </li>
+              </>
             ) : null}
             <li>
               <Link className={item} href="/settings/profile">

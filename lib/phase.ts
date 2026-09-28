@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { appEnv } from "@/lib/db/client";
-import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG } from "@/lib/flags";
+import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG } from "@/lib/flags";
 
 function flagInput(source: Headers) {
   const host = (source.get("host") ?? "").split(":")[0] ?? "";
@@ -29,4 +29,21 @@ export async function phase3Enabled(): Promise<boolean> {
 export async function phase3EnabledFor(request: Request): Promise<boolean> {
   const env = appEnv();
   return (await flagEnabled(env.FLAGS, PHASE2_FLAG, flagInput(request.headers))) && flagEnabled(env.FLAGS, PHASE3_FLAG, flagInput(request.headers));
+}
+
+async function allOn(flags: string[], source: Headers): Promise<boolean> {
+  const env = appEnv();
+  for (const flag of flags) {
+    if (!(await flagEnabled(env.FLAGS, flag, flagInput(source)))) return false;
+  }
+  return true;
+}
+
+/** Phase 4 (profiles, check-ins, saved places) sits behind `phase4.profiles` and needs Phases 2–3. */
+export async function phase4Enabled(): Promise<boolean> {
+  return allOn([PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG], new Headers(await headers()));
+}
+
+export async function phase4EnabledFor(request: Request): Promise<boolean> {
+  return allOn([PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG], request.headers);
 }

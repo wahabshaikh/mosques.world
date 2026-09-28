@@ -265,3 +265,57 @@ export type PhotoRow = typeof photo.$inferSelect;
 export type UserRow = typeof user.$inferSelect;
 export type PlaceRow = typeof place.$inferSelect;
 export type CityRow = typeof city.$inferSelect;
+
+export const checkin = sqliteTable("checkin", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  placeId: text("place_id").notNull(),
+  prayer: text("prayer").notNull(),
+  localDate: text("local_date").notNull(),
+  geoVerified: integer("geo_verified", { mode: "boolean" }).notNull().default(false),
+  distanceM: integer("distance_m"),
+  note: text("note"),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const userPlaceStat = sqliteTable("user_place_stat", {
+  userId: text("user_id").notNull(),
+  placeId: text("place_id").notNull(),
+  firstAt: integer("first_at").notNull(),
+  lastAt: integer("last_at").notNull(),
+  count: integer("count").notNull().default(0),
+});
+
+export const userStat = sqliteTable("user_stat", {
+  userId: text("user_id").primaryKey(),
+  places: integer("places").notNull().default(0),
+  countries: integer("countries").notNull().default(0),
+  cities: integer("cities").notNull().default(0),
+  continents: integer("continents").notNull().default(0),
+  jumuahCountries: integer("jumuah_countries").notNull().default(0),
+  fajrPlaces: integer("fajr_places").notNull().default(0),
+  verifications: integer("verifications").notNull().default(0),
+  placesAdded: integer("places_added").notNull().default(0),
+  photos: integer("photos").notNull().default(0),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const badge = sqliteTable("badge", {
+  key: text("key").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(),
+  ruleJson: text("rule_json").notNull(),
+});
+
+export const userBadge = sqliteTable("user_badge", {
+  userId: text("user_id").notNull(),
+  badgeKey: text("badge_key").notNull(),
+  awardedAt: integer("awarded_at").notNull(),
+});
+
+export const savedPlace = sqliteTable("saved_place", {
+  userId: text("user_id").notNull(),
+  placeId: text("place_id").notNull(),
+  createdAt: integer("created_at").notNull(),
+});

@@ -7,9 +7,9 @@ const GREEN: Rgb = [0x0b, 0x6e, 0x4f];
 const WHITE: Rgb = [255, 255, 255];
 const MUTED: Rgb = [206, 226, 220];
 
-type Rgb = [number, number, number];
+export type Rgb = [number, number, number];
 
-function paint(rgb: Uint8Array, x: number, y: number, color: Rgb) {
+export function paint(rgb: Uint8Array, x: number, y: number, color: Rgb) {
   if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) return;
   const index = (y * WIDTH + x) * 3;
   rgb[index] = color[0];
@@ -17,7 +17,7 @@ function paint(rgb: Uint8Array, x: number, y: number, color: Rgb) {
   rgb[index + 2] = color[2];
 }
 
-function drawText(rgb: Uint8Array, text: string, x: number, y: number, scale: number, color: Rgb) {
+export function drawText(rgb: Uint8Array, text: string, x: number, y: number, scale: number, color: Rgb) {
   let cursor = x;
   for (const char of text) {
     const rows = glyphFor(char);
@@ -40,7 +40,7 @@ function advance(scale: number) {
   return GLYPH_WIDTH * scale + scale;
 }
 
-function wrap(text: string, scale: number, maxWidth: number): string[] {
+export function wrap(text: string, scale: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
