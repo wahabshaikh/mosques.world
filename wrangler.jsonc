@@ -5,8 +5,8 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./worker/index.ts",
-  "preview_urls": true,
-  "workers_dev": true,
+  "preview_urls": false,
+  "workers_dev": false,
   "observability": { "enabled": true },
   "assets": {
     "not_found_handling": "none",
@@ -67,28 +67,17 @@
   // This block points them at the preview resources. It deliberately omits
   // routes, cron triggers, and queue consumers so a preview cannot take
   // mosques.world or the nightly cron. Queue producers keep the shared
-  // queue names; non-production hosts do not enqueue onto them.
+  // production queues. Preview work is processed inline against preview data.
   "previews": {
     "images": { "binding": "IMAGES" },
     "ai": { "binding": "AI" },
+    "send_email": [],
+    "queues": { "producers": [] },
     "vars": {
       "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
       "EMAIL_SINK": "1",
       "ENVIRONMENT": "preview",
       "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
-    },
-    "send_email": [
-      {
-        "name": "EMAIL",
-        "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
-      }
-    ],
-    "queues": {
-      "producers": [
-        { "binding": "Q_EMAIL", "queue": "q-email" },
-        { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
-        { "binding": "Q_MEDIA", "queue": "q-media" }
-      ]
     },
     "ratelimits": [
       { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
@@ -119,24 +108,13 @@
       "triggers": { "crons": [] },
       "images": { "binding": "IMAGES" },
       "ai": { "binding": "AI" },
+      "send_email": [],
+      "queues": { "producers": [] },
       "vars": {
         "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
         "EMAIL_SINK": "1",
         "ENVIRONMENT": "preview",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
-      },
-      "send_email": [
-        {
-          "name": "EMAIL",
-          "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
-        }
-      ],
-      "queues": {
-        "producers": [
-          { "binding": "Q_EMAIL", "queue": "q-email" },
-          { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
-          { "binding": "Q_MEDIA", "queue": "q-media" }
-        ]
       },
       "ratelimits": [
         { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },

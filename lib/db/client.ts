@@ -10,6 +10,7 @@ export type AppEnv = {
   ASSETS: Fetcher;
   PUBLIC_BASE_URL: string;
   EMAIL_SINK?: string;
+  TEST_FIXTURE_SECRET?: string;
   ENVIRONMENT?: string;
   GOOGLE_MAPS_API_KEY?: string;
   GOOGLE_PLACES_DAILY_CAP?: string;

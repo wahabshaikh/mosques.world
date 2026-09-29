@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
-import { identity, latestOtp, newUser, post, placeId, resetPlace, setFixture, signUp, todayIn } from "./helpers";
+import { identity, latestOtp, newUser, post, placeId, resetPlace, setFixture, signUp, testGet, todayIn } from "./helpers";
 
 // Contribution routes recompute trust synchronously; allow for cold starts on preview and dev.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -209,7 +209,7 @@ test.describe("phase 2 trusted iqamah times", () => {
     const email = identity("waiter").email;
     const joined = await request.post("/api/v1/waitlist", { data: { email, placeId: id } });
     expect(joined.ok()).toBeTruthy();
-    const confirmMail = (await (await request.get(`/api/v1/test/emails?to=${encodeURIComponent(email)}`)).json()) as { messages: Array<{ text: string }> };
+    const confirmMail = (await (await testGet(request, `/api/v1/test/emails?to=${encodeURIComponent(email)}`)).json()) as { messages: Array<{ text: string }> };
     const confirmUrl = new URL(confirmMail.messages[0]?.text.match(/https?:\/\/\S+/)?.[0] ?? "");
     await request.get(`${confirmUrl.pathname}${confirmUrl.search}`);
 
@@ -224,7 +224,7 @@ test.describe("phase 2 trusted iqamah times", () => {
     expect(((await again.json()) as { sent: number }).sent).toBe(0);
     await admin.context.close();
 
-    const live = (await (await request.get(`/api/v1/test/emails?to=${encodeURIComponent(email)}`)).json()) as {
+    const live = (await (await testGet(request, `/api/v1/test/emails?to=${encodeURIComponent(email)}`)).json()) as {
       messages: Array<{ subject: string; text: string; headers?: Record<string, string> }>;
     };
     const message = live.messages[0];
@@ -323,7 +323,7 @@ test.describe("phase 2 trusted iqamah times", () => {
     await expect(page.locator('[data-iqamah="dhuhr"]')).toContainText("1:30 PM");
     await expect(page.getByText("former member").first()).toBeVisible();
     await expect(page.getByText(`@${person.username}`)).toHaveCount(0);
-    const mail = await request.get(`/api/v1/test/emails?to=${encodeURIComponent(person.email)}`);
+    const mail = await testGet(request, `/api/v1/test/emails?to=${encodeURIComponent(person.email)}`);
     const body = (await mail.json()) as { messages: Array<{ subject: string }> };
     expect(body.messages[0]?.subject).toContain("deleted");
     await setFixture(request, { resetPlace: DELETE });

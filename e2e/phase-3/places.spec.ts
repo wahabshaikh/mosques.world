@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
-import { newUser, placeId, post, resetPlace, setFixture, todayIn } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, setFixture, testGet, todayIn } from "../phase-2/helpers";
 
 // Photo processing and trust recomputes run inline on preview and dev; allow for cold starts.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -147,7 +147,7 @@ test.describe("phase 3 amenities, places and photos", () => {
     await uploader.page.getByRole("button", { name: "Upload photo" }).click();
     await expect(uploader.page.getByText("Your photo will appear after a quick review")).toBeVisible();
 
-    const pending = await uploader.page.request.get(`/api/v1/test/photos?placeId=${id}`);
+    const pending = await testGet(uploader.page.request, `/api/v1/test/photos?placeId=${id}`);
     const photoId = ((await pending.json()) as { photos: Array<{ id: string; status: string }> }).photos[0]?.id ?? "";
     expect(photoId).toMatch(/^[0-9A-Z]{26}$/);
     const mine = await uploader.page.request.get(`/media/${photoId}/800.webp`);

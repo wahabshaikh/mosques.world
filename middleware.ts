@@ -42,7 +42,8 @@ export async function middleware(request: NextRequest) {
   headers.delete("x-mw-locale");
   headers.delete("x-mw-path");
   if (locale) headers.set("x-mw-locale", locale);
-  const nonProd = host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
+  const environment = appEnv().ENVIRONMENT;
+  const nonProd = environment === "preview" || environment === "local";
   if (!nonProd) {
     headers.delete("x-mw-latitude");
     headers.delete("x-mw-longitude");
@@ -93,7 +94,8 @@ export async function middleware(request: NextRequest) {
 /** Localized routes are dark-launched with Phase 8; while off, `/ar/…` is simply not found. */
 async function localesOn(request: NextRequest, host: string): Promise<boolean> {
   try {
-    return await flagEnabled(appEnv().FLAGS, PHASE8_FLAG, { host, bucketKey: request.headers.get("cf-connecting-ip") ?? host });
+    const env = appEnv();
+    return await flagEnabled(env.FLAGS, PHASE8_FLAG, { environment: env.ENVIRONMENT, bucketKey: request.headers.get("cf-connecting-ip") ?? host });
   } catch {
     return false;
   }

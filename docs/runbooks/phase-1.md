@@ -16,11 +16,13 @@ wrangler rollback
 
 ```bash
 pnpm install
-pnpm exec wrangler d1 migrations apply DB --local
-pnpm dev
+pnpm exec wrangler d1 migrations apply DB --env preview --local
+CLOUDFLARE_ENV=preview pnpm dev
 ```
 
-The app listens on http://127.0.0.1:5173. Local and preview hosts accept `x-mw-latitude`, `x-mw-longitude`, and `x-mw-now` so tests can pin a place and a clock. Production ignores those headers.
+The app listens on http://127.0.0.1:5173. Local development uses preview bindings so missing phase flags default on. Local and preview hosts accept `x-mw-latitude`, `x-mw-longitude`, and `x-mw-now` so tests can pin a place and a clock. Production ignores those headers.
+
+To run E2E locally, generate a unique secret and put `TEST_FIXTURE_SECRET=<secret>` in the ignored `.dev.vars.preview` file. Pass the same value as `PLAYWRIGHT_TEST_SECRET` to `pnpm e2e`. The fixture and email-sink routes return 404 without the secret, including on localhost. CI generates both values automatically.
 
 ## Data
 
@@ -40,22 +42,20 @@ A nightly cron recounts `city.place_count`.
 Production is the `mosques-world` Worker on `mosques.world`.
 
 ```bash
-pnpm exec wrangler d1 migrations apply DB --remote
-pnpm exec vinext build
-pnpm exec wrangler deploy
+pnpm deploy
 ```
 
-Preview is `mosques-world-preview` on `workers.dev` only. Its Wrangler env sets `routes` and `triggers.crons` to empty so a preview deploy does not take `mosques.world` or the nightly cron, and it declares the `IMAGES` binding (that binding is not inherited). Build with `CLOUDFLARE_ENV=preview`, then deploy the flattened config vinext writes:
+Preview is `mosques-world-preview` on `workers.dev` only. Its Wrangler env sets `routes` and `triggers.crons` to empty, uses separate D1/KV/R2 resources, and has no production queue or email bindings. Build with `CLOUDFLARE_ENV=preview`, then deploy the flattened config vinext writes:
 
 ```bash
-pnpm exec wrangler d1 migrations apply DB --remote --env preview
-CLOUDFLARE_ENV=preview pnpm exec vinext build
-pnpm exec wrangler deploy --config dist/server/wrangler.json
+pnpm deploy:preview
 ```
+
+Before running remote E2E against preview, set a unique 32-character-or-longer `TEST_FIXTURE_SECRET` Worker secret on that preview Worker and pass it as `PLAYWRIGHT_TEST_SECRET` to the test runner. The `/api/v1/test/*` routes return 404 without it on remote preview. Rotate the secret if exposed. Production never enables these routes.
 
 ## Email
 
-Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production enqueues the message on `q-email`. The consumer sends it with the Email Service binding from `no-reply@mail.mosques.world` (SPF, DKIM, and DMARC on `mail.mosques.world`).
+Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the protected test sink at `/api/v1/test/emails`. Production enqueues the message on `q-email`. The consumer sends it with the Email Service binding from `no-reply@mail.mosques.world` (SPF, DKIM, and DMARC on `mail.mosques.world`).
 
 ## Known gaps before the definition of done is fully closed
 

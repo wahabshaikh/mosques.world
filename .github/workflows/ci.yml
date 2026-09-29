@@ -8,6 +8,9 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -21,4 +24,13 @@ jobs:
       - run: pnpm lint
       - run: pnpm exec tsc --noEmit
       - run: pnpm test:coverage
+      - run: pnpm exec wrangler d1 migrations apply DB --env preview --local
       - run: pnpm exec vinext build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Configure preview test fixtures
+        run: |
+          secret=$(openssl rand -hex 32)
+          echo "::add-mask::$secret"
+          printf 'PLAYWRIGHT_TEST_SECRET=%s\n' "$secret" >> "$GITHUB_ENV"
+          printf 'TEST_FIXTURE_SECRET=%s\n' "$secret" > .dev.vars.preview
+      - run: pnpm e2e --project=chromium --grep @smoke

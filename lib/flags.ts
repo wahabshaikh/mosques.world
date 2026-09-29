@@ -1,5 +1,3 @@
-import { isNonProductionHost } from "@/lib/places/present";
-
 export const PHASE2_FLAG = "phase2.contributions";
 export const PHASE3_FLAG = "phase3.places";
 export const PHASE4_FLAG = "phase4.profiles";
@@ -39,11 +37,11 @@ export function bucketOf(key: string): number {
 }
 
 /**
- * Non-production hosts default to on so preview and local always exercise the newest phase.
+ * Preview and local environments default to on so they exercise the newest phase.
  * Production defaults to off until the flag is set (dark launch, spec 2.10).
  */
-export function flagDecision(value: string | null, input: { host: string; bucketKey: string }): boolean {
-  if (value === null || value === "") return isNonProductionHost(input.host);
+export function flagDecision(value: string | null, input: { environment?: string; bucketKey: string }): boolean {
+  if (value === null || value === "") return input.environment === "preview" || input.environment === "local";
   if (value === "on") return true;
   if (value === "off") return false;
   const percent = Number(value);
@@ -54,13 +52,13 @@ export function flagDecision(value: string | null, input: { host: string; bucket
 export async function flagEnabled(
   kv: KVNamespace | undefined,
   name: string,
-  input: { host: string; bucketKey: string },
+  input: { environment?: string; bucketKey: string },
 ): Promise<boolean> {
   return flagDecision(await readFlag(kv, name), input);
 }
 
-/** For crons and queues, which have no request: whether all flags are on for the public site's host. */
-export async function flagsOnForSite(env: { FLAGS?: KVNamespace; PUBLIC_BASE_URL?: string }, flags: string[]): Promise<boolean> {
+/** For crons and queues, which have no request: whether all flags are on for the configured environment. */
+export async function flagsOnForSite(env: { FLAGS?: KVNamespace; PUBLIC_BASE_URL?: string; ENVIRONMENT?: string }, flags: string[]): Promise<boolean> {
   let host = "mosques.world";
   try {
     host = new URL(env.PUBLIC_BASE_URL ?? "https://mosques.world").hostname;
@@ -68,7 +66,7 @@ export async function flagsOnForSite(env: { FLAGS?: KVNamespace; PUBLIC_BASE_URL
     // Keep the production default.
   }
   for (const flag of flags) {
-    if (!(await flagEnabled(env.FLAGS, flag, { host, bucketKey: host }))) return false;
+    if (!(await flagEnabled(env.FLAGS, flag, { environment: env.ENVIRONMENT, bucketKey: host }))) return false;
   }
   return true;
 }

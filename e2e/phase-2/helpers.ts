@@ -5,6 +5,14 @@ const origin = new URL(baseURL).origin;
 
 let counter = 0;
 
+function fixtureHeaders(): Record<string, string> {
+  return process.env.PLAYWRIGHT_TEST_SECRET ? { "x-mw-test-secret": process.env.PLAYWRIGHT_TEST_SECRET } : {};
+}
+
+export function testGet(request: APIRequestContext, path: string) {
+  return request.get(path, { headers: fixtureHeaders() });
+}
+
 /** A unique identity per run so suites can be re-run against the same database. */
 export function identity(prefix: string) {
   counter += 1;
@@ -20,7 +28,7 @@ export async function latestOtp(request: APIRequestContext, email: string): Prom
   let code = "";
   await expect
     .poll(async () => {
-      const response = await request.get(`/api/v1/test/emails?to=${encodeURIComponent(email)}`);
+      const response = await testGet(request, `/api/v1/test/emails?to=${encodeURIComponent(email)}`);
       const body = (await response.json()) as { messages: Array<{ subject: string }> };
       code = body.messages[0]?.subject.match(/code: (\d{6})/)?.[1] ?? "";
       return code;
@@ -62,7 +70,7 @@ export async function newUser(
 }
 
 export async function setFixture(request: APIRequestContext, body: unknown) {
-  const response = await request.post("/api/v1/test/fixtures", { data: body });
+  const response = await request.post("/api/v1/test/fixtures", { data: body, headers: fixtureHeaders() });
   expect(response.ok(), await response.text()).toBeTruthy();
 }
 
@@ -72,7 +80,7 @@ export async function resetPlace(request: APIRequestContext, slug: string) {
 
 /** JSON POST with the Origin header browsers send (mutating routes check it). */
 export function post(request: APIRequestContext, path: string, data: unknown) {
-  return request.post(path, { data, headers: { origin } });
+  return request.post(path, { data, headers: { origin, ...(path.startsWith("/api/v1/test/") ? fixtureHeaders() : {}) } });
 }
 
 export async function placeId(request: APIRequestContext, slug: string): Promise<string> {

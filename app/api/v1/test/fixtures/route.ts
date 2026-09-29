@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
-import { usesEmailSink } from "@/lib/email/send";
+import { testFixtureAllowed } from "@/lib/test-fixtures";
 import { periodOf, runExport } from "@/lib/open-data";
 import { refreshPlaceSummary } from "@/lib/trust/store";
 
@@ -33,10 +33,10 @@ const input = z.object({
   openDataExport: z.literal(true).optional(),
 });
 
-/** Preview/local only (same gate as the email sink): E2E fixtures for trust levels and clean places. */
+/** Protected preview/local E2E fixtures for trust levels and clean places. */
 export async function POST(request: Request) {
   const env = appEnv();
-  if (!usesEmailSink(env, new URL(request.url).hostname)) return Response.json({ error: "Not found" }, { status: 404 });
+  if (!testFixtureAllowed(env, request)) return Response.json({ error: "Not found" }, { status: 404 });
   const parsed = input.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "Bad fixture" }, { status: 400 });
   const database = env.DB;

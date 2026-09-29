@@ -4,7 +4,7 @@ import { flagEnabled, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6
 
 function flagInput(source: Headers) {
   const host = (source.get("host") ?? "").split(":")[0] ?? "";
-  return { host, bucketKey: source.get("cf-connecting-ip") ?? host };
+  return { environment: appEnv().ENVIRONMENT, bucketKey: source.get("cf-connecting-ip") ?? host };
 }
 
 /** Phase 2 (accounts and contributions) is dark-launched behind the `phase2.contributions` KV flag. */
