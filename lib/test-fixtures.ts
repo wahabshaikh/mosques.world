@@ -1,6 +1,6 @@
 import type { AppEnv } from "@/lib/db/client";
 
-/** Test routes can mutate data and reveal OTPs. A remote preview needs its own secret. */
+/** Test routes can mutate data and reveal OTPs. Every test environment needs a secret. */
 export function testFixtureAllowed(
   env: Pick<AppEnv, "ENVIRONMENT" | "EMAIL_SINK" | "TEST_FIXTURE_SECRET">,
   request: Request,
@@ -8,10 +8,6 @@ export function testFixtureAllowed(
   if (env.ENVIRONMENT !== "preview" && env.ENVIRONMENT !== "local")
     return false;
   if (env.EMAIL_SINK !== "1") return false;
-
-  const host = new URL(request.url).hostname;
-  const local = host === "localhost" || host === "127.0.0.1";
-  if (local && !(request as Request & { cf?: unknown }).cf) return true;
 
   const secret = env.TEST_FIXTURE_SECRET;
   return Boolean(

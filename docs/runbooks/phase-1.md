@@ -22,6 +22,8 @@ CLOUDFLARE_ENV=preview pnpm dev
 
 The app listens on http://127.0.0.1:5173. Local development uses preview bindings so missing phase flags default on. Local and preview hosts accept `x-mw-latitude`, `x-mw-longitude`, and `x-mw-now` so tests can pin a place and a clock. Production ignores those headers.
 
+To run E2E locally, generate a unique secret and put `TEST_FIXTURE_SECRET=<secret>` in the ignored `.dev.vars.preview` file. Pass the same value as `PLAYWRIGHT_TEST_SECRET` to `pnpm e2e`. The fixture and email-sink routes return 404 without the secret, including on localhost. CI generates both values automatically.
+
 ## Data
 
 `migrations/0001_phase1.sql` creates the directory tables. `migrations/0002_seed.sql` loads launch-city places from OpenStreetMap (London, Istanbul, Makkah, Toronto, Jakarta, Oslo, Mumbai).

@@ -27,7 +27,7 @@ describe("test fixture access", () => {
     ).toBe(false);
   });
 
-  it("requires a secret on remote preview, including requests with Cloudflare metadata", () => {
+  it("requires a secret on preview", () => {
     const env = {
       ENVIRONMENT: "preview",
       EMAIL_SINK: "1",
@@ -43,19 +43,26 @@ describe("test fixture access", () => {
         request("preview.workers.dev", "short"),
       ),
     ).toBe(false);
-    const spoofed = Object.assign(request("127.0.0.1"), {
-      cf: { colo: "LHR" },
-    });
-    expect(testFixtureAllowed(env, spoofed)).toBe(false);
+    expect(testFixtureAllowed(env, request("127.0.0.1"))).toBe(false);
   });
 
-  it("allows a local preview with no Cloudflare request metadata", () => {
+  it("also requires a secret for local tests", () => {
+    expect(
+      testFixtureAllowed(
+        {
+          ENVIRONMENT: "preview",
+          EMAIL_SINK: "1",
+          TEST_FIXTURE_SECRET: secret,
+        },
+        request("127.0.0.1", secret),
+      ),
+    ).toBe(true);
     expect(
       testFixtureAllowed(
         { ENVIRONMENT: "preview", EMAIL_SINK: "1" },
         request("127.0.0.1"),
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       testFixtureAllowed(
         { ENVIRONMENT: "preview", EMAIL_SINK: "0" },
