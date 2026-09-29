@@ -3,7 +3,8 @@ import type { Mail } from "./templates";
 
 export const MAIL_FROM = "no-reply@mail.mosques.world";
 
-export function usesEmailSink(env: Pick<AppEnv, "EMAIL_SINK">, host: string): boolean {
+export function usesEmailSink(env: Pick<AppEnv, "EMAIL_SINK" | "ENVIRONMENT">, host: string): boolean {
+  if (env.ENVIRONMENT === "production") return false;
   return env.EMAIL_SINK === "1" || host === "localhost" || host === "127.0.0.1";
 }
 

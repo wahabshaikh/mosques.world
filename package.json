@@ -7,7 +7,8 @@
     "dev": "vinext dev --port 5173 --hostname 127.0.0.1",
     "build": "vinext build",
     "start": "vinext start",
-    "deploy": "vinext build && wrangler deploy",
+    "deploy": "vinext build && wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "deploy:preview": "CLOUDFLARE_ENV=preview vinext build && wrangler d1 migrations apply DB --remote --env preview && wrangler deploy --config dist/server/wrangler.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -74,7 +75,7 @@
     "typescript-eslint": "^8.44.0",
     "vite": "^8.0.0",
     "vitest": "^3.2.4",
-    "wrangler": "^4.40.0"
+    "wrangler": "^4.141.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -33,6 +33,7 @@ describe("email delivery", () => {
     expect(usesEmailSink({ EMAIL_SINK: "1" }, "mosques.world")).toBe(true);
     expect(usesEmailSink({ EMAIL_SINK: "0" }, "127.0.0.1")).toBe(true);
     expect(usesEmailSink({ EMAIL_SINK: "0" }, "mosques.world")).toBe(false);
+    expect(usesEmailSink({ EMAIL_SINK: "1", ENVIRONMENT: "production" }, "127.0.0.1")).toBe(false);
     const sink = env({ EMAIL_SINK: "1" });
     await deliver(sink, "mosques.world", otpMail("a@x", "1"));
     expect(sink.CACHE.put).toHaveBeenCalledTimes(2);

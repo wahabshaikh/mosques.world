@@ -15,7 +15,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "pnpm exec wrangler d1 migrations apply DB --local && pnpm dev",
+        command: "pnpm exec wrangler d1 migrations apply DB --env preview --local && CLOUDFLARE_ENV=preview pnpm dev",
         url: "http://127.0.0.1:5173",
         reuseExistingServer: true,
         timeout: 120_000,

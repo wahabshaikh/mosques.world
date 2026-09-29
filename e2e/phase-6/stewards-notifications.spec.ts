@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
-import { baseURL, newUser, placeId, post, resetPlace, todayIn } from "../phase-2/helpers";
+import { baseURL, newUser, placeId, post, resetPlace, testGet, todayIn } from "../phase-2/helpers";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 
@@ -23,7 +23,7 @@ async function lastMail(page: Page, email: string): Promise<Mail> {
   let mail: Mail | null = null;
   await expect
     .poll(async () => {
-      const response = await page.request.get(`/api/v1/test/emails?to=${encodeURIComponent(email)}`);
+      const response = await testGet(page.request, `/api/v1/test/emails?to=${encodeURIComponent(email)}`);
       const body = (await response.json()) as { messages: Mail[] };
       mail = body.messages.find((message) => message.subject.includes("changed at")) ?? null;
       return Boolean(mail);

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { testGet } from "../phase-2/helpers";
 
 const londonHeaders = {
   "x-mw-latitude": "51.5074",
@@ -84,7 +85,7 @@ test.describe("phase 1 find a mosque", () => {
     await page.getByPlaceholder("Email for iqamah updates").fill("person@example.com");
     await page.getByRole("button", { name: "Get notified" }).click();
     await expect(page.getByText("Check your email to confirm.")).toBeVisible();
-    const sink = await request.get("/api/v1/test/emails");
+    const sink = await testGet(request, "/api/v1/test/emails");
     expect(sink.ok()).toBeTruthy();
     const body = (await sink.json()) as { messages: Array<{ text: string }> };
     const link = body.messages[0]?.text.match(/https?:\/\/\S+/)?.[0];

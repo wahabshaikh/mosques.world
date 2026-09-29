@@ -67,11 +67,14 @@ describe("auth configuration", () => {
     expect(getAuth(production, "https://mosques.world")).toBeTruthy();
   });
 
-  it("reads the phase 2 flag from the request host", async () => {
-    resetEnv({ FLAGS: undefined });
+  it("defaults phase flags by environment regardless of request host", async () => {
+    resetEnv({ FLAGS: undefined, ENVIRONMENT: "preview" });
     expect(await phase2EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
-    expect(await phase2EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
+    expect(await phase2EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(true);
     expect(await phase3EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
+    resetEnv({ FLAGS: undefined, ENVIRONMENT: "production" });
+    expect(await phase2EnabledFor(new Request("https://mosques-world.x.workers.dev/"))).toBe(false);
+    expect(await phase2EnabledFor(new Request("http://127.0.0.1:5173/"))).toBe(false);
     expect(await phase3EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
   });
 });
