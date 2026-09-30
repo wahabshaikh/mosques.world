@@ -10,13 +10,14 @@ from `migrations/`. No Cloudflare account, secrets or real email are needed.
 | `pnpm verify` | Lint, typecheck, unit tests with coverage thresholds. Run before every push. |
 | `pnpm e2e` | Every phase's Playwright suite. Starts `pnpm dev` (after local migrations) unless one is already on :5173. |
 | `pnpm e2e e2e/phase-3` | One phase. Add `-g "title"` for one test, `--project=chromium` to skip WebKit. |
+| `E2E_BUILD=1 pnpm e2e` | Same, against the production build running in workerd (`vite preview`), as CI does. Use it for service worker, caching and offline changes: the dev server serves hundreds of unbundled modules. |
 | `pnpm e2e:smoke` | Only tests tagged `@smoke`. |
 | `pnpm verify:e2e` | `verify`, then the whole E2E suite (what CI runs). |
 | `pnpm auth:session --email a@example.com [--role admin] [--trust 2] [--not-onboarded]` | Signs a person in on a running server and writes a Playwright storage state to `.auth/`, plus a cookie for `curl`. |
 | `pnpm shot /saved /settings/profile --as a@example.com [--mobile] [--dark]` | Signed-in (or signed-out, without `--as`) full-page screenshots to `.artifacts/screenshots/`; prints status codes and browser errors. |
 
 CI (`.github/workflows/ci.yml`) runs `check` (lint, typecheck, unit, build) and `e2e` (all phases,
-Chromium and mobile WebKit) on every pull request. A failed `e2e` job uploads the HTML report and
+Chromium and mobile WebKit, against the production build) on every pull request. A failed `e2e` job uploads the HTML report and
 traces as the `playwright-report` artifact (`pnpm exec playwright show-trace <trace.zip>`).
 
 ## Signing in during tests

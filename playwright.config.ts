@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const ci = Boolean(process.env.CI);
+// CI (and E2E_BUILD=1) tests the production build in workerd via `vite preview`: the dev server serves hundreds of
+// unbundled modules, which the service worker's bounded caches (and offline tests) aren't built for.
+const build = ci || process.env.E2E_BUILD === "1";
 
 export default defineConfig({
   testDir: "e2e",
@@ -28,9 +31,11 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: "pnpm db:migrate:local && pnpm dev",
+        command: build
+          ? "pnpm db:migrate:local && pnpm build && pnpm exec vite preview --port 5173 --host 127.0.0.1 --strictPort"
+          : "pnpm db:migrate:local && pnpm dev",
         url: "http://127.0.0.1:5173",
         reuseExistingServer: !ci,
-        timeout: 180_000,
+        timeout: 300_000,
       },
 });
