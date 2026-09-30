@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DirectoryPlace } from "@/lib/db/queries";
-import { asSort, isNonProductionHost, madhabOf, readNow, sortCards, toCard } from "./present";
+import { asSort, madhabOf, readNow, sortCards, toCard } from "./present";
 
 const place: DirectoryPlace = {
   id: "elm",
@@ -56,9 +56,6 @@ describe("place cards", () => {
     expect(fixed.toISOString()).toBe("2026-09-25T11:00:00.000Z");
     expect(readNow("not-a-date", true).getTime()).toBeGreaterThan(0);
     expect(readNow("2026-09-25T11:00:00Z", false).toISOString()).not.toBe("2026-09-25T11:00:00.000Z");
-    expect(isNonProductionHost("127.0.0.1")).toBe(true);
-    expect(isNonProductionHost("mosques-world.example.workers.dev")).toBe(true);
-    expect(isNonProductionHost("mosques.world")).toBe(false);
   });
 });
 

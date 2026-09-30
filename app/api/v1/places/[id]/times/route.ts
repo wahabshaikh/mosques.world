@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { calcDefault, place } from "@/lib/db/schema";
 import { getPrayerDay } from "@/lib/prayer/times";
-import { madhabOf, readNow, isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { madhabOf, readNow } from "@/lib/places/present";
 
 export const dynamic = "force-dynamic";
 

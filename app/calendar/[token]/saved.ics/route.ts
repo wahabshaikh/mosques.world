@@ -2,7 +2,8 @@ import { appEnv } from "@/lib/db/client";
 import { savedPlaces } from "@/lib/db/queries";
 import { calendar, placeEvents, readFeedToken } from "@/lib/ics";
 import { secretOf } from "@/lib/notify";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase7EnabledFor } from "@/lib/phase";
 
 export const dynamic = "force-dynamic";

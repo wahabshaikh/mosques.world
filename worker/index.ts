@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/cloudflare";
 import handler from "vinext/server/fetch-handler";
+import type { AppEnv as Env } from "@/lib/db/client";
 import { asMail, MAIL_FROM } from "@/lib/email/send";
 import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/lib/jobs";
 import { processPhoto } from "@/lib/media";
@@ -10,27 +11,6 @@ import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data"
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
 import { sentryOptions } from "@/lib/sentry";
-
-type Env = {
-  DB: D1Database;
-  FLAGS?: KVNamespace;
-  Q_EMAIL?: Queue;
-  BETTER_AUTH_SECRET?: string;
-  EMAIL_SINK?: string;
-  VAPID_PUBLIC_KEY?: string;
-  VAPID_PRIVATE_KEY?: string;
-  VAPID_SUBJECT?: string;
-  MEDIA: R2Bucket;
-  IMAGES?: ImagesBinding;
-  AI?: Ai;
-  CACHE?: KVNamespace;
-  EMAIL?: SendEmail;
-  Q_RECOMPUTE?: Queue;
-  GOOGLE_MAPS_API_KEY?: string;
-  PUBLIC_BASE_URL?: string;
-  SENTRY_DSN?: string;
-  ENVIRONMENT?: string;
-};
 
 /** Weekly OSM diff sync (new places only); must match wrangler.jsonc triggers. */
 const WEEKLY_CRON = "30 3 * * 1";
@@ -65,7 +45,7 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
     const notifications = await flagsOnForSite(env, PHASE6_FLAGS);
-    const deliveryEnv = { ...env, CACHE: env.CACHE as KVNamespace, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" };
+    const deliveryEnv = { ...env, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" };
     if (controller.cron === WEEKLY_CRON) {
       ctx.waitUntil(weeklyOsmSync(env.DB, fetch, Date.now()));
       if (notifications) {
@@ -91,7 +71,7 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
         if (isRecomputeMessage(message.body)) {
           await recomputeFacts(env.DB, message.body.ids);
         } else if (isDeliverMessage(message.body)) {
-          await deliverPending({ ...env, CACHE: env.CACHE as KVNamespace, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" }, { host: "", limit: 100 });
+          await deliverPending({ ...env, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" }, { host: "", limit: 100 });
         } else if (isUserStatsMessage(message.body)) {
           await recomputeUserStats(env.DB, message.body.id);
         } else if (isExportMessage(message.body)) {

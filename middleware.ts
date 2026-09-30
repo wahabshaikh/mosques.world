@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { contentSecurityPolicy } from "@/lib/csp";
 import { appEnv } from "@/lib/db/client";
+import { isNonProductionHost } from "@/lib/environment";
 import { flagEnabled, PHASE8_FLAG } from "@/lib/flags";
 import { DEFAULT_LOCALE, splitLocale, type Locale } from "@/lib/i18n/config";
 
@@ -42,7 +43,7 @@ export async function middleware(request: NextRequest) {
   headers.delete("x-mw-locale");
   headers.delete("x-mw-path");
   if (locale) headers.set("x-mw-locale", locale);
-  const nonProd = host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
+  const nonProd = isNonProductionHost(host);
   if (!nonProd) {
     headers.delete("x-mw-latitude");
     headers.delete("x-mw-longitude");

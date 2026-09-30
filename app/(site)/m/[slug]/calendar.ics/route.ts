@@ -1,7 +1,8 @@
 import { appEnv } from "@/lib/db/client";
 import { placeBySlug } from "@/lib/db/queries";
 import { calendar, placeEvents } from "@/lib/ics";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase7EnabledFor } from "@/lib/phase";
 import { monthValues } from "@/lib/timetable";
 

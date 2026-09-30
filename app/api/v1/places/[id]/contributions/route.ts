@@ -1,6 +1,6 @@
 import { afterContribution } from "@/lib/notify";
 import { scheduleUserStats } from "@/lib/profile/stats";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { eq } from "drizzle-orm";
 import { serverGoal } from "@/lib/analytics-server";
 import { contributionInput, effectiveFromProblem, resultMessage } from "@/lib/contribute";
