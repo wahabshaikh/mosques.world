@@ -19,5 +19,9 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   {
     echo 'export WRANGLER_SEND_METRICS=false'
     echo 'export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1'
+    # The pinned Playwright can expect a newer Chromium than the one preinstalled in cloud containers.
+    if [ -x /opt/pw-browsers/chromium ]; then
+      echo 'export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium'
+    fi
   } >> "$CLAUDE_ENV_FILE"
 fi
