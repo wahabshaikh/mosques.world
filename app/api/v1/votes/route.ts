@@ -1,6 +1,6 @@
 import { afterContribution } from "@/lib/notify";
 import { scheduleUserStats } from "@/lib/profile/stats";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { serverGoal } from "@/lib/analytics-server";
 import { resultMessage, voteInput } from "@/lib/contribute";
 import { appEnv } from "@/lib/db/client";

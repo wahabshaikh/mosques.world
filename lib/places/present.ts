@@ -56,10 +56,6 @@ export function readNow(headerValue: string | null, nonProduction: boolean): Dat
   return new Date();
 }
 
-export function isNonProductionHost(host: string): boolean {
-  return host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev");
-}
-
 export type ExploreSort = "distance" | "iqamah" | "verified";
 
 export function asSort(value: string | undefined): ExploreSort {

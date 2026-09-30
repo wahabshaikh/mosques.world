@@ -1,0 +1,105 @@
+# Production deploy on every push to main (or by hand from the Actions tab):
+# checks -> Time Travel bookmark -> migrations -> deploy -> smoke test, then refreshes the stable
+# `main` Worker Preview on the preview database.
+#
+# Needs the CLOUDFLARE_API_TOKEN secret on the `production` environment (Workers Scripts:Edit,
+# D1:Edit, Workers Routes:Edit for mosques.world). Without it the job skips with a notice.
+# If the Worker is also connected to Workers Builds, turn Builds' production deploys off so
+# each merge deploys once.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN || 'wahabshaikh' }}
+
+jobs:
+  # The same gates as CI, so a red main never reaches production.
+  checks:
+    if: github.repository == 'wahabshaikh/mosques.world'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  production:
+    needs: checks
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment:
+      name: production
+      url: https://mosques.world
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      DEPLOY_SHA: ${{ github.sha }}
+    steps:
+      - name: Check Cloudflare credentials
+        id: credentials
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN is not set on the production environment; skipping the deploy."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        if: steps.credentials.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        if: steps.credentials.outputs.ready == 'true'
+
+      - name: Build
+        if: steps.credentials.outputs.ready == 'true'
+        run: pnpm build
+
+      # Restore point before migrations (spec 2.9). To roll data back:
+      # wrangler d1 time-travel restore DB --bookmark=<bookmark>
+      - name: Record D1 Time Travel bookmark
+        if: steps.credentials.outputs.ready == 'true'
+        run: pnpm exec wrangler d1 time-travel info DB --json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Apply migrations
+        if: steps.credentials.outputs.ready == 'true'
+        run: pnpm db:migrate:remote
+
+      - name: Deploy
+        if: steps.credentials.outputs.ready == 'true'
+        run: pnpm exec wrangler deploy --message "$DEPLOY_SHA"
+
+      - name: Smoke test
+        if: steps.credentials.outputs.ready == 'true'
+        run: |
+          for path in / /robots.txt /api/v1/openapi.json; do
+            curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 3 -o /dev/null "https://mosques.world$path"
+            echo "ok $path"
+          done
+
+      # A stable staging URL for main on the preview database. Failure here never fails the deploy.
+      - name: Refresh the main Preview
+        if: steps.credentials.outputs.ready == 'true'
+        continue-on-error: true
+        run: |
+          pnpm db:migrate:preview
+          pnpm exec wrangler preview --name main --message "$DEPLOY_SHA" \
+            --var "PUBLIC_BASE_URL:https://main-mosques-world.${WORKERS_SUBDOMAIN}.workers.dev"

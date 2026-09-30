@@ -3,11 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vinext dev --port 5173 --hostname 127.0.0.1",
     "build": "vinext build",
     "start": "vinext start",
     "deploy": "vinext build && wrangler deploy",
+    "deploy:preview": "vinext build && wrangler preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -16,6 +20,7 @@
     "format:check": "prettier --check .",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:migrate:preview": "tsx scripts/d1-migrate-preview.ts",
     "e2e": "playwright test"
   },
   "dependencies": {

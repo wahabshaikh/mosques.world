@@ -1,7 +1,7 @@
 import { appEnv } from "@/lib/db/client";
 import { chunk, type RecomputeMessage } from "@/lib/jobs";
 import { afterContribution } from "@/lib/notify";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { phase6EnabledFor, phase7EnabledFor } from "@/lib/phase";
 import { scheduleUserStats } from "@/lib/profile/stats";
 import { writeAllowed } from "@/lib/ratelimit";

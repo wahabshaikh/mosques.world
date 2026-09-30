@@ -1,0 +1,26 @@
+# Local secrets for `pnpm dev`. Copy to .dev.vars (git-ignored) and fill in what you need.
+# Everything is optional locally: without a value the feature is off or uses a local fallback.
+# Production and Preview values live in Cloudflare (`wrangler secret put`, `wrangler preview secret put`),
+# never in this repo. See docs/deployment.md.
+
+# Signs sessions and emailed links. Localhost falls back to a fixed development secret.
+BETTER_AUTH_SECRET=
+
+# "Continue with Google" sign-in. Hidden when unset; email one-time codes always work.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Google Places (add a place, "Where" search). Without it search falls back to the city table.
+GOOGLE_MAPS_API_KEY=
+
+# Turnstile. Localhost uses the email sink, which skips the captcha.
+TURNSTILE_SECRET_KEY=
+
+# Web Push (P-256 VAPID pair, base64url). Without it push is off and its prompts are hidden.
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+
+# Error reporting and analytics. No-ops when unset.
+SENTRY_DSN=
+DATAFAST_WEBSITE_ID=
+DATAFAST_API_KEY=

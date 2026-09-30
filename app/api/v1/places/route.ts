@@ -1,5 +1,5 @@
 import { scheduleUserStats } from "@/lib/profile/stats";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { placesInBbox } from "@/lib/db/queries";
 import { firstIssue } from "@/lib/account";
 import { appEnv } from "@/lib/db/client";

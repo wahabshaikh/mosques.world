@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { env } from "cloudflare:workers";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bucketOf, clearFlagCache, flagDecision, flagEnabled, readFlag } from "./flags";
 
 function kv(value: string | null) {
@@ -8,10 +9,17 @@ function kv(value: string | null) {
 describe("flags", () => {
   beforeEach(() => clearFlagCache());
 
+  afterEach(() => {
+    delete (env as { ENVIRONMENT?: string }).ENVIRONMENT;
+  });
+
   it("defaults on outside production and off in production", () => {
+    (env as { ENVIRONMENT?: string }).ENVIRONMENT = "preview";
     expect(flagDecision(null, { host: "127.0.0.1", bucketKey: "a" })).toBe(true);
-    expect(flagDecision(null, { host: "mosques-world-preview.x.workers.dev", bucketKey: "a" })).toBe(true);
+    expect(flagDecision(null, { host: "pr-1-mosques-world.x.workers.dev", bucketKey: "a" })).toBe(true);
     expect(flagDecision(null, { host: "mosques.world", bucketKey: "a" })).toBe(false);
+    (env as { ENVIRONMENT?: string }).ENVIRONMENT = "production";
+    expect(flagDecision(null, { host: "1a2b3c4d-mosques-world.x.workers.dev", bucketKey: "a" })).toBe(false);
   });
 
   it("honours on, off and percentages", () => {
