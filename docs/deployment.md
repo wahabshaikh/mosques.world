@@ -8,8 +8,8 @@ It serves pages, the JSON API, auth, the queue consumer and the cron jobs. Every
 
 | | Local | Preview | Production |
 |---|---|---|---|
-| URL | `http://127.0.0.1:5173` | `pr-<n>-mosques-world.<subdomain>.workers.dev`, plus a stable `main-…` | `https://mosques.world` |
-| How | `pnpm dev` | [Worker Previews](https://developers.cloudflare.com/workers/previews/): `.github/workflows/preview.yml` on every PR | `.github/workflows/deploy.yml` on every push to `main` |
+| URL | `http://127.0.0.1:5173` | `<branch>-mosques-world.<subdomain>.workers.dev` | `https://mosques.world` |
+| How | `pnpm dev` | [Worker Previews](https://developers.cloudflare.com/workers/previews/) from Workers Builds on every pushed branch | Workers Builds on every push to `main` |
 | Config | top level of `wrangler.jsonc`, local simulators | the `previews` block | top level |
 | D1 / R2 / KV | Miniflare, in `.wrangler/state` | `mosques-world-preview`, `mosques-media-preview`, `*-preview` KV (shared by all Previews) | `mosques-world`, `mosques-media`, production KV |
 | Queues, crons | run inline | none: jobs run inline | `q-email`, `q-recompute`, `q-media` → `q-dlq`; two crons |
@@ -33,27 +33,28 @@ shared database without breaking other Previews.
 
 ## Continuous deployment
 
-| Workflow | Trigger | Does |
+[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) (the Cloudflare GitHub app) builds every
+push. Its commands live in `package.json`, so they are reviewed like code:
+
+| Builds setting | Value | Runs |
 |---|---|---|
-| `ci.yml` | every PR and push to `main` | lint, typecheck, unit tests, build |
-| `preview.yml` | PR opened/updated (same-repo only) | build → migrate preview D1 → `wrangler preview --name pr-<n>` → smoke test → comment the URL. Deletes the Preview when the PR closes. |
-| `deploy.yml` | push to `main`, or by hand | checks → D1 Time Travel bookmark → `wrangler d1 migrations apply --remote` → `wrangler deploy` → smoke test → refresh the `main` Preview |
+| Build command | `pnpm build` | `vinext build` |
+| Deploy command (`main`) | `pnpm cf:deploy` | print a D1 Time Travel bookmark → `wrangler d1 migrations apply DB --remote` → `wrangler deploy` |
+| Preview command (other branches) | `pnpm cf:preview` | `pnpm db:migrate:preview` → `wrangler preview` (Preview named after the branch) |
 
-The preview job records a GitHub deployment in the `preview` environment with the Preview URL, so E2E jobs can
-run against it (`PLAYWRIGHT_BASE_URL`).
+Builds posts the Preview URL on the pull request. GitHub Actions (`ci.yml`) runs lint, typecheck, tests and the build
+on every PR.
 
-### One-time setup
+### One-time setup (Cloudflare dashboard → Workers & Pages → mosques-world)
 
-1. Create a Cloudflare API token with **Workers Scripts: Edit**, **D1: Edit**, **Workers R2 Storage: Edit**,
-   **Workers KV Storage: Edit**, **Workers Routes: Edit** and **Account Settings: Read** on the account.
-2. In GitHub, add it as `CLOUDFLARE_API_TOKEN` in two places: a repository secret (Previews) and a secret on the
-   `production` environment (deploys). Add required reviewers to `production` if deploys should wait for a click.
-3. If the Worker is connected to Workers Builds, disconnect it (or turn off its production and preview builds) so
-   each change deploys once.
-4. Optional repository variable `CLOUDFLARE_WORKERS_SUBDOMAIN` if the account's `workers.dev` subdomain is not
-   `wahabshaikh`.
-
-Without the token both workflows skip with a notice, which is what forks see.
+1. **Settings → Builds**: set the three commands above and turn on preview builds for non-production branches.
+2. **Domains**: under **Worker URL**, turn on **Preview** so Previews get a `workers.dev` URL. (A `wrangler deploy`
+   with `preview_urls: true` also sets it.) Leave the production `workers.dev` URL off.
+3. The build token needs **D1: Edit** for the migration steps. If a build fails with an authorization error on
+   `d1 migrations apply`, pick an API token under **Settings → Builds → API token** that has Workers Scripts: Edit
+   and D1: Edit.
+4. Delete old Preview settings under **Settings → Previews** (base config) that `wrangler.jsonc` no longer declares,
+   such as queue or email bindings. Secrets stay there.
 
 ## Secrets
 
@@ -66,7 +67,7 @@ openssl rand -base64 32 | tr -d '\n' | pnpm exec wrangler secret put BETTER_AUTH
 
 # Every new Preview (base config), and one existing Preview
 pnpm exec wrangler preview base-config secret put BETTER_AUTH_SECRET
-pnpm exec wrangler preview secret put BETTER_AUTH_SECRET --name pr-12
+pnpm exec wrangler preview secret put BETTER_AUTH_SECRET --name my-branch
 ```
 
 | Name | Production | Preview | Notes |
@@ -87,7 +88,7 @@ pnpm db:migrate:preview    # shared preview D1 (reads previews.d1_databases)
 pnpm db:migrate:remote     # production D1, take a Time Travel bookmark first
 
 pnpm deploy:preview        # build + Preview named after the current git branch
-pnpm deploy                # build + production (prefer the workflow)
+pnpm deploy                # build + production (prefer Workers Builds, which also migrates)
 ```
 
 `vinext build` writes the deployable config to `dist/server/wrangler.json` and points Wrangler at it through
@@ -99,7 +100,7 @@ pnpm deploy                # build + production (prefer the workflow)
   a version from before a secret change also drops that secret.
 - Features: every phase is behind a KV flag in `FLAGS`; set it to `off` (takes effect within 60 s).
 - Data: migrations are additive, so code rollbacks need no data rollback. For data damage, restore the bookmark the
-  deploy recorded: `pnpm exec wrangler d1 time-travel restore DB --bookmark=<bookmark>`.
+  deploy printed in its build log: `pnpm exec wrangler d1 time-travel restore DB --bookmark=<bookmark>`.
 
 ## Resources
 

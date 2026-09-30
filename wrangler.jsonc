@@ -1,7 +1,7 @@
 // One Worker serves the whole app (pages, API, queue consumer and crons); see docs/deployment.md.
 //
 // Top-level settings are production (mosques.world). The `previews` block is what every
-// Worker Preview (`wrangler preview`, one per pull request) runs with. Previews do not inherit
+// Worker Preview (`wrangler preview`, one per branch via Workers Builds) runs with. Previews do not inherit
 // anything from the top level, so every binding the code reads is declared again there, pointed
 // at preview resources.
 {
@@ -80,15 +80,15 @@
   //   producer here would send onto the production queues, whose consumer reads production D1.
   // - send_email: previews set EMAIL_SINK=1, so mail goes to the KV sink at /api/v1/test/emails.
   //
-  // PUBLIC_BASE_URL is overridden per Preview by the deploy workflow (`--var`) with the
-  // Preview's own URL; the value below is the stable `main` Preview.
+  // Emailed links from a Preview use the request's own origin (lib/environment.ts `linkBase`);
+  // PUBLIC_BASE_URL here only feeds canonical/OG metadata, which Previews do not need to get right.
   "previews": {
     "observability": { "enabled": true },
     "images": { "binding": "IMAGES" },
     "ai": { "binding": "AI" },
     "vars": {
       "ENVIRONMENT": "preview",
-      "PUBLIC_BASE_URL": "https://main-mosques-world.wahabshaikh.workers.dev",
+      "PUBLIC_BASE_URL": "https://mosques.world",
       "EMAIL_SINK": "1",
       "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
     },

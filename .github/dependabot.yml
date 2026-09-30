@@ -15,7 +15,7 @@ updates:
       lint-and-test:
         patterns: ["eslint", "@eslint/*", "typescript-eslint", "vitest", "@vitest/*", "@playwright/test", "prettier"]
   - package-ecosystem: github-actions
-    directories: ["/", "/.github/actions/*"]
+    directory: /
     schedule:
       interval: weekly
     cooldown:

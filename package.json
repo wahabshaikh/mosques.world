@@ -12,6 +12,8 @@
     "start": "vinext start",
     "deploy": "vinext build && wrangler deploy",
     "deploy:preview": "vinext build && wrangler preview",
+    "cf:deploy": "wrangler d1 time-travel info DB && pnpm db:migrate:remote && wrangler deploy",
+    "cf:preview": "pnpm db:migrate:preview && wrangler preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

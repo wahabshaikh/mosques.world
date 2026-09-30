@@ -15,3 +15,13 @@ export function isNonProductionHost(host: string, environment = deploymentEnviro
   if (host === "localhost" || host === "127.0.0.1") return true;
   return environment !== undefined && environment !== "production" && host.endsWith(".workers.dev");
 }
+
+/**
+ * Base URL for links a request sends out (emails, feeds). Outside production that is the request's own
+ * origin, so a link from a Preview opens that Preview; in production it is PUBLIC_BASE_URL.
+ */
+export function linkBase(requestUrl: string, publicBaseUrl: string | undefined, environment = deploymentEnvironment()): string {
+  const url = new URL(requestUrl);
+  if (isNonProductionHost(url.hostname, environment)) return url.origin;
+  return publicBaseUrl || "https://mosques.world";
+}

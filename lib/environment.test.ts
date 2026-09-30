@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNonProductionHost } from "./environment";
+import { isNonProductionHost, linkBase } from "./environment";
 
 describe("isNonProductionHost", () => {
   it("treats local dev as non-production whatever the environment", () => {
@@ -16,5 +16,19 @@ describe("isNonProductionHost", () => {
 
   it("never treats the public domain as non-production", () => {
     expect(isNonProductionHost("mosques.world", "preview")).toBe(false);
+  });
+});
+
+describe("linkBase", () => {
+  it("links back to the Preview or local server that sent the email", () => {
+    expect(linkBase("https://pr-3-mosques-world.x.workers.dev/api/v1/waitlist", "https://mosques.world", "preview")).toBe(
+      "https://pr-3-mosques-world.x.workers.dev",
+    );
+    expect(linkBase("http://127.0.0.1:5173/api/v1/waitlist", "https://mosques.world", "production")).toBe("http://127.0.0.1:5173");
+  });
+
+  it("uses the public base URL in production, whatever host the request came in on", () => {
+    expect(linkBase("https://1a2b-mosques-world.x.workers.dev/api", "https://mosques.world", "production")).toBe("https://mosques.world");
+    expect(linkBase("https://mosques.world/api", undefined, "production")).toBe("https://mosques.world");
   });
 });

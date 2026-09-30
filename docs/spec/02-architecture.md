@@ -152,7 +152,7 @@ unused, so later phases need no infrastructure change beyond feature flags.
 | Env | URL | Data | Deploy |
 |---|---|---|---|
 | Local | `localhost:5173` (`pnpm dev`) | Miniflare D1/R2/KV + seed fixture (≈2k London/Istanbul places); emails logged locally | — |
-| Preview | `pr-<n>-mosques-world.<acct>.workers.dev` | Preview D1, shared by all Previews | Every PR ([Worker Previews](https://developers.cloudflare.com/workers/previews/), `wrangler preview`) |
+| Preview | `<branch>-mosques-world.<acct>.workers.dev` | Preview D1, shared by all Previews | Every branch ([Worker Previews](https://developers.cloudflare.com/workers/previews/) via Workers Builds, `pnpm cf:preview`) |
 | Production | `mosques.world` | Production D1 | Merge to `main` → migrations → deploy → smoke tests; gradual rollout via Workers versions (10% → 100%) |
 
 ## 2.6 Data sources and licensing
@@ -206,9 +206,9 @@ GitHub Actions:
 
 1. `pnpm install --frozen-lockfile` → `lint` (eslint + prettier) → `typecheck` → `vinext check`
 2. `test` (unit + integration)
-3. `build` → `pnpm db:migrate:preview` → `wrangler preview --name pr-<n>` (`preview.yml`)
+3. Workers Builds: `build` → `pnpm db:migrate:preview` → `wrangler preview` (`pnpm cf:preview`)
 4. Playwright E2E (all phases) + axe + Lighthouse against the preview URL
-5. On `main` (`deploy.yml`): Time Travel bookmark → `wrangler d1 migrations apply --remote` → `wrangler deploy` → smoke test
+5. On `main`, Workers Builds: Time Travel bookmark → `wrangler d1 migrations apply --remote` → `wrangler deploy` (`pnpm cf:deploy`)
 
 A D1 Time Travel restore point is recorded before each production migration.
 

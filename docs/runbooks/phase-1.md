@@ -37,8 +37,8 @@ A nightly cron recounts `city.place_count`.
 
 ## Deploy
 
-Production is the `mosques-world` Worker on `mosques.world`. Pushes to `main` deploy it through
-`.github/workflows/deploy.yml` (migrations first); pull requests get a Worker Preview on the preview database. See
+Production is the `mosques-world` Worker on `mosques.world`. Workers Builds deploys every push to `main`
+(`pnpm cf:deploy`, migrations first); other branches get a Worker Preview on the preview database. See
 [docs/deployment.md](../deployment.md) for environments, secrets and manual commands.
 
 ## Email
