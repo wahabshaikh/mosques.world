@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from "@playwright/test";
 
 export const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
 const origin = new URL(baseURL).origin;
@@ -47,17 +47,40 @@ export async function signUp(page: Page, person: ReturnType<typeof identity>, ne
   await page.waitForURL((url) => !url.pathname.startsWith("/onboarding"));
 }
 
+export type SessionFixture = {
+  username?: string;
+  name?: string;
+  /** false stops before onboarding (no username yet). */
+  onboarded?: boolean;
+  trustLevel?: number;
+  role?: "user" | "moderator" | "admin";
+  ageDays?: number;
+};
+
+/**
+ * Signs `email` in with one request to the preview/local-only session endpoint, creating the
+ * account if needed. The session cookie lands in the context's cookie jar, so `page`,
+ * `page.request` and `context.request` are all signed in. Use `signUp` only to test the OTP UI.
+ */
+export async function signIn(context: BrowserContext, email: string, fixture: SessionFixture = {}) {
+  const response = await context.request.post("/api/v1/test/session", { data: { email, ...fixture } });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return ((await response.json()) as { user: { id: string; email: string; username: string | null } }).user;
+}
+
+/** A fresh, onboarded, signed-in person in their own browser context. */
 export async function newUser(
   browser: Browser,
   prefix: string,
-  fixture: { trustLevel?: number; ageDays?: number; role?: string } = {},
+  fixture: Omit<SessionFixture, "username" | "name"> = {},
   options: BrowserContextOptions = {},
 ) {
-  const context = await browser.newContext({ ...options, baseURL });
-  const page = await context.newPage();
   const person = identity(prefix);
-  await signUp(page, person);
-  if (Object.keys(fixture).length > 0) await setFixture(page.request, { user: { email: person.email, ...fixture } });
+  const context = await browser.newContext({ ...options, baseURL });
+  await signIn(context, person.email, { username: person.username, name: person.username, ...fixture });
+  const page = await context.newPage();
+  // Page-level, like a real client IP: per-IP rate limits stay per person, service worker fetches are unaffected.
+  await page.setExtraHTTPHeaders({ "cf-connecting-ip": person.ip });
   return { context, page, person };
 }
 

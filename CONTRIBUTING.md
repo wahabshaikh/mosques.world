@@ -20,8 +20,12 @@ local sink (`/api/v1/test/emails`), and features that need a third-party key are
 ## Before you open a pull request
 
 ```sh
-pnpm lint && pnpm typecheck && pnpm test
+pnpm verify             # lint, typecheck, unit tests with coverage
+pnpm e2e e2e/phase-N    # the Playwright suite for the phase you touched (CI runs them all)
 ```
+
+Signed-in flows don't need the email code: `pnpm shot /saved --as you@example.com` screenshots pages as a
+signed-in person, and specs use `newUser`/`signIn` from `e2e/support/helpers.ts`. See [docs/testing.md](docs/testing.md).
 
 - Read the [spec](docs/spec/README.md), especially the compatibility rules in
   [2.10](docs/spec/02-architecture.md#210-compatibility-rules-so-phases-never-break-each-other): migrations are
@@ -42,7 +46,7 @@ worker/         Worker entry: fetch, queue and scheduled handlers
 middleware.ts   locale routing, security headers, cache headers
 migrations/     D1 SQL migrations (append-only)
 scripts/        one-off and operational scripts (OSM import, roles, preview migrations)
-e2e/            Playwright suites, one folder per phase
+e2e/            Playwright suites, one folder per phase; shared helpers in e2e/support
 docs/           spec, runbooks, deployment
 design/         design canvas snapshot
 ```

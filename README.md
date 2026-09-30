@@ -19,6 +19,7 @@ pnpm dev          # http://127.0.0.1:5173
 ## Docs
 
 - [Contributing](CONTRIBUTING.md)
+- [Testing and verifying changes](docs/testing.md) (`pnpm verify`, `pnpm e2e`, signed-in screenshots with `pnpm shot`)
 - [Deployment and environments](docs/deployment.md)
 - [Implementation spec](docs/spec/README.md) and [runbooks](docs/runbooks)
 - [Design](design/README.md) · [live canvas](https://claude.ai/artifact/C5AduujXjZbCEDLdvjVgmr)
