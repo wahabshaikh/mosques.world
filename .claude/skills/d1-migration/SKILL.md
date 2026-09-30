@@ -28,17 +28,19 @@ pnpm test:coverage                                      # lib/testing/d1.ts runs
 Then run the E2E suite for the feature. To start from an empty local database, delete
 `.wrangler/state/v3/d1` and re-apply.
 
-## Apply remotely (only when a human asked for it in this task)
+## How it reaches preview and production
 
-Preview first, then production, each after a bookmark:
+You don't apply remote migrations by hand. Workers Builds does it (see `docs/deployment.md`):
 
-```sh
-pnpm exec wrangler d1 time-travel info DB --env preview      # note the bookmark
-pnpm exec wrangler d1 migrations apply DB --env preview --remote
-pnpm exec wrangler d1 time-travel info DB                    # production bookmark
-pnpm exec wrangler d1 migrations apply DB --remote
-```
+- **Push a branch** → `pnpm cf:preview` applies new migrations to the **shared** preview D1 used by every
+  Preview. That's why migrations must be additive: other branches' Previews read the same database.
+- **Merge to `main`** → `pnpm cf:deploy` prints a Time Travel bookmark, applies migrations to production
+  D1, then deploys. The bookmark is in the build log.
 
-Record each bookmark (and the time) in the PR description or the phase runbook, next to the restore
-command: `wrangler d1 time-travel restore DB --bookmark=<bookmark>`. Deploy the Worker only after the
-migration is applied, since the code may read the new columns.
+So before pushing a migration, be sure of it: a pushed migration can't be taken back from the preview
+database, and merging it changes production. In the PR's Rollout section list the migration file,
+whether it changes existing data, and the restore command
+`pnpm exec wrangler d1 time-travel restore DB --bookmark=<bookmark from the deploy log>`.
+
+Run `pnpm db:migrate:preview` or `pnpm db:migrate:remote` yourself only when a human asked for that
+exact step in this task. Deploy code that reads new columns only after (or with) the migration, never before.

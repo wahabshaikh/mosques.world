@@ -20,6 +20,7 @@ paths:
   6. Reply: `Response.json({ ok: true, ... })` or `jsonError(message, status)`. Messages are short,
      friendly sentences shown to people.
 - Every new mutation needs unit tests for authZ and rate limiting in `lib/` (spec §6.0).
-- `/api/v1/test/*` routes exist only for E2E and must 404 in production (`usesEmailSink` / host checks).
+- `/api/v1/test/*` routes exist only for E2E and must 404 in production: gate them with
+  `isNonProductionHost` from `lib/environment.ts` (or `usesEmailSink`), never a raw hostname check.
 - Public API (`/api/v1/public/*`): key auth via `lib/api-keys.ts`, `RL_API`, open CORS for GET, never
   return contributor identities. Document every change in `lib/openapi.ts`.

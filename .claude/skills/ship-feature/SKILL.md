@@ -11,7 +11,7 @@ Work in this order. Each step lists where the pattern already exists; copy it ra
    and the relevant parts of `04-sitemap-screens-flows.md` and `05-data-model.md`. If the ask conflicts
    with the spec, follow the ask and update the spec in the same PR.
 2. **Flag.** Reuse the phase flag when the feature belongs to a phase; otherwise add a constant in
-   `lib/flags.ts` and a helper in `lib/phase.ts`. Local and `*.workers.dev` default to on, production to off.
+   `lib/flags.ts` and a helper in `lib/phase.ts`. Flags default on outside production (localhost, Previews) and off in production.
 3. **Data.** If it needs storage, use the `d1-migration` skill (additive SQL + `lib/db/schema.ts`).
 4. **Logic in `lib/`.** Pure functions where possible, with a `*.test.ts` beside them covering the happy
    path, edge cases, authZ and rate limits. Times in the place's timezone.
@@ -26,8 +26,9 @@ Work in this order. Each step lists where the pattern already exists; copy it ra
 9. **Docs.** Update `docs/runbooks/phase-N.md` (what is live, flag, before-turning-on steps, load limits,
    rollback) and the spec if behaviour changed. Update `/privacy` if data collection changed.
 10. **Verify.** Run the `preflight` skill.
-11. **PR.** Push the branch, open a **draft** PR using `.github/pull_request_template.md`, including
-    what was verified and what was not.
+11. **PR.** Push the branch (Workers Builds then gives it a Preview URL on the shared preview database)
+    and open a **draft** PR using `.github/pull_request_template.md`: fill in Rollout and "Not verified:".
+    Try UI changes on the Preview URL once the build bot posts it.
 
-Do not deploy, apply remote migrations, set secrets or flip production flags; list those as rollout
-steps in the PR for a human.
+Do not deploy, run remote/preview migrations yourself, set secrets or flip production flags; list
+those as Rollout steps in the PR for a human. Merging to `main` deploys and migrates production.

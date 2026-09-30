@@ -36,7 +36,15 @@
       "Bash(* secret delete *)",
       "Bash(* d1 time-travel restore *)",
       "Bash(git push * main)",
-      "Bash(git push --force *)"
+      "Bash(git push --force *)",
+      "Bash(pnpm deploy:preview *)",
+      "Bash(pnpm cf:deploy *)",
+      "Bash(pnpm cf:preview *)",
+      "Bash(pnpm db:migrate:preview *)",
+      "Bash(wrangler preview *)",
+      "Bash(pnpm exec wrangler preview *)",
+      "Bash(* wrangler rollback *)",
+      "Bash(wrangler rollback *)"
     ]
   },
   "hooks": {

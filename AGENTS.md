@@ -12,7 +12,9 @@ Queues, Images, Email, Rate Limiting, Turnstile and Workers AI bindings.
 
 The spec in [`docs/spec`](docs/spec/README.md) is the source of truth for product, architecture, design
 system, data model and delivery phases. Read the relevant spec section before changing behaviour, and
-update the spec in the same PR when behaviour changes.
+update the spec in the same PR when behaviour changes. Environments, bindings, secrets, deploys and
+rollback are in [`docs/deployment.md`](docs/deployment.md); human contributor setup is in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Commands
 
@@ -30,6 +32,9 @@ pnpm only (never npm or yarn). Node 22.
 | E2E (starts the dev server itself) | `pnpm e2e e2e/phase-2` |
 | E2E against a deployment | `PLAYWRIGHT_BASE_URL=https://… pnpm e2e --grep @smoke` |
 | Local D1 migrations | `pnpm db:migrate:local` |
+
+Local secrets go in `.dev.vars` (copy `.dev.vars.example`); everything works without them except the
+features that need a third-party key.
 
 Formatting: Prettier is installed but the repo has no formatting baseline yet, so do **not** run
 `pnpm format` across the repo. Match the surrounding style (2 spaces, double quotes, semicolons,
@@ -64,6 +69,7 @@ components/mw/       product components
 lib/                 domain logic, one module per concern, tests beside the code
   db/schema.ts       Drizzle schema (keep in sync with migrations/)
   db/client.ts       appEnv() (typed bindings) and db() (Drizzle)
+  environment.ts     isNonProductionHost() / linkBase(): the only place that decides "is this production?"
   trust/ prayer/     consensus engine and prayer-time logic (pure, highest test bar)
   i18n/messages/     server string catalogs, typed against en.ts
   testing/           Vitest stand-ins for cloudflare:workers
@@ -71,8 +77,8 @@ worker/index.ts      Worker entry: fetch (vinext) + queue + scheduled handlers, 
 middleware.ts        locale rewrites, headers, CSP
 migrations/          hand-written D1 SQL, numbered, append-only
 e2e/phase-N/         Playwright suite per delivery phase
-scripts/             one-off ops scripts (tsx), OSM import
-docs/spec/           the spec;  docs/runbooks/  per-phase rollout + rollback notes
+scripts/             one-off ops scripts (tsx), OSM import, preview migrations
+docs/spec/           the spec;  docs/runbooks/  per-phase rollout;  docs/deployment.md  envs + deploys
 design/              design canvas snapshot (reference only, not app code)
 ```
 
@@ -85,15 +91,19 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 2. **URLs are permanent.** Never remove a route; a renamed route gets a 308.
 3. **Fact keys** (`iqamah.asr`, `amenity.women_section`) are stable strings: add, never repurpose.
 4. **New user-facing work ships behind a KV flag** in [`lib/flags.ts`](lib/flags.ts), gated via
-   [`lib/phase.ts`](lib/phase.ts). Flags default **on** for localhost and `*.workers.dev`, **off** in production.
+   [`lib/phase.ts`](lib/phase.ts). Flags default **on** outside production (localhost and Previews, per
+   `lib/environment.ts`) and **off** in production.
 5. **`/api/v1` is versioned**: additive changes only. Update [`lib/openapi.ts`](lib/openapi.ts) for public endpoints.
 6. **Email templates and analytics goal names are append-only.** Goals are `snake_case`, never carry PII.
 
 ## Code conventions
 
 - TypeScript strict, ESM, `@/` imports from the repo root. Unused vars must start with `_`.
-- Read bindings with `appEnv()` from `@/lib/db/client`, never `process.env`. New bindings or secrets go
-  in `wrangler.jsonc` **and** the `AppEnv` type.
+- Read bindings with `appEnv()` from `@/lib/db/client`, never `process.env`. A new binding goes in
+  `wrangler.jsonc` at the top level **and** in `previews` (pointed at a preview resource), and in the
+  `AppEnv` type. Never add queue producers, `send_email`, routes or crons to `previews`.
+- Test-only behaviour (fixtures, the email sink, `x-mw-*` headers) is gated with `isNonProductionHost`
+  from `lib/environment.ts`, never a raw hostname check.
 - Validate every input at the boundary with zod. Use D1 prepared statements with `.bind()`; never
   interpolate user input into SQL.
 - Mutating route handlers follow the pattern in [`app/api/v1/saved/route.ts`](app/api/v1/saved/route.ts):
@@ -107,21 +117,24 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 
 ## Safety
 
+Workers Builds deploys automatically: every pushed branch gets a Preview (and applies new migrations to
+the shared preview D1), and every merge to `main` applies migrations to production D1 and deploys. So a
+migration on a branch reaches the shared preview database as soon as you push, and production when merged.
+
 Never do these unless a human explicitly asked for that specific action in this task:
 
-- `wrangler deploy`, `wrangler versions deploy`, `pnpm deploy`, or anything with `--remote`
-  (D1 migrations, `d1 execute`, KV/R2 writes against real namespaces).
-- `wrangler secret put`, editing Cloudflare dashboard settings, DNS, or production KV flags.
-- Before a data-changing production D1 migration, record a Time Travel bookmark
-  (`wrangler d1 time-travel info DB`) and put it in the PR or runbook.
+- `pnpm deploy`, `pnpm deploy:preview`, `pnpm cf:deploy`, `pnpm cf:preview`, `wrangler deploy`,
+  `wrangler preview`, `wrangler rollback`, or anything with `--remote` (D1, KV, R2).
+- `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler secret put`, Cloudflare dashboard settings,
+  DNS, or production KV flags.
 - Never commit secrets. Local secrets live in `.dev.vars` (gitignored).
 
 ## Git and PRs
 
 - Branch from `main`; never push to `main`. Open PRs as **drafts**.
 - Commit subjects are short imperative sentences ("Serve /favicon.ico and …"); one logical change per commit.
-- Fill in the PR template, and always list what you verified **and what you did not** (and any
-  rollout steps a human must do: flag, migration, secrets).
+- Fill in [the PR template](.github/pull_request_template.md): before/after, how, rollout (flags,
+  migrations, secrets) and checks, including the "Not verified:" line. Try UI changes on the PR's Preview URL.
 - A delivery phase also updates `docs/runbooks/phase-N.md` and its acceptance E2E in `e2e/phase-N/`.
 
 ## Agent tooling
