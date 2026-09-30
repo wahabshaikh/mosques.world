@@ -17,7 +17,9 @@ from `migrations/`. No Cloudflare account, secrets or real email are needed.
 | `pnpm shot /saved /settings/profile --as a@example.com [--mobile] [--dark]` | Signed-in (or signed-out, without `--as`) full-page screenshots to `.artifacts/screenshots/`; prints status codes and browser errors. |
 
 CI (`.github/workflows/ci.yml`) runs `check` (lint, typecheck, unit, build) and `e2e` (all phases,
-Chromium and mobile WebKit, against the production build) on every pull request. A failed `e2e` job uploads the HTML report and
+Chromium and mobile WebKit, against the production build) on every pull request. Phase-5 tests tagged
+`@chromium-phone` (the offline reload, which Playwright's WebKit fails with "internal error" even on the production
+build) run on a phone-sized Chromium project instead. A failed `e2e` job uploads the HTML report and
 traces as the `playwright-report` artifact (`pnpm exec playwright show-trace <trace.zip>`).
 
 ## Signing in during tests
