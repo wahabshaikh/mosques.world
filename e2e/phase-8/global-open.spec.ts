@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { newUser, placeId, post, resetPlace, setFixture, todayIn } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, setFixture, todayIn } from "../support/helpers";
 
 const expect = baseExpect.configure({ timeout: 20_000 });
 

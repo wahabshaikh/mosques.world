@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
-import { newUser, placeId, post, resetPlace, setFixture, todayIn } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, setFixture, todayIn } from "../support/helpers";
 
 // Photo processing and trust recomputes run inline on preview and dev; allow for cold starts.
 const expect = baseExpect.configure({ timeout: 15_000 });

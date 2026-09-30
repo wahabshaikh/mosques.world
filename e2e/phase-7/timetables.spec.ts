@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
 import ICAL from "ical.js";
-import { newUser, placeId, post, resetPlace, setFixture } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, setFixture } from "../support/helpers";
 
 const expect = baseExpect.configure({ timeout: 20_000 });
 

@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect as baseExpect, test, type Page } from "@playwright/test";
-import { identity, latestOtp, newUser, post, placeId, resetPlace, setFixture, signUp, todayIn } from "./helpers";
+import { identity, latestOtp, newUser, post, placeId, resetPlace, setFixture, signUp, todayIn } from "../support/helpers";
 
 // Contribution routes recompute trust synchronously; allow for cold starts on preview and dev.
 const expect = baseExpect.configure({ timeout: 15_000 });

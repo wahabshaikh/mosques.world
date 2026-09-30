@@ -1,5 +1,5 @@
 import { expect as baseExpect, test, type BrowserContextOptions, type Page } from "@playwright/test";
-import { newUser, placeId, post, resetPlace, todayIn } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, todayIn } from "../support/helpers";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 
@@ -79,7 +79,9 @@ test.describe("phase 5 at the mosque", () => {
     await visitor.context.close();
   });
 
-  test("offline, saved places still show their times", async ({ browser, request }) => {
+  // Tagged @chromium-phone: in CI, Playwright's WebKit fails the offline reload itself ("WebKit encountered an
+  // internal error") before the service worker can answer, so this runs on the phone-sized Chromium project.
+  test("offline, saved places still show their times", { tag: "@chromium-phone" }, async ({ browser, request }) => {
     const member = await newUser(browser, "offline", {}, device);
     const { page, context } = member;
     const saved = await post(page.request, "/api/v1/saved", { placeId: await placeId(request, SAVED) });
