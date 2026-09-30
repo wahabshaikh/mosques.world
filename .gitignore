@@ -14,3 +14,7 @@ blob-report
 *.tsbuildinfo
 next-env.d.ts
 .vinext
+
+# Personal agent settings
+CLAUDE.local.md
+.claude/settings.local.json
