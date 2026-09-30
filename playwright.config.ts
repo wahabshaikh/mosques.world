@@ -23,14 +23,7 @@ export default defineConfig({
       testIgnore: /phase-5\//,
     },
     // "At the mosque" is a phone flow (spec P5 acceptance runs on WebKit mobile).
-    { name: "mobile-webkit", use: { ...devices["iPhone 13"] }, testMatch: /phase-5\//, grepInvert: /@chromium-phone/ },
-    // Phone-sized Chromium for phase-5 tests WebKit can't drive under Playwright (tagged @chromium-phone).
-    {
-      name: "mobile-chromium",
-      use: { ...devices["Pixel 7"], launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined } },
-      testMatch: /phase-5\//,
-      grep: /@chromium-phone/,
-    },
+    { name: "mobile-webkit", use: { ...devices["iPhone 13"] }, testMatch: /phase-5\// },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

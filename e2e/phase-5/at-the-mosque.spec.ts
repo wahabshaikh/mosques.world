@@ -79,9 +79,7 @@ test.describe("phase 5 at the mosque", () => {
     await visitor.context.close();
   });
 
-  // Tagged @chromium-phone: in CI, Playwright's WebKit fails the offline reload itself ("WebKit encountered an
-  // internal error") before the service worker can answer, so this runs on the phone-sized Chromium project.
-  test("offline, saved places still show their times", { tag: "@chromium-phone" }, async ({ browser, request }) => {
+  test("offline, saved places still show their times", async ({ browser, request }) => {
     const member = await newUser(browser, "offline", {}, device);
     const { page, context } = member;
     const saved = await post(page.request, "/api/v1/saved", { placeId: await placeId(request, SAVED) });

@@ -42,9 +42,7 @@ off on mosques.world. The service worker registers only while the flag is on.
 
 `e2e/phase-5` targets WebKit mobile (`mobile-webkit` project, iPhone 13). Where WebKit is not installed, run it with
 iPhone 13 emulation on Chromium. The installability check uses Chromium's `Page.getInstallabilityErrors` (the same
-checks Lighthouse used) and is skipped on WebKit. The offline test is tagged `@chromium-phone` and runs on the
-`mobile-chromium` project (Pixel 7): in CI, Playwright's WebKit fails `page.reload()` while offline with "WebKit
-encountered an internal error" before the service worker answers.
+checks Lighthouse used) and is skipped on WebKit.
 
 ## Rollback
 
