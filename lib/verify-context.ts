@@ -1,7 +1,8 @@
 import { placeById, type DirectoryPlace } from "@/lib/db/queries";
 import { haversineKm } from "@/lib/geo/distance";
 import { GEO_VERIFY_METRES } from "@/lib/checkins";
-import { isNonProductionHost, madhabOf, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { madhabOf, readNow } from "@/lib/places/present";
 import { getPrayerDay, type PrayerDay } from "@/lib/prayer/times";
 
 /** Loads a place for quick verify and checks the person is within 150 m of it right now. */

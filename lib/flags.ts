@@ -1,4 +1,4 @@
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 
 export const PHASE2_FLAG = "phase2.contributions";
 export const PHASE3_FLAG = "phase3.places";

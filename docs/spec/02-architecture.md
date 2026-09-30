@@ -92,9 +92,12 @@ Actions), JSON endpoints (Route Handlers under `/api/*`), better-auth (`/api/aut
   "triggers": { "crons": ["15 2 * * *", "0 * * * *"] },
   "ai": { "binding": "AI" },               // Phase 3+
   "observability": { "enabled": true },
-  "env": { "preview": { /* separate D1/R2/KV ids */ } }
+  "previews": { /* Worker Previews: preview D1/R2/KV ids, no queues, crons or routes */ }
 }
 ```
+
+The live file is [`wrangler.jsonc`](../../wrangler.jsonc); [docs/deployment.md](../deployment.md) explains each
+environment and what a Preview may touch.
 
 Queues, Images, Email Service and Rate Limiting are all bound from Phase 1 even where they are
 unused, so later phases need no infrastructure change beyond feature flags.
@@ -135,7 +138,7 @@ unused, so later phases need no infrastructure change beyond feature flags.
   email/                  # React Email templates + send helper (enqueue)
   analytics.ts            # DataFast helpers (client + server)
   flags.ts, ratelimit.ts, turnstile.ts, images.ts
-/worker/entry.ts          # re-exports vinext fetch + queue + scheduled handlers
+/worker/index.ts          # Worker entry: vinext fetch + queue + scheduled handlers
 /migrations               # drizzle-kit generated SQL, append-only
 /scripts                  # OSM import, seeding, backfills (run with tsx + wrangler d1)
 /public/map               # MapLibre styles, sprites, Natural Earth GeoJSON
@@ -149,7 +152,7 @@ unused, so later phases need no infrastructure change beyond feature flags.
 | Env | URL | Data | Deploy |
 |---|---|---|---|
 | Local | `localhost:5173` (`pnpm dev`) | Miniflare D1/R2/KV + seed fixture (≈2k London/Istanbul places); emails logged locally | — |
-| Preview | `<branch>.mosques-world.<acct>.workers.dev` | Preview D1 (fixture + anonymised snapshot) | Every PR (`wrangler versions upload`) |
+| Preview | `<branch>-mosques-world.<acct>.workers.dev` | Preview D1, shared by all Previews | Every branch ([Worker Previews](https://developers.cloudflare.com/workers/previews/) via Workers Builds, `pnpm cf:preview`) |
 | Production | `mosques.world` | Production D1 | Merge to `main` → migrations → deploy → smoke tests; gradual rollout via Workers versions (10% → 100%) |
 
 ## 2.6 Data sources and licensing
@@ -203,9 +206,9 @@ GitHub Actions:
 
 1. `pnpm install --frozen-lockfile` → `lint` (eslint + prettier) → `typecheck` → `vinext check`
 2. `test` (unit + integration)
-3. `build` → `wrangler versions upload --env preview` → `wrangler d1 migrations apply --env preview`
+3. Workers Builds: `build` → `pnpm db:migrate:preview` → `wrangler preview` (`pnpm cf:preview`)
 4. Playwright E2E (all phases) + axe + Lighthouse against the preview URL
-5. On `main`: `wrangler d1 migrations apply --remote` → `wrangler versions deploy` (gradual) → smoke E2E (`@smoke` tag) → promote to 100%
+5. On `main`, Workers Builds: Time Travel bookmark → `wrangler d1 migrations apply --remote` → `wrangler deploy` (`pnpm cf:deploy`)
 
 A D1 Time Travel restore point is recorded before each production migration.
 

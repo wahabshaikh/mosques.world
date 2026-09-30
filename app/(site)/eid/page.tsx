@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import { TrackView } from "@/components/mw/track-view";
 import { appEnv } from "@/lib/db/client";
 import { formatDistance } from "@/lib/geo/distance";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase7Enabled } from "@/lib/phase";
 import { eidNear, specialDates } from "@/lib/special";
 
