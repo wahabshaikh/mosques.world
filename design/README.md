@@ -22,3 +22,10 @@ placeholders. Airbnb patterns were referenced via Mobbin (search pill, list + ma
 filter modal, trust badge, profile card); visuals are our own.
 
 The design system these mockups use is specified in [`docs/spec/03-design-system.md`](../docs/spec/03-design-system.md).
+
+## Social & community (phases 9–12, proposed)
+
+[`docs/design/social-community.html`](../docs/design/social-community.html) is a standalone design board for
+pray-together gatherings, trips, companions and hosts, grouped into buildable phases 9–12
+([live board](https://claude.ai/artifact/U8hsezQDQ2bityRCN3z7CP)). It is a proposal: the spec is updated
+phase by phase as each one is built.
