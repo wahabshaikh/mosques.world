@@ -12,7 +12,7 @@ After:
 
 ## Checks
 
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` pass
+- [ ] `pnpm verify && pnpm build` pass, plus the E2E suites the change touches
 - [ ] Migrations (if any) are additive: no `DROP`/`RENAME` of anything deployed code still reads
 - [ ] New behaviour is behind its phase flag, or the PR says why not
 - [ ] Tried on the PR's Preview URL
