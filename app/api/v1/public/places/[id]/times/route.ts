@@ -1,5 +1,6 @@
 import { appEnv } from "@/lib/db/client";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase8EnabledFor } from "@/lib/phase";
 import { apiError, findPlace, guardKey, middayOf, placeTimes, prayerDayFor } from "@/lib/public-api";
 import { placeFacts } from "@/lib/trust/read";

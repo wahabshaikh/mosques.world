@@ -55,9 +55,9 @@
    pnpm exec wrangler secret list   # names only
    ```
 
-   For the preview Worker add `--env preview`. For new Previews use `wrangler preview base-config secret put|bulk
-   --worker-name <mosques-world|mosques-world-preview>`; an existing Preview picks them up on its next build (or use
-   `wrangler preview secret put --name <preview>`). Each production `secret put`/`bulk` creates and deploys a new
+   For new Worker Previews use `wrangler preview base-config secret put|bulk`; an existing Preview picks them up on
+   its next deploy (or use `wrangler preview secret put --name <preview>`). The separate `mosques-world-preview`
+   Worker (`--env preview`) was replaced by Worker Previews; see [docs/deployment.md](../deployment.md). Each production `secret put`/`bulk` creates and deploys a new
    Worker version, and rolling back to a version from before the change also drops the secrets.
 3. The email sending domain needs List-Unsubscribe support (Cloudflare Email Service passes the headers through).
 

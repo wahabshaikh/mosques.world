@@ -1,6 +1,7 @@
 import { checkinInput, CheckinError, createCheckin } from "@/lib/checkins";
 import { appEnv } from "@/lib/db/client";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase4EnabledFor } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { recomputeUserStats } from "@/lib/profile/stats";

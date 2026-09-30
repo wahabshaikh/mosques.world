@@ -1,6 +1,7 @@
 import { savedPlaces } from "@/lib/db/queries";
 import { weekTimes } from "@/lib/offline";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase5EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 

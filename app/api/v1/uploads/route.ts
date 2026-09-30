@@ -2,7 +2,7 @@ import { captchaRequired } from "@/lib/auth";
 import { appEnv } from "@/lib/db/client";
 import { ulid } from "@/lib/id";
 import { dailyUploadCap, isPhotoCategory, originalKey, PHOTO_PURPOSES, processPhoto, uploadProblem, type PhotoPurpose } from "@/lib/media";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { phase3EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";

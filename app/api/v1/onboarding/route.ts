@@ -2,6 +2,7 @@ import { firstIssue, onboardingInput } from "@/lib/account";
 import { appEnv } from "@/lib/db/client";
 import { deliver } from "@/lib/email/send";
 import { welcomeMail } from "@/lib/email/templates";
+import { linkBase } from "@/lib/environment";
 import { phase2EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
   }
   if (first) {
     const host = (request.headers.get("host") ?? "").split(":")[0] ?? "";
-    await deliver(env, host, welcomeMail(user.email, { username: input.username, baseUrl: env.PUBLIC_BASE_URL }));
+    await deliver(env, host, welcomeMail(user.email, { username: input.username, baseUrl: linkBase(request.url, env.PUBLIC_BASE_URL) }));
   }
   return Response.json({ ok: true, first });
 }

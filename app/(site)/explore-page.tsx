@@ -5,7 +5,8 @@ import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
 import { phase2Enabled, phase3Enabled } from "@/lib/phase";
 import { parseNeeds } from "@/lib/places/amenities";
-import { asSort, isNonProductionHost, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { asSort, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
 
 export async function ExplorePage({

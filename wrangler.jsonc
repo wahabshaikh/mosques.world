@@ -1,3 +1,9 @@
+// One Worker serves the whole app (pages, API, queue consumer and crons); see docs/deployment.md.
+//
+// Top-level settings are production (mosques.world). The `previews` block is what every
+// Worker Preview (`wrangler preview`, one per branch via Workers Builds) runs with. Previews do not inherit
+// anything from the top level, so every binding the code reads is declared again there, pointed
+// at preview resources.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mosques-world",
@@ -5,26 +11,43 @@
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./worker/index.ts",
-  "preview_urls": true,
-  "workers_dev": true,
+  "upload_source_maps": true,
   "observability": { "enabled": true },
-  "assets": {
-    "not_found_handling": "none",
-    "binding": "ASSETS"
-  },
+
+  // Production is served only on its custom domains. `preview_urls` keeps workers.dev URLs for
+  // Worker Previews (and production Version URLs, which `lib/environment.ts` still treats as
+  // production because ENVIRONMENT is "production").
+  "workers_dev": false,
+  "preview_urls": true,
+  "routes": [
+    { "pattern": "mosques.world", "custom_domain": true },
+    { "pattern": "www.mosques.world", "custom_domain": true }
+  ],
+  "triggers": { "crons": ["15 2 * * *", "30 3 * * 1"] },
+
+  // vinext serves static files and next/image sources through env.ASSETS.
+  "assets": { "not_found_handling": "none", "binding": "ASSETS" },
   "images": { "binding": "IMAGES" },
   "ai": { "binding": "AI" },
+
   "vars": {
+    "ENVIRONMENT": "production",
     "PUBLIC_BASE_URL": "https://mosques.world",
     "EMAIL_SINK": "0",
-    "ENVIRONMENT": "production",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
   },
-  "send_email": [
+  "d1_databases": [
     {
-      "name": "EMAIL",
-      "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+      "binding": "DB",
+      "database_name": "mosques-world",
+      "database_id": "67a99e89-35ff-4c14-8a4c-633711fb50d1",
+      "migrations_dir": "migrations"
     }
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media" }],
+  "kv_namespaces": [
+    { "binding": "FLAGS", "id": "8ebd3aa5942c4201a1daff013b159a11" },
+    { "binding": "CACHE", "id": "40548f22b18f41ddb801f0f8f19dc5a3" }
   ],
   "queues": {
     "producers": [
@@ -38,63 +61,38 @@
       { "queue": "q-media", "max_retries": 5, "dead_letter_queue": "q-dlq" }
     ]
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+    }
+  ],
   "ratelimits": [
     { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
     { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
     { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
   ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "mosques-world",
-      "database_id": "67a99e89-35ff-4c14-8a4c-633711fb50d1",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "r2_buckets": [
-    { "binding": "MEDIA", "bucket_name": "mosques-media" }
-  ],
-  "kv_namespaces": [
-    { "binding": "FLAGS", "id": "8ebd3aa5942c4201a1daff013b159a11" },
-    { "binding": "CACHE", "id": "40548f22b18f41ddb801f0f8f19dc5a3" }
-  ],
-  "triggers": { "crons": ["15 2 * * *", "30 3 * * 1"] },
-  "routes": [
-    { "pattern": "mosques.world", "custom_domain": true },
-    { "pattern": "www.mosques.world", "custom_domain": true }
-  ],
-  // Worker Previews (`wrangler preview`) do not inherit top-level settings.
-  // This block points them at the preview resources. It deliberately omits
-  // routes, cron triggers, and queue consumers so a preview cannot take
-  // mosques.world or the nightly cron. Queue producers keep the shared
-  // queue names; non-production hosts do not enqueue onto them.
+
+  // Worker Previews. Never add routes, crons or queue consumers here.
+  //
+  // Deliberately absent, so a Preview cannot touch production:
+  // - Queue producers: preview hosts run jobs inline (lib/notify, uploads, timetable), and a
+  //   producer here would send onto the production queues, whose consumer reads production D1.
+  // - send_email: previews set EMAIL_SINK=1, so mail goes to the KV sink at /api/v1/test/emails.
+  //
+  // Emailed links from a Preview use the request's own origin (lib/environment.ts `linkBase`);
+  // PUBLIC_BASE_URL here only feeds canonical/OG metadata, which Previews do not need to get right.
   "previews": {
+    "observability": { "enabled": true },
     "images": { "binding": "IMAGES" },
     "ai": { "binding": "AI" },
     "vars": {
-      "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
-      "EMAIL_SINK": "1",
       "ENVIRONMENT": "preview",
+      "PUBLIC_BASE_URL": "https://mosques.world",
+      "EMAIL_SINK": "1",
       "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
     },
-    "send_email": [
-      {
-        "name": "EMAIL",
-        "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
-      }
-    ],
-    "queues": {
-      "producers": [
-        { "binding": "Q_EMAIL", "queue": "q-email" },
-        { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
-        { "binding": "Q_MEDIA", "queue": "q-media" }
-      ]
-    },
-    "ratelimits": [
-      { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
-      { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
-    { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
-    ],
+    // Shared by all Previews. Migrations: `pnpm db:migrate:preview`.
     "d1_databases": [
       {
         "binding": "DB",
@@ -103,61 +101,16 @@
         "migrations_dir": "migrations"
       }
     ],
-    "r2_buckets": [
-      { "binding": "MEDIA", "bucket_name": "mosques-media-preview" }
-    ],
+    "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media-preview" }],
     "kv_namespaces": [
       { "binding": "FLAGS", "id": "101da01539e9490f86e7b45adc25ebd6" },
       { "binding": "CACHE", "id": "1f406bb733d845fcab3d60c10d8c14fe" }
+    ],
+    // Separate namespaces so preview and E2E traffic never spends production's per-IP budgets.
+    "ratelimits": [
+      { "name": "RL_WRITE", "namespace_id": "1101", "simple": { "limit": 30, "period": 60 } },
+      { "name": "RL_AUTH", "namespace_id": "1102", "simple": { "limit": 5, "period": 60 } },
+      { "name": "RL_API", "namespace_id": "1103", "simple": { "limit": 60, "period": 60 } }
     ]
-  },
-  "env": {
-    "preview": {
-      "name": "mosques-world-preview",
-      "workers_dev": true,
-      "routes": [],
-      "triggers": { "crons": [] },
-      "images": { "binding": "IMAGES" },
-      "ai": { "binding": "AI" },
-      "vars": {
-        "PUBLIC_BASE_URL": "https://mosques-world-preview.wahabshaikh.workers.dev",
-        "EMAIL_SINK": "1",
-        "ENVIRONMENT": "preview",
-        "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
-      },
-      "send_email": [
-        {
-          "name": "EMAIL",
-          "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
-        }
-      ],
-      "queues": {
-        "producers": [
-          { "binding": "Q_EMAIL", "queue": "q-email" },
-          { "binding": "Q_RECOMPUTE", "queue": "q-recompute" },
-          { "binding": "Q_MEDIA", "queue": "q-media" }
-        ]
-      },
-      "ratelimits": [
-        { "name": "RL_WRITE", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
-        { "name": "RL_AUTH", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
-    { "name": "RL_API", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
-      ],
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "mosques-world-preview",
-          "database_id": "f5c9e8ac-b263-4ef5-86f5-564ffe1e9816",
-          "migrations_dir": "migrations"
-        }
-      ],
-      "r2_buckets": [
-        { "binding": "MEDIA", "bucket_name": "mosques-media-preview" }
-      ],
-      "kv_namespaces": [
-        { "binding": "FLAGS", "id": "101da01539e9490f86e7b45adc25ebd6" },
-        { "binding": "CACHE", "id": "1f406bb733d845fcab3d60c10d8c14fe" }
-      ]
-    }
   }
 }

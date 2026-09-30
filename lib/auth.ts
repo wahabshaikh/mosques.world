@@ -7,7 +7,7 @@ import * as schema from "@/lib/db/schema";
 import { deliver, usesEmailSink } from "@/lib/email/send";
 import { otpMail } from "@/lib/email/templates";
 import { ulid } from "@/lib/id";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { usernameProblem } from "@/lib/username";
 
 const DEV_SECRET = "mosques-world-local-development-secret-not-for-production";

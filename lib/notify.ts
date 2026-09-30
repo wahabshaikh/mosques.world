@@ -3,7 +3,7 @@ import type { AppEnv } from "@/lib/db/client";
 import { serverGoal } from "@/lib/analytics-server";
 import { deliver } from "@/lib/email/send";
 import { layout, type Mail } from "@/lib/email/templates";
-import { isNonProductionHost } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
 import { NOTIFICATION_CHANNELS, NOTIFICATION_TOPICS, TOPIC_LABELS, type NotificationChannel, type NotificationTopic } from "@/lib/notifications";
 
 /**

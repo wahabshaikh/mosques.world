@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { appEnv, db } from "@/lib/db/client";
 import { place, waitlist } from "@/lib/db/schema";
 import { deliver } from "@/lib/email/send";
+import { linkBase } from "@/lib/environment";
 import { hashToken, newToken, normalizeEmail, waitlistMessage } from "@/lib/email/waitlist";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
 
   const env = appEnv();
   const host = new URL(request.url).hostname;
-  const confirmUrl = `${env.PUBLIC_BASE_URL}/waitlist/confirm?token=${token}`;
+  const confirmUrl = `${linkBase(request.url, env.PUBLIC_BASE_URL)}/waitlist/confirm?token=${token}`;
   await deliver(env, host, { to: email, ...waitlistMessage({ placeName: found.name, confirmUrl }) });
   return Response.json({ ok: true });
 }

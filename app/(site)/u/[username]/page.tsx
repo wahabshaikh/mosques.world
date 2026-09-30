@@ -7,7 +7,8 @@ import { BadgeTile, ContributionList, ProfileAvatar, ProfileCard, RecentVisits, 
 import { CopyLinkField, ShareMapButton } from "@/components/mw/profile-share";
 import { TrackView } from "@/components/mw/track-view";
 import { appEnv } from "@/lib/db/client";
-import { isNonProductionHost, readNow } from "@/lib/places/present";
+import { isNonProductionHost } from "@/lib/environment";
+import { readNow } from "@/lib/places/present";
 import { phase4Enabled } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import {
