@@ -120,7 +120,8 @@ Never do these unless a human explicitly asked for that specific action in this 
 
 - Branch from `main`; never push to `main`. Open PRs as **drafts**.
 - Commit subjects are short imperative sentences ("Serve /favicon.ico and …"); one logical change per commit.
-- Fill in the PR template: before/after, how, what was verified and what wasn't, rollout (flag, migration).
+- Fill in the PR template, and always list what you verified **and what you did not** (and any
+  rollout steps a human must do: flag, migration, secrets).
 - A delivery phase also updates `docs/runbooks/phase-N.md` and its acceptance E2E in `e2e/phase-N/`.
 
 ## Agent tooling
