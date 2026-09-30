@@ -25,3 +25,7 @@ pnpm dev          # http://127.0.0.1:5173
 - [Security policy](SECURITY.md)
 
 Map data © OpenStreetMap contributors (ODbL). See [/attribution](https://mosques.world/attribution).
+
+## License
+
+[AGPL-3.0](LICENSE). If you run a modified version as a service, you must publish its source.
