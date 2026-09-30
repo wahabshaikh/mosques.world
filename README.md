@@ -7,3 +7,4 @@ mosque you have prayed in.
 
 - **Implementation spec:** [`docs/spec`](docs/spec/README.md)
 - **Design:** [`design`](design/README.md) · [live canvas](https://claude.ai/artifact/C5AduujXjZbCEDLdvjVgmr)
+- **Testing and verifying changes:** [`docs/testing.md`](docs/testing.md) (`pnpm verify`, `pnpm e2e`, signed-in screenshots with `pnpm shot`)

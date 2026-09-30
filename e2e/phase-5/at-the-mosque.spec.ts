@@ -1,5 +1,5 @@
 import { expect as baseExpect, test, type BrowserContextOptions, type Page } from "@playwright/test";
-import { newUser, placeId, post, resetPlace, todayIn } from "../phase-2/helpers";
+import { newUser, placeId, post, resetPlace, todayIn } from "../support/helpers";
 
 const expect = baseExpect.configure({ timeout: 15_000 });
 
@@ -84,6 +84,8 @@ test.describe("phase 5 at the mosque", () => {
     const { page, context } = member;
     const saved = await post(page.request, "/api/v1/saved", { placeId: await placeId(request, SAVED) });
     expect(saved.ok(), await saved.text()).toBeTruthy();
+    // Land on the home page first, as a person does, so /saved's own loads all run under the worker.
+    await visit(page, "/");
     await visit(page, "/saved");
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;

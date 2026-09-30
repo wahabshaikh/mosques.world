@@ -26,7 +26,8 @@ test.describe("phase 1 find a mosque", () => {
   });
 
   test("Istanbul search updates the URL and survives reload", async ({ page }) => {
-    await page.setExtraHTTPHeaders({ "cf-connecting-ip": "203.0.113.10" });
+    // Geocode searches are counted per IP per hour, so a fixed IP gets blocked after a few local re-runs.
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": `203.0.113.${Math.floor(Math.random() * 250) + 1}` });
     await page.goto("/search?where=London&lat=51.5074&lng=-0.1278&z=11");
     await waitForApp(page);
     const where = page.getByLabel("Where");
@@ -81,14 +82,20 @@ test.describe("phase 1 find a mosque", () => {
   test("waitlist confirmation", async ({ page, request }) => {
     await page.goto("/m/east-london-mosque-whitechapel");
     await waitForApp(page);
-    await page.getByPlaceholder("Email for iqamah updates").fill("person@example.com");
+    // A fresh address per run: a confirmed address gets no second email, so re-runs would find none.
+    const email = `waitlist.${Date.now().toString(36)}@example.com`;
+    await page.getByPlaceholder("Email for iqamah updates").fill(email);
     await page.getByRole("button", { name: "Get notified" }).click();
     await expect(page.getByText("Check your email to confirm.")).toBeVisible();
-    const sink = await request.get("/api/v1/test/emails");
-    expect(sink.ok()).toBeTruthy();
-    const body = (await sink.json()) as { messages: Array<{ text: string }> };
-    const link = body.messages[0]?.text.match(/https?:\/\/\S+/)?.[0];
-    expect(link).toBeTruthy();
+    let link: string | undefined;
+    await expect
+      .poll(async () => {
+        const sink = await request.get(`/api/v1/test/emails?to=${encodeURIComponent(email)}`);
+        const body = (await sink.json()) as { messages: Array<{ text: string }> };
+        link = body.messages[0]?.text.match(/https?:\/\/\S+/)?.[0];
+        return link;
+      })
+      .toBeTruthy();
     const path = new URL(link ?? "").pathname + new URL(link ?? "").search;
     await page.goto(path.replace("https://mosques.world", ""));
     await expect(page.getByRole("heading", { name: "You are confirmed" })).toBeVisible();
