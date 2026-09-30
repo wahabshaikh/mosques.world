@@ -24,14 +24,17 @@ pnpm only (never npm or yarn). Node 22.
 | --- | --- |
 | Install | `pnpm install --frozen-lockfile` |
 | Dev server (http://127.0.0.1:5173) | `pnpm db:migrate:local && pnpm dev` |
-| Lint | `pnpm lint` |
-| Typecheck | `pnpm typecheck` |
+| Lint + typecheck + unit tests with coverage gate | `pnpm verify` |
 | Unit tests (one file) | `pnpm exec vitest run lib/slug.test.ts` |
-| Unit tests + coverage gate | `pnpm test:coverage` |
 | Build | `pnpm build` |
-| E2E (starts the dev server itself) | `pnpm e2e e2e/phase-2` |
-| E2E against a deployment | `PLAYWRIGHT_BASE_URL=https://… pnpm e2e --grep @smoke` |
+| E2E, one phase (starts the dev server itself) | `pnpm e2e e2e/phase-2` (add `--project=chromium` in sandboxes) |
+| E2E against the production build, as CI does | `E2E_BUILD=1 pnpm e2e` |
+| E2E against a deployment | `PLAYWRIGHT_BASE_URL=https://… pnpm e2e:smoke` |
+| Signed-in screenshots of a page | `pnpm shot /saved --as a@example.com [--mobile] [--dark]` |
+| Signed-in session for curl or Playwright | `pnpm auth:session --email a@example.com [--role admin]` |
 | Local D1 migrations | `pnpm db:migrate:local` |
+
+[`docs/testing.md`](docs/testing.md) is the full reference for these.
 
 Local secrets go in `.dev.vars` (copy `.dev.vars.example`); everything works without them except the
 features that need a third-party key.
@@ -42,18 +45,21 @@ long lines are fine).
 
 ## Verify before you push
 
-Run these, in this order, and fix what fails. They are exactly what CI runs
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+Run these and fix what fails. CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the
+same in its `check` job, plus every E2E suite against the production build in its `e2e` job:
 
 ```sh
-pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
+pnpm verify && pnpm build
 ```
 
 Then prove the change works, not just that it compiles:
 
 - `lib/` logic: a Vitest test next to the file (`lib/foo.ts` → `lib/foo.test.ts`). Coverage gate is 80% lines.
-- A page, route or flow: run the E2E suite for that phase (`pnpm e2e e2e/phase-N`) or drive it in a
-  browser. Sign-in in E2E uses the email sink, see `signUp()` in [`e2e/phase-2/helpers.ts`](e2e/phase-2/helpers.ts).
+- A page, route or flow: run the E2E suite for that phase (`pnpm e2e e2e/phase-N`), and look at it with
+  `pnpm shot`. Service worker, caching or offline changes need `E2E_BUILD=1`.
+- Signed-in tests don't go through the sign-in UI: `POST /api/v1/test/session` (or `newUser()` /
+  `signIn()` in [`e2e/support/helpers.ts`](e2e/support/helpers.ts)) opens a real session. Only the
+  sign-in flow itself uses the email sink (`GET /api/v1/test/emails?to=`). Both 404 in production.
 - Say in the PR what you ran and what you did **not** verify (for example "E2E not run: needs Google
   Places key"). Never claim a check passed that you did not run.
 
@@ -76,9 +82,9 @@ lib/                 domain logic, one module per concern, tests beside the code
 worker/index.ts      Worker entry: fetch (vinext) + queue + scheduled handlers, wrapped in Sentry
 middleware.ts        locale rewrites, headers, CSP
 migrations/          hand-written D1 SQL, numbered, append-only
-e2e/phase-N/         Playwright suite per delivery phase
-scripts/             one-off ops scripts (tsx), OSM import, preview migrations
-docs/spec/           the spec;  docs/runbooks/  per-phase rollout;  docs/deployment.md  envs + deploys
+e2e/phase-N/         Playwright suite per delivery phase;  e2e/support/  shared helpers;  e2e/auth/  test-session
+scripts/             ops and dev scripts (tsx): OSM import, preview migrations, shot, dev-session
+docs/spec/           the spec;  docs/runbooks/  per-phase rollout;  docs/deployment.md  envs + deploys;  docs/testing.md
 design/              design canvas snapshot (reference only, not app code)
 ```
 

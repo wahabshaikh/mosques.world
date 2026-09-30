@@ -1,6 +1,6 @@
 ---
 name: preflight
-description: Run mosques.world's pre-push checks (lint, typecheck, unit tests with coverage, build, and the E2E suites the change touches) and report exactly what passed, failed or was not run. Use before pushing, before opening or marking a PR ready, and whenever asked to verify a change.
+description: Run mosques.world's pre-push checks (pnpm verify, build, and the E2E suites the change touches) and report exactly what passed, failed or was not run. Use before pushing, before opening or marking a PR ready, and whenever asked to verify a change.
 ---
 
 # Preflight
@@ -9,12 +9,10 @@ Run the same checks CI runs, plus the E2E that covers the change, and report res
 
 ## 1. Static checks and unit tests
 
-Run in this order and stop at the first failure to fix it (later steps assume earlier ones pass):
+This is CI's `check` job. Fix the first failure before moving on:
 
 ```sh
-pnpm lint
-pnpm typecheck
-pnpm test:coverage
+pnpm verify   # lint, typecheck, unit tests with coverage gate
 pnpm build
 ```
 
@@ -33,8 +31,12 @@ Map changed files (`git diff --name-only origin/main...`) to suites:
 | `middleware.ts`, `lib/auth.ts`, `lib/session.ts`, layouts, `worker/index.ts` | `pnpm e2e` (every phase) |
 | A migration | `pnpm db:migrate:local`, then the phase suite that reads the new tables |
 
-`pnpm e2e` starts the dev server (with local migrations) itself. Sign-in is covered through the email
-sink; no real email or Google account is needed. Suites that call Google Places or Workers AI may need
+`pnpm e2e` starts the dev server (with local migrations) itself. In sandboxes add `--project=chromium`
+(the SessionStart hook sets `PLAYWRIGHT_CHROMIUM_EXECUTABLE`); WebKit then runs only in CI. Use
+`E2E_BUILD=1` (the production build, as CI's `e2e` job does) for service worker, caching and offline
+changes. Signed-in tests use `POST /api/v1/test/session`; no real email or Google account is needed.
+For UI changes also run `pnpm shot <path> [--as <email>] [--mobile]` and look at the screenshots in
+`.artifacts/screenshots/`. Suites that call Google Places or Workers AI may need
 keys in `.dev.vars` or remote bindings; if a test can't run for that reason, record it rather than
 skipping it silently.
 
@@ -43,8 +45,8 @@ skipping it silently.
 Reply (or put in the PR body under "Verification") one line per check, for example:
 
 ```
-- pnpm lint ✅  pnpm typecheck ✅  pnpm test:coverage ✅ (lines 86%)  pnpm build ✅
-- pnpm e2e e2e/phase-2 ✅ (14 passed)
+- pnpm verify ✅ (lines 86%)  pnpm build ✅
+- pnpm e2e e2e/phase-2 --project=chromium ✅ (14 passed)
 - Not run: e2e/phase-3 photo upload (needs IMAGES binding locally)
 ```
 

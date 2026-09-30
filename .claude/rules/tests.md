@@ -14,10 +14,11 @@ paths:
 - Coverage gate (CI): 80% lines/statements/functions, 70% branches over `lib/`. Trust engine and prayer
   logic aim for 95%. Test behaviour through exported functions, not internals.
 - Prayer/time code needs fixtures across DST changes, high latitudes and Hanafi Asr.
-- E2E: Playwright, one folder per delivery phase (`e2e/phase-N/`). All earlier phase suites must keep
+- E2E: Playwright, one folder per delivery phase (`e2e/phase-N/`); shared helpers in `e2e/support/`. All earlier phase suites must keep
   passing. Runs serially against one database (local Miniflare or preview).
-  - Sign up / sign in through the UI with `newUser()` / `signUp()` from `e2e/phase-2/helpers.ts`. OTPs
-    come from the email sink at `/api/v1/test/emails` (localhost and preview only).
+  - Sign in with `newUser()` / `signIn()` from `e2e/support/helpers.ts`, which call
+    `POST /api/v1/test/session`. Only tests of the sign-in UI itself go through email OTP, read from the
+    sink at `/api/v1/test/emails?to=`. Both endpoints 404 in production. Full guide: `docs/testing.md`.
   - Seed state with `setFixture()` (`/api/v1/test/fixtures`), and use `identity()` so re-runs don't collide.
   - Wait for `[data-app-ready=true]` before interacting. Mark production-safe checks with `@smoke`.
   - Run axe on new pages (`@axe-core/playwright`) and assert no serious/critical violations.

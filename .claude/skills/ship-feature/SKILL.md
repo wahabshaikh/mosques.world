@@ -21,8 +21,9 @@ Work in this order. Each step lists where the pattern already exists; copy it ra
    Strings via the i18n catalogs on localized pages; logical (RTL-safe) classes; `track()` for the
    spec's analytics goals.
 7. **Async work.** Queue messages or cron work go through `worker/index.ts` with a type guard in `lib/`.
-8. **E2E.** Add the acceptance scenarios to `e2e/phase-N/` using the helpers in `e2e/phase-2/helpers.ts`
-   (UI sign-up through the email sink, fixtures, `@smoke` for production-safe checks, axe).
+8. **E2E.** Add the acceptance scenarios to `e2e/phase-N/` using the helpers in `e2e/support/helpers.ts`
+   (`newUser()` / `signIn()` via `POST /api/v1/test/session`, fixtures, `@smoke` for production-safe
+   checks, axe). Check the screens with `pnpm shot <path> --as <email>`. See `docs/testing.md`.
 9. **Docs.** Update `docs/runbooks/phase-N.md` (what is live, flag, before-turning-on steps, load limits,
    rollback) and the spec if behaviour changed. Update `/privacy` if data collection changed.
 10. **Verify.** Run the `preflight` skill.
