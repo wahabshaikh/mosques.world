@@ -1,6 +1,13 @@
 "use client";
 
-export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
+import { useEffect } from "react";
+import { captureClientException } from "@/lib/sentry";
+
+export default function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
+  useEffect(() => {
+    captureClientException(error);
+  }, [error]);
+
   return (
     <div className="mx-auto max-w-lg px-4 py-24 text-center">
       <h1 className="text-3xl font-bold">Something went wrong</h1>

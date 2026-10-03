@@ -10,7 +10,7 @@ import { flagsOnForSite, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
 import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
-import { sentryOptions } from "@/lib/sentry";
+import { sentryOptions, withoutSentryUserIp } from "@/lib/sentry";
 
 /** Weekly OSM diff sync (new places only); must match wrangler.jsonc triggers. */
 const WEEKLY_CRON = "30 3 * * 1";
@@ -34,7 +34,10 @@ async function serve(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
 }
 
-export default Sentry.withSentry((env) => sentryOptions(env), {
+export default Sentry.withSentry((env) => {
+  const options = sentryOptions(env);
+  return { ...options, beforeSend: (event) => withoutSentryUserIp(event) };
+}, {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
     if (url.hostname === "www.mosques.world") {
