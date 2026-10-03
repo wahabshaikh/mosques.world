@@ -1,4 +1,4 @@
-import { browserSentryOptions, setClientExceptionCapture } from "@/lib/sentry";
+import { browserSentryOptions, setClientExceptionCapture, withoutSentryUserIp } from "@/lib/sentry";
 
 // ENVIRONMENT is a Worker runtime var, so it is not inlined into the client.
 // The root layout copies it onto <html data-mw-environment> before this module
@@ -13,6 +13,7 @@ if (dsn) {
     const Sentry = await import("@sentry/react");
     Sentry.init({
       ...options,
+      beforeSend: (event) => withoutSentryUserIp(event),
       integrations: [Sentry.browserTracingIntegration()],
     });
     setClientExceptionCapture((error) => {

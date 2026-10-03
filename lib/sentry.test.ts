@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { SENTRY_TRACES_SAMPLE_RATE, browserSentryOptions, captureClientException, sentryDataCollection, sentryOptions, setClientExceptionCapture } from "./sentry";
+import {
+  SENTRY_TRACES_SAMPLE_RATE,
+  browserSentryOptions,
+  captureClientException,
+  sentryDataCollection,
+  sentryOptions,
+  setClientExceptionCapture,
+  withoutSentryUserIp,
+} from "./sentry";
 
 describe("sentryOptions", () => {
   it("stays disabled when the DSN is missing or blank", () => {
@@ -15,6 +23,14 @@ describe("sentryOptions", () => {
     expect(options.tracesSampleRate).toBeLessThan(1);
     expect(options.environment).toBe("preview");
     expect(options.dataCollection).toEqual(sentryDataCollection);
+    expect(withoutSentryUserIp({})).toEqual({
+      user: { ip_address: null },
+      sdk: { settings: { infer_ip: "never" } },
+    });
+    expect(withoutSentryUserIp({ user: { ip_address: "203.0.113.5" }, sdk: { settings: { infer_ip: "auto" } } })).toEqual({
+      user: { ip_address: null },
+      sdk: { settings: { infer_ip: "never" } },
+    });
     expect(options.dataCollection).toMatchObject({
       userInfo: false,
       cookies: false,

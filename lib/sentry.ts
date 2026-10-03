@@ -24,6 +24,24 @@ export type SentryRuntimeEnv = {
   ENVIRONMENT?: string;
 };
 
+type EventWithUser = {
+  user?: { ip_address?: string | null } | null;
+  sdk?: { settings?: { infer_ip?: string } };
+};
+
+/**
+ * The browser SDK sets `sdk.settings.infer_ip` to `never` when user info is off.
+ * `@sentry/cloudflare` leaves that unset, so Relay stores the envelope sender's IP.
+ * The event has to say not to.
+ */
+export function withoutSentryUserIp<Event extends EventWithUser>(event: Event): Event {
+  return {
+    ...event,
+    user: { ...event.user, ip_address: null },
+    sdk: { ...event.sdk, settings: { ...event.sdk?.settings, infer_ip: "never" } },
+  };
+}
+
 export type WorkerSentryOptions = {
   dsn?: string;
   enabled: boolean;
