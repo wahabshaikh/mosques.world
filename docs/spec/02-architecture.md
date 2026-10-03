@@ -112,7 +112,8 @@ unused, so later phases need no infrastructure change beyond feature flags.
 | `GOOGLE_MAPS_API_KEY` | secret | Places API (server-side only; key restricted by API + IP-less server usage) |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | var / secret | Turnstile |
 | `DATAFAST_WEBSITE_ID` / `DATAFAST_API_KEY` | var / secret | analytics script / server goals |
-| `SENTRY_DSN` | secret | errors |
+| `SENTRY_DSN` | secret | Worker errors |
+| `NEXT_PUBLIC_SENTRY_DSN` | Workers Builds build variable | browser errors (public DSN, inlined by vinext; unset disables the browser SDK) |
 | `PUBLIC_BASE_URL` | var | links in emails, OG images |
 
 ## 2.4 Repository layout

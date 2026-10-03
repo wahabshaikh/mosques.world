@@ -77,8 +77,16 @@ pnpm exec wrangler preview secret put BETTER_AUTH_SECRET --name my-branch
 | `GOOGLE_MAPS_API_KEY` | optional | optional | Places search and add. |
 | `TURNSTILE_SECRET_KEY` | optional | not used | Previews use the email sink, which skips the captcha. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional | optional | Web Push. |
-| `SENTRY_DSN` | optional | optional | Errors are tagged with `ENVIRONMENT`. |
+| `SENTRY_DSN` | optional | optional | Worker errors, tagged with `ENVIRONMENT`. Secret, not a `vars` entry. |
 | `DATAFAST_WEBSITE_ID`, `DATAFAST_API_KEY` | optional | not used | Analytics. |
+
+Browser errors use `NEXT_PUBLIC_SENTRY_DSN`. vinext inlines `NEXT_PUBLIC_*` when the Worker is built, so set it as a Workers Builds build variable for production and preview builds (Cloudflare dashboard → the `mosques-world` Worker → Settings → Builds). It is a public DSN, not a secret. Do not add `SENTRY_DSN` to `wrangler.jsonc` `vars`: a var and a secret with the same name conflict on deploy. Locally, put `SENTRY_DSN` in `.dev.vars` and `NEXT_PUBLIC_SENTRY_DSN` in `.env.local` (see [`.env.example`](../.env.example)).
+
+```sh
+pnpm exec wrangler secret put SENTRY_DSN
+pnpm exec wrangler preview secret put SENTRY_DSN
+pnpm exec wrangler preview base-config secret put SENTRY_DSN
+```
 
 ## Manual commands
 

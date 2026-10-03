@@ -21,6 +21,10 @@ VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 
 # Error reporting and analytics. No-ops when unset.
+# SENTRY_DSN is the Worker runtime secret (`wrangler secret put`). The browser reads
+# NEXT_PUBLIC_SENTRY_DSN, which vinext inlines at build time from `.env.local` / the
+# process environment — not from this file. Copy it into `.env.local` for local browser reports.
 SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
 DATAFAST_WEBSITE_ID=
 DATAFAST_API_KEY=

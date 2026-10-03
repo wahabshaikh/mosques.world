@@ -40,13 +40,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const pwa = await phase5Enabled().catch(() => false);
   const locale = await getLocale();
   let websiteId: string | undefined;
+  let environment: string | undefined;
   try {
-    websiteId = appEnv().DATAFAST_WEBSITE_ID;
+    const env = appEnv();
+    websiteId = env.DATAFAST_WEBSITE_ID;
+    environment = env.ENVIRONMENT;
   } catch {
     websiteId = process.env.DATAFAST_WEBSITE_ID;
+    environment = process.env.ENVIRONMENT;
   }
   return (
-    <html lang={locale} dir={direction(locale)} suppressHydrationWarning>
+    <html lang={locale} dir={direction(locale)} data-mw-environment={environment?.trim() || undefined} suppressHydrationWarning>
       <body>
         <HoistMetadata />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
