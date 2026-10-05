@@ -3,13 +3,15 @@ import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
-import { osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { enrichEnabled, osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
 import { geocodeWhere } from "@/lib/geocode";
+import { formatTime12 } from "@/lib/trust/facts";
 import { areaNeedsFill } from "@/lib/osm-fill";
 import { parseNeeds } from "@/lib/places/amenities";
 import { isNonProductionHost } from "@/lib/environment";
 import { asSort, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
+import { areaTimes } from "@/lib/places/area-times";
 
 export async function ExplorePage({
   searchParams,
@@ -45,6 +47,7 @@ export async function ExplorePage({
   const verifiedOnly = community && one("verified") === "1";
   const amenitiesOn = community && (await phase3Enabled());
   const needs = amenitiesOn ? parseNeeds(params.needs) : [];
+  const photos = await enrichEnabled();
   const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
   const needsFill = osm
     ? await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
@@ -53,7 +56,7 @@ export async function ExplorePage({
       })
     : false;
   const cards = sortCards(
-    places.map((place) => toCard(place, now)),
+    places.map((place) => toCard(place, now, { photos })),
     sort,
   ).slice(0, 60);
   const anchor = places[0];
@@ -70,7 +73,7 @@ export async function ExplorePage({
           now,
         });
         const next = nextAdhanLabel(day);
-        return `${view.where} · ${day.hijri} · next ${next.label} ${next.time} adhan`;
+        return `${view.where} · ${day.hijri} · next ${next.label} adhan ${formatTime12(next.time)}`;
       })()
     : `${view.where} · no places in this view yet`;
 
@@ -92,6 +95,7 @@ export async function ExplorePage({
       amenities={amenitiesOn}
       fillBbox={needsFill ? view.bbox : null}
       osm={osm}
+      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now) : null}
     />
   );
 }

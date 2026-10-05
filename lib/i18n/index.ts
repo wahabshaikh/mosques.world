@@ -57,9 +57,9 @@ export function translator(locale: Locale = DEFAULT_LOCALE) {
     );
   }
 
-  /** Adhan column: English keeps its 24h "HH:MM"; other languages follow their clock style. */
+  /** Adhan times use the same clock style as iqamah times, so one list never mixes "16:35" and "5:00 PM". */
   function adhan(hm: string): string {
-    return locale === DEFAULT_LOCALE ? hm : time(hm);
+    return time(hm);
   }
 
   function prayer(key: PrayerKey, jumuah = false): string {

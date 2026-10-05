@@ -11,7 +11,7 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled, phase7Enabled, phase8Enabled } from "@/lib/phase";
+import { enrichEnabled, phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled, phase7Enabled, phase8Enabled } from "@/lib/phase";
 import { languageAlternates, localePath } from "@/lib/i18n/config";
 import type { Translator } from "@/lib/i18n";
 import { getTranslator } from "@/lib/i18n/server";
@@ -23,6 +23,7 @@ import { CalendarLink } from "@/components/mw/calendar-link";
 import { CheckinButton } from "@/components/mw/checkin-button";
 import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
 import { defaultPrayer } from "@/lib/checkins";
+import { parseEnrichment } from "@/lib/enrich/wikidata";
 import { currentUser, isModerator } from "@/lib/session";
 import { placesContext } from "@/lib/places/context";
 import { liveFields } from "@/lib/places/google";
@@ -36,7 +37,7 @@ import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/tim
 import { iqamahCells, jumuahCards, nextRows, trustHeadline } from "@/lib/places/mosque";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
-import { describeValue, factLabel, formatTime12, iqamahValue, methodLabel, resolveIqamah } from "@/lib/trust/facts";
+import { describeValue, factLabel, formatTime12, iqamahValue, madhabLabel, methodLabel, resolveIqamah } from "@/lib/trust/facts";
 import { placeActivity, placeFacts, placeTrustStats } from "@/lib/trust/read";
 import { coverTint } from "@/lib/utils";
 
@@ -89,10 +90,11 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const { place, now } = loaded;
   const l = await getTranslator();
   const english = l.locale === "en";
-  // Row labels and clock style in the page's language; English keeps the calculated rows as they are.
-  const day = english
-    ? loaded.day
-    : { ...loaded.day, rows: loaded.day.rows.map((row) => ({ ...row, label: l.prayer(row.key, row.key === "dhuhr" && loaded.day.jumuah), adhan: l.adhan(row.adhan) })) };
+  // Row labels and clock style in the page's language, for display only: anything that does time arithmetic reads loaded.day.
+  const day = {
+    ...loaded.day,
+    rows: loaded.day.rows.map((row) => ({ ...row, label: english ? row.label : l.prayer(row.key, row.key === "dhuhr" && loaded.day.jumuah), adhan: l.adhan(row.adhan) })),
+  };
   const labels = english ? undefined : tableLabels(l);
   const justAdded = (await searchParams).added === "1";
   let viewerCanConfirm = false;
@@ -134,7 +136,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
       })();
   const disputes: DisputeItem[] = facts.flatMap((fact) => {
     if (!fact.challenger || !fact.current || !fact.key.startsWith("iqamah.")) return [];
-    const adhan = day.rows.find((row) => `iqamah.${row.key}` === fact.key)?.adhan ?? "00:00";
+    const adhan = loaded.day.rows.find((row) => `iqamah.${row.key}` === fact.key)?.adhan ?? "00:00";
     const label = (value: unknown) => {
       const parsed = iqamahValue.safeParse(value);
       return parsed.success ? formatTime12(resolveIqamah(parsed.data, adhan)) : describeValue(fact.key, value);
@@ -173,6 +175,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const amenities = places ? amenityRows(facts) : [];
   const google = places && place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
   const closed = place.status === "closed";
+  const enrichment = (await enrichEnabled()) ? parseEnrichment(place.enrichmentJson) : null;
   const photos = places ? await placePhotos(appEnv().DB, place.id, 5) : [];
   const photoCount = photos.length < 5 ? photos.length : ((await appEnv().DB.prepare(`SELECT COUNT(*) AS n FROM photo WHERE place_id = ? AND status = 'approved' AND purpose IN ('place', 'evidence')`).bind(place.id).first<{ n: number }>())?.n ?? photos.length);
   const summaryLine = [
@@ -230,60 +233,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           </p>
         ) : null}
         {place.accessNotes ? <p className="mt-2 text-sm">{l.t("mosque.access", { notes: place.accessNotes })}</p> : null}
-        {places ? (
-          <PhotoGrid
-            photos={photos}
-            total={photoCount}
-            tint={tint}
-            slug={place.slug}
-            placeId={place.id}
-            canAdd={!closed}
-            turnstileSiteKey={captchaRequired(appEnv(), loaded.host) ? appEnv().TURNSTILE_SITE_KEY : undefined}
-            text={english ? undefined : clientText(l.locale)}
-          />
-        ) : (
-          <div
-            className="mt-6 flex aspect-[16/7] items-end rounded-2xl p-6 text-sm font-semibold"
-            style={{ background: tint.bg, color: "#1f1d1a" }}
-          >
-            {l.t("mosque.photoLater")}
-          </div>
-        )}
-
-        {contributions && hasIqamah ? (
-          <div className="mt-8 flex flex-col gap-6">
-            <TrustSummary
-              title={headline.title}
-              tone={headline.tone}
-              sentence={trustSentence}
-              agreement={stats?.agreement ?? null}
-              lastCheck={place.lastVerifiedAt}
-            />
-            <p className="border-b border-border pb-6 text-[15px] font-semibold">
-              {l.plural("trust.keptBy", stats?.contributors ?? 0)}
-              {stewards > 0 ? (
-                <span className="mt-1 flex items-center gap-1.5 text-primary" data-testid="steward-badge">
-                  <ShieldCheck className="size-4" aria-hidden="true" /> {l.plural("trust.stewards", stewards)}
-                </span>
-              ) : null}
-            </p>
-          </div>
-        ) : (
-          <section className="mt-8 rounded-2xl border border-border p-4">
-            <h2 className="text-lg font-bold">{l.t("mosque.notAddedTitle")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {l.t(contributions ? "mosque.beFirst" : "mosque.beFirstLater")} {l.t("mosque.adhanCalculated")}
-            </p>
-            {contributions ? (
-              <UpdateLink href={updateHref} className="mt-3 inline-flex h-11 items-center rounded-[12px] bg-secondary px-4 text-sm font-semibold text-secondary-foreground">
-                {l.t("mosque.addIqamah")}
-              </UpdateLink>
-            ) : null}
-            <WaitlistForm placeId={place.id} />
-          </section>
-        )}
-
-        <section className="mt-8">
+        <section className="mt-6">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold">{l.t("mosque.today")}</h2>
@@ -297,6 +247,23 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               </UpdateLink>
             ) : null}
           </div>
+          {!(contributions && hasIqamah) ? (
+            <section className="mb-4 flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:flex-row sm:items-center" aria-labelledby="no-iqamah">
+              <div className="flex-1">
+                <h3 id="no-iqamah" className="font-bold">
+                  {l.t("mosque.notAddedTitle")}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {l.t(contributions ? "mosque.beFirst" : "mosque.beFirstLater")} {l.t("mosque.adhanCalculated")}
+                </p>
+              </div>
+              {contributions ? (
+                <UpdateLink href={updateHref} className="inline-flex h-11 shrink-0 items-center justify-center rounded-[12px] bg-secondary px-4 text-sm font-semibold text-secondary-foreground">
+                  {l.t("mosque.addIqamah")}
+                </UpdateLink>
+              ) : null}
+            </section>
+          ) : null}
           <div className="overflow-hidden rounded-2xl border border-input">
             <PrayerTable
               day={day}
@@ -309,7 +276,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            {l.t("mosque.calcNote", { method: methodLabel(place.calcMethod), madhab: place.asrMadhab, zone: place.timezone })}
+            {l.t("mosque.calcNote", { method: methodLabel(place.calcMethod), madhab: madhabLabel(place.asrMadhab), zone: place.timezone })}
             {place.adhanAdjustJson ? l.t("mosque.adhanCommunity") : null}
             {contributions ? l.t("mosque.communityNote") : null}
             {contributions ? (
@@ -336,7 +303,29 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               </>
             ) : null}
           </p>
+          {!(contributions && hasIqamah) ? <WaitlistForm placeId={place.id} /> : null}
         </section>
+
+        {contributions && hasIqamah ? (
+          <div className="mt-8 flex flex-col gap-6">
+            <TrustSummary
+              title={headline.title}
+              tone={headline.tone}
+              sentence={trustSentence}
+              // One person always "agrees" with themselves; a percentage only means something once others have voted.
+              agreement={stats && stats.contributors >= 2 ? stats.agreement : null}
+              lastCheck={place.lastVerifiedAt}
+            />
+            <p className="border-b border-border pb-6 text-[15px] font-semibold">
+              {l.plural("trust.keptBy", stats?.contributors ?? 0)}
+              {stewards > 0 ? (
+                <span className="mt-1 flex items-center gap-1.5 text-primary" data-testid="steward-badge">
+                  <ShieldCheck className="size-4" aria-hidden="true" /> {l.plural("trust.stewards", stewards)}
+                </span>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
 
         {jumuah.length > 0 ? (
           <section className="mt-8 border-t border-border pt-8">
@@ -385,6 +374,28 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
         ) : null}
 
         {places ? (
+          <PhotoGrid
+            photos={photos}
+            total={photoCount}
+            tint={tint}
+            slug={place.slug}
+            placeId={place.id}
+            canAdd={!closed}
+            commons={enrichment?.image ?? null}
+            turnstileSiteKey={captchaRequired(appEnv(), loaded.host) ? appEnv().TURNSTILE_SITE_KEY : undefined}
+            text={english ? undefined : clientText(l.locale)}
+          />
+        ) : (
+          <div
+            className="mt-6 flex aspect-[16/7] items-end rounded-2xl p-6 text-sm font-semibold"
+            style={{ background: tint.bg, color: "#1f1d1a" }}
+          >
+            {l.t("mosque.photoLater")}
+          </div>
+        )}
+
+
+        {places ? (
           <section className="mt-8 border-t border-border pt-8" aria-labelledby="offers">
             <h2 id="offers" className="mb-5 text-xl font-bold">
               {l.t("mosque.offers")}
@@ -401,7 +412,18 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
         ) : null}
 
         <section className="mt-8 text-sm">
-          <h2 className="text-xl font-bold">{l.t("mosque.fromOsm")}</h2>
+          <h2 className="text-xl font-bold">{l.t(enrichment ? "mosque.about" : "mosque.fromOsm")}</h2>
+          {enrichment?.wikipedia ? (
+            <div className="mt-3" data-testid="wikipedia-summary">
+              <p className="text-[15px] leading-6">{enrichment.wikipedia.extract}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                <a href={enrichment.wikipedia.url} className="underline" rel="noopener">
+                  {l.t("mosque.fromWikipedia")}
+                </a>
+              </p>
+            </div>
+          ) : null}
+          {enrichment?.inception ? <p className="mt-3">{l.t("mosque.founded", { year: enrichment.inception })}</p> : null}
           <dl className="mt-3 space-y-2">
             {place.address ? (
               <div>
@@ -413,8 +435,8 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               <div>
                 <dt className="text-muted-foreground">{l.t("mosque.website")}</dt>
                 <dd>
-                  <a href={place.website} className="underline">
-                    {place.website}
+                  <a href={place.website} className="underline" rel="nofollow noopener">
+                    {displayUrl(place.website)}
                   </a>
                 </dd>
               </div>
@@ -432,6 +454,14 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               </div>
             ) : null}
           </dl>
+          {enrichment ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {l.t("mosque.sources")} ·{" "}
+              <a href={`https://www.wikidata.org/wiki/${enrichment.wikidata}`} className="underline" rel="noopener">
+                {enrichment.wikidata}
+              </a>
+            </p>
+          ) : null}
           {google && (google.phone || google.website || google.hours.length > 0) ? (
             <div className="mt-6" data-testid="google-fields">
               <h3 className="font-bold">{l.t("mosque.fromGoogle")}</h3>
@@ -486,7 +516,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
         </section>
       </div>
       <aside className="flex flex-col gap-6">
-        <div className="h-fit rounded-2xl border border-input p-5 shadow-[0_6px_20px_rgba(31,29,26,.12)] lg:sticky lg:top-24">
+        <div className="z-10 h-fit rounded-2xl border border-input bg-card p-5 shadow-[0_6px_20px_rgba(31,29,26,.12)] lg:sticky lg:top-24">
           <Countdown rows={rows} initialNow={now.toISOString()} labels={labels} />
           <div className="mt-4 flex flex-col gap-2">
             <a
@@ -550,4 +580,9 @@ function tableLabels(l: Translator): TableLabels {
     hours: l.t("duration.hours"),
     hoursMinutes: l.t("duration.hoursMinutes"),
   };
+}
+
+/** "http://www.example.org/" → "example.org", for links people read rather than copy. */
+function displayUrl(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 }

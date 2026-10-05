@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { UpdateTimes, type UpdateData, type UpdateTab } from "./update-times";
@@ -19,9 +19,18 @@ export function UpdateModal({ data, initialTab }: { data: UpdateData; initialTab
     return () => query.removeEventListener("change", listener);
   }, []);
 
+  const submitted = useRef(false);
+
   const close = () => {
     setOpen(false);
+    if (submitted.current) {
+      // Refresh the mosque page once the history step back has landed, so it shows the new times.
+      window.addEventListener("popstate", () => router.refresh(), { once: true });
+    }
     router.back();
+  };
+  const onSubmitted = () => {
+    submitted.current = true;
   };
   const onOpenChange = (next: boolean) => {
     if (!next) close();
@@ -35,7 +44,7 @@ export function UpdateModal({ data, initialTab }: { data: UpdateData; initialTab
         <DrawerContent className="h-[94vh]">
           <DrawerTitle className="px-6 pt-3 text-center text-base font-extrabold">{title}</DrawerTitle>
           <DrawerDescription className="sr-only">{description}</DrawerDescription>
-          <UpdateTimes data={data} onDone={close} initialTab={initialTab} />
+          <UpdateTimes data={data} onDone={close} onSubmitted={onSubmitted} initialTab={initialTab} />
         </DrawerContent>
       </Drawer>
     );
@@ -47,7 +56,7 @@ export function UpdateModal({ data, initialTab }: { data: UpdateData; initialTab
           <DialogTitle className="text-base font-extrabold">{title}</DialogTitle>
         </div>
         <DialogDescription className="sr-only">{description}</DialogDescription>
-        <UpdateTimes data={data} onDone={close} initialTab={initialTab} />
+        <UpdateTimes data={data} onDone={close} onSubmitted={onSubmitted} initialTab={initialTab} />
       </DialogContent>
     </Dialog>
   );

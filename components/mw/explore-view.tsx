@@ -14,6 +14,7 @@ import { FiltersDialog, NeedIcon } from "./filters-dialog";
 const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
+import type { AreaTimes } from "@/lib/places/area-times";
 
 type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string };
 
@@ -35,6 +36,9 @@ export type ExplorePlace = {
   verifiers: number;
   tag: string | null;
   tint: string;
+  monogram: string;
+  /** A free-licence photo (Wikimedia Commons) when the place has no community photo yet. */
+  photo?: string | null;
 };
 
 export function ExploreView({
@@ -54,6 +58,7 @@ export function ExploreView({
   amenities = false,
   fillBbox = null,
   osm = false,
+  areaTimes = null,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -72,6 +77,8 @@ export function ExploreView({
   /** Set when this area has not been loaded from OpenStreetMap yet; the client asks the server to fill it. */
   fillBbox?: { west: number; south: number; east: number; north: number } | null;
   osm?: boolean;
+  /** Calculated adhan for the area, shown while it has no places listed. */
+  areaTimes?: AreaTimes | null;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -389,7 +396,7 @@ export function ExploreView({
           </div>
         </div>
       </div>
-      <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,840px)_1fr]">
+      <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,680px)_1fr]">
         <section className={cn("px-4 py-6 lg:px-6", mapMode && "hidden lg:block")}>
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
@@ -460,6 +467,22 @@ export function ExploreView({
               Loading more mosques in this area…
             </p>
           ) : null}
+          {cards.length === 0 && areaTimes ? (
+            <section className="mb-4 rounded-2xl bg-muted p-4" aria-labelledby="area-times" data-testid="area-times">
+              <h2 id="area-times" className="text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
+                Prayer times here today
+              </h2>
+              <ol className="mt-3 grid grid-cols-5 gap-1.5 text-center">
+                {areaTimes.rows.map((row) => (
+                  <li key={row.key} className={cn("rounded-xl px-1 py-2", row.next ? "bg-primary text-primary-foreground" : "bg-card")}>
+                    <span className={cn("block text-xs", row.next ? "text-primary-foreground/80" : "text-muted-foreground")}>{row.label}</span>
+                    <span className="tabular block text-xs font-extrabold whitespace-nowrap sm:text-sm">{row.time}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs text-muted-foreground">Adhan, calculated ({areaTimes.method}). Each mosque&apos;s iqamah is on its page.</p>
+            </section>
+          ) : null}
           {cards.length === 0 && filling === "loading" ? (
             <div role="status" className="flex items-center gap-3 rounded-2xl bg-muted p-6 text-sm" data-testid="area-filling">
               <LoaderCircle className="size-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
@@ -492,7 +515,7 @@ export function ExploreView({
               ) : null}
             </div>
           ) : (
-            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="-mx-2 flex flex-col">
               {cards.map((place) => (
                 <li key={place.id}>
                   <Link
@@ -501,39 +524,31 @@ export function ExploreView({
                     onMouseEnter={() => setActiveId(place.id)}
                     onMouseLeave={() => setActiveId(null)}
                     onFocus={() => setActiveId(place.id)}
-                    className={cn(
-                      "block overflow-hidden rounded-2xl border border-border bg-card",
-                      activeId === place.id && "ring-2 ring-primary",
-                    )}
+                    className={cn("flex items-center gap-4 rounded-2xl p-2.5 hover:bg-muted", activeId === place.id && "bg-muted ring-2 ring-primary")}
                   >
-                    <div className="relative aspect-[4/3.3]" style={{ background: place.tint }}>
-                      <CardChip place={place} />
-                    </div>
-                    <div className="space-y-1 p-3">
-                      <h2 className="font-bold">
-                        {place.name}
+                    <PlaceThumb place={place} />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate font-bold">{place.name}</span>
                         {place.verifiers > 0 ? (
-                          <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-semibold text-muted-foreground">
+                          <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-muted-foreground">
                             <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
                             <span className="sr-only">confirmed by</span>
                             {place.verifiers}
                           </span>
                         ) : null}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {place.locality}
-                        {place.distanceKm !== null ? ` · ${formatDistance(place.distanceKm)}` : ""}
-                      </p>
-                      <p className="text-sm">
-                        <span className="tabular text-base font-extrabold">
-                          {place.nextLabel} {place.nextTime}
-                        </span>{" "}
-                        <span className="text-muted-foreground">
-                          {place.nextKind === "iqamah" ? "iqamah" : "· adhan"}
-                          {place.tag ? ` · ${place.tag}` : ""}
-                        </span>
-                      </p>
-                    </div>
+                      </span>
+                      <span className="truncate text-sm text-muted-foreground">
+                        {[place.locality, place.distanceKm !== null ? formatDistance(place.distanceKm) : null, place.tag].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1 text-end">
+                      {/* Calculated adhan is the same for every place nearby, so it stays quiet and community iqamah times stand out. */}
+                      <span className={cn("tabular text-base", place.nextKind === "iqamah" ? "font-extrabold" : "font-semibold text-muted-foreground")}>
+                        {place.nextLabel} {place.nextTime}
+                      </span>
+                      <CardStatus place={place} />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -609,24 +624,37 @@ export function ExploreView({
   );
 }
 
-function CardChip({ place }: { place: ExplorePlace }) {
+/** One trust word under the time, so the list reads at a glance: whose time it is and how sure we are. */
+function CardStatus({ place }: { place: ExplorePlace }) {
   if (place.changeReported) {
     return (
-      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-warning shadow-sm">
-        <CircleAlert className="size-3.5" aria-hidden="true" /> Change reported
+      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-bold text-warning">
+        <CircleAlert className="size-3" aria-hidden="true" /> iqamah · change reported
       </span>
     );
   }
-  if (place.verification === "verified") {
-    return (
-      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-primary shadow-sm">
-        <ShieldCheck className="size-3.5" aria-hidden="true" /> Community verified
-      </span>
-    );
+  if (place.nextKind === "adhan") {
+    return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">adhan · no iqamah yet</span>;
+  }
+  const verified = place.verification === "verified";
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", verified ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground")}>
+      iqamah · {verified ? "verified" : "unverified"}
+    </span>
+  );
+}
+
+function PlaceThumb({ place }: { place: ExplorePlace }) {
+  if (place.photo) {
+    return <img src={place.photo} alt="" loading="lazy" className="size-14 shrink-0 rounded-xl object-cover" />;
   }
   return (
-    <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2 py-1 text-[11px] font-bold">
-      {place.nextKind === "iqamah" ? "Iqamah" : "Adhan"}
+    <span
+      aria-hidden="true"
+      className="flex size-14 shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-foreground/70"
+      style={{ background: place.tint }}
+    >
+      {place.monogram}
     </span>
   );
 }

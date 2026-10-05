@@ -129,7 +129,18 @@ function initialJumuah(data: UpdateData): JumuahRow[] {
     .filter((row): row is JumuahRow => row !== null);
 }
 
-export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: UpdateData; onDone?: () => void; initialTab?: UpdateTab }) {
+export function UpdateTimes({
+  data,
+  onDone,
+  onSubmitted,
+  initialTab = "iqamah",
+}: {
+  data: UpdateData;
+  onDone?: () => void;
+  /** Set by the dialog, which refreshes the page underneath once it closes. */
+  onSubmitted?: () => void;
+  initialTab?: UpdateTab;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<UpdateTab>(initialTab);
   const [amenities, setAmenities] = useState<Record<string, AmenityChoice>>({});
@@ -269,7 +280,9 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
       if (choice && choice !== "unsure") track("amenity_vote_cast", { amenity: amenity.key });
     }
     setResults(body?.results ?? []);
-    router.refresh();
+    // Refreshing now would re-render the dialog's route and drop the thank-you screen, so the dialog
+    // refreshes the page underneath when it closes; the full-page form navigates on Done instead.
+    onSubmitted?.();
   }
 
   if (results) {
