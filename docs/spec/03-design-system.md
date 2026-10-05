@@ -147,7 +147,7 @@ Airbnb's "Share"/"Save"), `warning`.
 | `SearchPill` | Three segments: **Where** (Places autocomplete), **Prayer** (Next / Fajr … / Jumu'ah), **Needs** (amenity multiselect) + round emerald search button | idle, focused segment (white raised), mobile: one tappable pill opening a full-screen `Drawer` |
 | `CategoryBar` | Horizontal scroll of icon+label toggles, selected = ink with 2px underline; trailing "Filters" button with count badge | selected, hover, overflow arrows |
 | `FiltersDialog` | Airbnb-style modal: sections for place type, amenities, Jumu'ah language, open-for-Fajr; footer "Clear all" + "Show N places" | live count |
-| `MosqueCard` | 4:3.3 rounded cover (photo or tinted silhouette), status chip top-left ("Community verified"/"Change reported"), save bookmark top-right, name + ✓verifier count, locality · distance, "**Asr 4:30** iqamah · tag" | loading skeleton, hover (map pin highlights), no-iqamah ("Add iqamah times") |
+| `MosqueCard` (list row) | 56px thumbnail (Commons photo, else a two-letter monogram on the place tint), name + ✓verifier count, locality · distance · tag, and on the end side the next time with one trust word: "iqamah · verified", "iqamah · unverified", "iqamah · change reported" (amber) or "adhan · no iqamah yet" (muted time). Replaced the 4:3 cover grid in the October 2026 redesign: blank covers filled the screen and every adhan-only card read the same | hover (map pin highlights), focus ring |
 | `PlaceMap` | MapLibre map, pins = `TimePin` (white pill with next iqamah; ink when selected/hovered; amber dot when disputed; arch icon for prayer rooms without jamā'ah), clusters as ink circles with counts, zoom controls, "Search as I move the map" toggle, legend | loading, empty area ("No places here yet — add one") |
 | `TimePin` | Pill 13px/700 text | default, selected (scale 1.08, ink), disputed, no-time (icon) |
 | `PhotoGrid` | 1 large + 4 small, 16px outer radius, "Show all N photos" | fewer photos, none (tinted illustration + "Add photos") |
@@ -171,7 +171,8 @@ Airbnb's "Share"/"Save"), `warning`.
 ### Content and formatting rules
 
 - Times are shown in the **place's local time**, as `4:30 PM` in `en` (12h/24h by locale). Adhan
-  is secondary (muted); iqamah is bold.
+  and iqamah use the **same clock style** everywhere (table, cards, pins, countdown, subline), so a list
+  never mixes "16:35" and "5:00 PM". Adhan is secondary (muted); iqamah is bold.
 - Relative freshness: "Verified 2 days ago · 9 people". Beyond 60 days, show amber "Needs check".
 - Calculated values are always labelled: "Adhan times are calculated (Muslim World League)".
 - Arabic terms use a consistent transliteration: Jumu'ah, jamā'ah, iqamah, wudhu, Qur'an, Janazah.

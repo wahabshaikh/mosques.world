@@ -73,19 +73,20 @@ For each screen: purpose → key content → states. Visual reference in bracket
 ### Explore / Search `/`, `/search` [Main.dc.html, P1]
 - **Header**: logo, `SearchPill` (Where · Prayer · Needs), "Add a mosque" (P3; before that "About"), account menu.
 - **CategoryBar**: Nearby, Jumu'ah, Women's section, Wudhu area, Step-free, Parking, Prayer rooms, Open for Fajr, Classes, then Filters. P1 shows only filters backed by data (Nearby, Prayer rooms, Jumu'ah via OSM tags); amenity filters light up in P3.
-- **List**: heading "38 mosques & prayer spaces nearby", a subline with local time and next prayer, sort (Soonest iqamah / Distance / Most verified), `MosqueCard` grid (3 columns at ≥xl, 2 at md, 1 on mobile), infinite scroll (24 per page).
+- **List**: heading "38 mosques & prayer spaces nearby", a subline with local time and next prayer, sort (Soonest iqamah / Distance / Most verified), a single column of `MosqueCard` rows, infinite scroll (24 per page). An area with no places yet shows **"Prayer times here today"** (calculated, Muslim World League, labelled) above the "Finding mosques…" state, so a first visit is never empty.
 - **Map**: `PlaceMap` with `TimePin`s, "Search as I move the map", zoom, legend, "you are here" dot.
 - **States**: location permission prompt (inline card, not a browser popup on load), empty area CTA, offline banner, error toast.
 - **Mobile**: list-first with a floating "Map" button; the map view has a bottom-sheet list (vaul snap points 20%/60%/100%).
 
 ### Mosque page `/m/[slug]` [Mosque.dc.html, MobileMosque.dc.html]
-- Title, address, Share/Save (Save P4), `PhotoGrid` (P1 placeholder illustration → P3 photos).
-- Summary line (type · Jumu'ah count · top amenities).
-- `TrustSummary` (P2; in P1 it reads "Iqamah times not yet added. Be the first", with sign-in in P2).
+- Title, address, Share/Save (Save P4), summary line (type · Jumu'ah count · top amenities).
+- **Today's prayer times** first (`PrayerTimesTable`), date + Hijri date, "Update timings" (P2), `DisputeBanner` (P2), calculation note + "Monthly timetable" (P7). With no iqamah yet, a compact "Iqamah times not yet added · Add iqamah times" row sits above the table and the waitlist email field below it.
+- `TrustSummary` (P2), shown once iqamah times exist; "agreement" is a dash until at least two people have voted.
 - Stewards row (P6; in P2–5 "Kept up to date by N contributors").
-- **Today's prayer times** (`PrayerTimesTable`), date + Hijri date, "Update timings" (P2), `DisputeBanner` (P2), calculation note + "Monthly timetable" (P7).
 - **Jumu'ah** cards (P2).
+- `PhotoGrid` after the times (P3 photos; else a credited Wikimedia Commons photo when `places.enrich` found one; else a slim "Add photos" prompt instead of a full-width illustration).
 - **What this place offers** (`AmenityList`, P3; P1 shows OSM-derived facts marked "from OpenStreetMap").
+- **About this place**: Wikipedia summary (linked, CC BY-SA), founding year, address, website, phone, sources line with the Wikidata ID (`places.enrich`; "From OpenStreetMap" without it).
 - **Aside**: `NextPrayerCard` (directions → Google/Apple Maps deep link by UA; "I prayed here" P4), "Report a timing change" / "Report a problem" (P3), mini map with the pin and nearest transit (from OSM), `ActivityFeed` (P2).
 - **Footer**: "Something missing? Suggest an edit", data attribution.
 - SEO: `Place`/`PlaceOfWorship` JSON-LD (`Mosque` type), canonical URL, OG image.

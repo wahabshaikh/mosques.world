@@ -183,6 +183,11 @@ engine governs everything) and the table is kept as the provenance record.
 one row per geohash-4 cell filled on demand from Overpass; the `filling` status doubles as a two-minute lock.
 **`place.adhan_adjust_json`**: the community's per-prayer adhan adjustments (see `adhan.*` below).
 
+### Enrichment
+**`place.wikidata_id`** and **`place.enrichment_json`** (`{wikidata, image:{file,thumb,page,author,license,licenseUrl}, wikipedia:{title,url,extract}, inception, nameAr}`):
+what the free open-data match found (`lib/enrich/wikidata.ts`). **`enrich_cell`** (`geohash` PK, `status` done/failed,
+`synced_at`, `matched`, `error`): one row per geohash-4 cell matched against Wikidata, refreshed quarterly.
+
 ### Phase 8
 **`api_key`** (`id`, `owner_id`, `hash`, `scopes`, `rate_limit`, `created_at`, `revoked_at`) and
 **`export_run`** (`id`, `kind`, `r2_key`, `rows`, `created_at`).
