@@ -40,7 +40,8 @@ export function contentSecurityPolicy(nonProd: boolean, embeddable = false): str
     "default-src 'self'",
     scriptSrc,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://tiles.openfreemap.org https://*.openfreemap.org",
+    // Wikimedia Commons thumbnails (free-licence photos from Wikidata) are hotlinked, as Wikimedia allows.
+    "img-src 'self' data: blob: https://tiles.openfreemap.org https://*.openfreemap.org https://upload.wikimedia.org https://thumb.wikimedia.org",
     connectSrc,
     "font-src 'self' data:",
     "worker-src 'self' blob:",

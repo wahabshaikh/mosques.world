@@ -1,0 +1,207 @@
+{
+ "head": {
+  "vars": [
+   "item",
+   "itemLabel",
+   "coord",
+   "image",
+   "website",
+   "inception",
+   "article",
+   "arLabel"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q4965928"
+    },
+    "arLabel": {
+     "xml:lang": "ar",
+     "type": "literal",
+     "value": "مسجد بريك لين"
+    },
+    "article": {
+     "type": "uri",
+     "value": "https://en.wikipedia.org/wiki/Brick_Lane_Mosque"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-0.0722222 51.5193)"
+    },
+    "image": {
+     "type": "uri",
+     "value": "http://commons.wikimedia.org/wiki/Special:FilePath/Brick%20Lane%20Jamme%20Masjid.jpg"
+    },
+    "website": {
+     "type": "uri",
+     "value": "http://bricklanejammemasjid.org.uk/"
+    },
+    "inception": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1743-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Brick Lane Masjid"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q7460188"
+    },
+    "arLabel": {
+     "xml:lang": "ar",
+     "type": "literal",
+     "value": "مسجد شاكلويل لين"
+    },
+    "article": {
+     "type": "uri",
+     "value": "https://en.wikipedia.org/wiki/Shacklewell_Lane_Mosque"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-0.0742 51.5509)"
+    },
+    "image": {
+     "type": "uri",
+     "value": "http://commons.wikimedia.org/wiki/Special:FilePath/Shacklewell%20Lane%20synagogue%20-%20mosque.jpg"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Shacklewell Lane Mosque"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q124789941"
+    },
+    "arLabel": {
+     "xml:lang": "ar",
+     "type": "literal",
+     "value": "مسجد بيت الأحد"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(0.038986078 51.533913554)"
+    },
+    "inception": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "2010-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "Baitul Ahad Mosque"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3352688"
+    },
+    "arLabel": {
+     "xml:lang": "ar",
+     "type": "literal",
+     "value": "مسجد شرق لندن"
+    },
+    "article": {
+     "type": "uri",
+     "value": "https://en.wikipedia.org/wiki/East_London_Mosque"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-0.0656 51.5176)"
+    },
+    "image": {
+     "type": "uri",
+     "value": "http://commons.wikimedia.org/wiki/Special:FilePath/ELM%20and%20LMC%20Angled%20View%201.jpg"
+    },
+    "website": {
+     "type": "uri",
+     "value": "http://www.eastlondonmosque.org.uk/"
+    },
+    "inception": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1910-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "East London Mosque"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q3352688"
+    },
+    "arLabel": {
+     "xml:lang": "ar",
+     "type": "literal",
+     "value": "مسجد شرق لندن"
+    },
+    "article": {
+     "type": "uri",
+     "value": "https://en.wikipedia.org/wiki/East_London_Mosque"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-0.0656 51.5176)"
+    },
+    "image": {
+     "type": "uri",
+     "value": "http://commons.wikimedia.org/wiki/Special:FilePath/East%20London%20Mosque%20Front%20View.jpg"
+    },
+    "website": {
+     "type": "uri",
+     "value": "http://www.eastlondonmosque.org.uk/"
+    },
+    "inception": {
+     "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+     "type": "literal",
+     "value": "1910-01-01T00:00:00Z"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "East London Mosque"
+    }
+   },
+   {
+    "item": {
+     "type": "uri",
+     "value": "http://www.wikidata.org/entity/Q26658897"
+    },
+    "coord": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "Point(-0.07618 51.484445)"
+    },
+    "image": {
+     "type": "uri",
+     "value": "http://commons.wikimedia.org/wiki/Special:FilePath/Former%20Church%20of%20Saint%20Mark%20%28New%20Peckham%20Mosque%29%20near%20Burgess%20Park%20%2801%29.jpg"
+    },
+    "itemLabel": {
+     "xml:lang": "en",
+     "type": "literal",
+     "value": "New Peckham Mosque"
+    }
+   }
+  ]
+ }
+}

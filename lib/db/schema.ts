@@ -35,6 +35,8 @@ export const place = sqliteTable(
     amenityBits: integer("amenity_bits").notNull().default(0),
     accessNotes: text("access_notes"),
     adhanAdjustJson: text("adhan_adjust_json"),
+    wikidataId: text("wikidata_id"),
+    enrichmentJson: text("enrichment_json"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
@@ -327,5 +329,13 @@ export const osmCell = sqliteTable("osm_cell", {
   startedAt: integer("started_at").notNull(),
   syncedAt: integer("synced_at"),
   inserted: integer("inserted").notNull().default(0),
+  error: text("error"),
+});
+
+export const enrichCell = sqliteTable("enrich_cell", {
+  geohash: text("geohash").primaryKey(),
+  status: text("status").notNull(),
+  syncedAt: integer("synced_at").notNull(),
+  matched: integer("matched").notNull().default(0),
   error: text("error"),
 });
