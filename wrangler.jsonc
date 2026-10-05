@@ -34,7 +34,9 @@
     "ENVIRONMENT": "production",
     "PUBLIC_BASE_URL": "https://mosques.world",
     "EMAIL_SINK": "0",
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFEk6AkU3t2qboxj",
+    // Global billable Google Places calls per UTC day (lib/places/context.ts; default 2000).
+    "GOOGLE_PLACES_DAILY_CAP": "500"
   },
   "d1_databases": [
     {
