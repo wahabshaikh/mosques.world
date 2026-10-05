@@ -178,6 +178,11 @@ email|push, `topic` saved_changes|digest|steward_alerts, `enabled`). **`notifica
 `times_json`, `notes`). Timetable rows are imported as dated `fact_candidate`s (so one trust
 engine governs everything) and the table is kept as the provenance record.
 
+### Launch
+**`osm_cell`** (`geohash` PK, `status` filling/done/failed, `started_at`, `synced_at`, `inserted`, `error`):
+one row per geohash-4 cell filled on demand from Overpass; the `filling` status doubles as a two-minute lock.
+**`place.adhan_adjust_json`**: the community's per-prayer adhan adjustments (see `adhan.*` below).
+
 ### Phase 8
 **`api_key`** (`id`, `owner_id`, `hash`, `scopes`, `rate_limit`, `created_at`, `revoked_at`) and
 **`export_run`** (`id`, `kind`, `r2_key`, `rows`, `created_at`).
@@ -188,7 +193,9 @@ engine governs everything) and the table is kept as the provenance record.
 |---|---|---|---|
 | `iqamah.fajr` … `iqamah.isha` | — | `{t:"HH:MM"}` or `{rule:"after_adhan",min:N}` | 2 |
 | `jumuah.jamaah` | `1..6` | `{t:"13:15", khutbah:"12:55", lang:["en"]}` | 2 |
-| `asr_madhab` | — | `{v:"hanafi"}` | 2 |
+| `asr_madhab` | — | `{v:"hanafi"}` (copied to `place.asr_madhab` when current) | 2 |
+| `adhan.method` | — | `{v:"NorthAmerica"}`: an adhan-js method the mosque's timetable follows (copied to `place.calc_method`) | launch |
+| `adhan.fajr` … `adhan.isha` | — | `{min:-120..120}` minutes from the calculated adhan, or `{t:"HH:MM"}` fixed; denormalised to `place.adhan_adjust_json` and applied by `getPrayerDay` everywhere | launch |
 | `amenity.women_section` | — | `{v:true\|false, note?}` | 3 |
 | `amenity.wudhu_men`, `amenity.wudhu_women` | — | same | 3 |
 | `amenity.step_free`, `amenity.parking`, `amenity.toilets`, `amenity.classes`, `amenity.janazah`, `amenity.open_between_prayers`, `amenity.open_for_fajr` | — | same | 3 |

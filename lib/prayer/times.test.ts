@@ -1,6 +1,6 @@
 import { CalculationMethod, Coordinates, Madhab, PrayerTimes } from "adhan";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getPrayerDay, nextAdhanLabel, prayerLabel, type PrayerDay } from "./times";
+import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust, prayerLabel, type PrayerDay } from "./times";
 
 const eastLondon = {
   lat: 51.5173983,
@@ -184,4 +184,31 @@ describe("prayer times", () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe("community adhan adjustments", () => {
+  it("shifts by minutes, pins fixed times, and leaves the rest calculated", () => {
+    const now = new Date("2026-09-25T11:00:00Z");
+    const day = getPrayerDay({ ...eastLondon, now, adjust: { fajr: { min: 15 }, isha: { t: "20:30" }, dhuhr: { min: -5 } } });
+    expect(day.rows.map((row) => row.adhan)).toEqual(["05:33", "06:51", "12:52", "16:55", "18:55", "20:30"]);
+    expect(day.rows.find((row) => row.key === "isha")?.at).toBe("2026-09-25T19:30:00.000Z");
+  });
+
+  it("uses the adjusted times for the next prayer, including tomorrow's Fajr", () => {
+    // 20:15 local: calculated Isha (20:09) has passed, the mosque's 20:30 Isha has not.
+    const evening = new Date("2026-09-25T19:15:00Z");
+    expect(getPrayerDay({ ...eastLondon, now: evening, adjust: { isha: { t: "20:30" } } }).nextKey).toBe("isha");
+    const late = new Date("2026-09-25T21:00:00Z");
+    const day = getPrayerDay({ ...eastLondon, now: late, adjust: { fajr: { min: 10 } } });
+    expect(day.nextKey).toBe("fajr");
+    // Tomorrow's calculated Fajr is 05:19.
+    expect(day.rows[0]?.adhan).toBe("05:29");
+  });
+
+  it("parses stored adjustments defensively", () => {
+    expect(parseAdhanAdjust(null)).toBeNull();
+    expect(parseAdhanAdjust("not json")).toBeNull();
+    expect(parseAdhanAdjust('{"fajr":{"min":500},"sunrise":{"min":3},"isha":{"t":"25:00"}}')).toBeNull();
+    expect(parseAdhanAdjust('{"fajr":{"min":-10},"maghrib":{"t":"18:45"},"asr":{"min":1.5}}')).toEqual({ fajr: { min: -10 }, maghrib: { t: "18:45" } });
+  });
 });

@@ -86,6 +86,8 @@ export const bn: Messages = {
   "mosque.update": "সময় হালনাগাদ করুন",
   "mosque.jumuahToday": "আজ জুমা · নিচে দেখুন",
   "mosque.calcNote": "আজানের সময় {method} পদ্ধতি, {madhab} আসর ও {zone} সময় অঞ্চলে হিসাব করা। এগুলো মসজিদের ইকামত নয়।",
+  "mosque.adhanCommunity": " যেখানে কমিউনিটি নির্ধারণ করেছে, সেখানে আজান এই মসজিদের নিজস্ব সময়সূচি অনুসরণ করে।",
+  "mosque.adhanDiffers": "মসজিদের আজান আলাদা?",
   "mosque.communityNote": " ইকামতের সময় মসজিদ থেকে আসে এবং কমিউনিটি তা হালনাগাদ রাখে। ",
   "mosque.history": "এই সময়গুলোর ইতিহাস",
   "mosque.monthly": "মাসিক সময়সূচি",

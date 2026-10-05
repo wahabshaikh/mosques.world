@@ -86,6 +86,8 @@ export const ur: Messages = {
   "mosque.update": "اوقات اپ ڈیٹ کریں",
   "mosque.jumuahToday": "آج جمعہ ہے · نیچے دیکھیں",
   "mosque.calcNote": "اذان کے اوقات {method} طریقے، {madhab} عصر اور {zone} کے وقت سے نکالے گئے ہیں۔ یہ مسجد کی اقامت نہیں ہیں۔",
+  "mosque.adhanCommunity": " جہاں کمیونٹی نے مقرر کیا ہے وہاں اذان اس مسجد کے اپنے نظام الاوقات کے مطابق ہے۔",
+  "mosque.adhanDiffers": "مسجد کی اذان مختلف ہے؟",
   "mosque.communityNote": " اقامت کے اوقات مسجد سے آتے ہیں اور کمیونٹی انہیں تازہ رکھتی ہے۔ ",
   "mosque.history": "ان اوقات کی تاریخ",
   "mosque.monthly": "ماہانہ نظام الاوقات",

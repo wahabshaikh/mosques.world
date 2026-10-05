@@ -3,7 +3,7 @@ import { haversineKm } from "@/lib/geo/distance";
 import { GEO_VERIFY_METRES } from "@/lib/checkins";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
-import { getPrayerDay, type PrayerDay } from "@/lib/prayer/times";
+import { getPrayerDay, type PrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 
 /** Loads a place for quick verify and checks the person is within 150 m of it right now. */
 export async function presentAt(
@@ -24,6 +24,7 @@ export async function presentAt(
     method: place.calcMethod,
     madhab: madhabOf(place.asrMadhab),
     highLat: place.highLatRule,
+    adjust: parseAdhanAdjust(place.adhanAdjustJson),
     now,
   });
   return { place, day, now, distanceM };

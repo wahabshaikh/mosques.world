@@ -83,6 +83,8 @@ export const ms: Messages = {
   "mosque.update": "Kemas kini waktu",
   "mosque.jumuahToday": "Jumaat hari ini · lihat di bawah",
   "mosque.calcNote": "Waktu azan dikira dengan kaedah {method}, Asar {madhab}, dalam zon {zone}. Ia bukan waktu iqamah masjid.",
+  "mosque.adhanCommunity": " Azan mengikut jadual masjid ini jika telah ditetapkan oleh komuniti.",
+  "mosque.adhanDiffers": "Azan masjid berbeza?",
   "mosque.communityNote": " Waktu iqamah datang daripada masjid dan dikemas kini oleh komuniti. ",
   "mosque.history": "Sejarah waktu ini",
   "mosque.monthly": "Jadual bulanan",

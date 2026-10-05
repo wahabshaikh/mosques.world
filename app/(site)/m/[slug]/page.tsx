@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Countdown, PrayerTable, type NextRow, type TableLabels } from "@/components/mw/prayer-table";
+import { MiniMap } from "@/components/mw/mini-map";
 import { DisputeBanner, ReportProblem, UpdateLink, ViewerProvider, type DisputeItem } from "@/components/mw/place-actions";
 import { ActivityFeed, JumuahCards, TrustSummary } from "@/components/mw/place-trust";
 import { TrackView } from "@/components/mw/track-view";
@@ -31,11 +32,11 @@ import { placePhotos } from "@/lib/media";
 import { captchaRequired } from "@/lib/auth";
 import { amenityRows, amenitySummary } from "@/lib/places/amenities";
 import { AmenityList } from "@/components/mw/amenity-list";
-import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
+import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
 import { iqamahCells, jumuahCards, nextRows, trustHeadline } from "@/lib/places/mosque";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
-import { describeValue, factLabel, formatTime12, iqamahValue, resolveIqamah } from "@/lib/trust/facts";
+import { describeValue, factLabel, formatTime12, iqamahValue, methodLabel, resolveIqamah } from "@/lib/trust/facts";
 import { placeActivity, placeFacts, placeTrustStats } from "@/lib/trust/read";
 import { coverTint } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ async function load(slug: string) {
     method: place.calcMethod,
     madhab: madhabOf(place.asrMadhab),
     highLat: place.highLatRule,
+    adjust: parseAdhanAdjust(place.adhanAdjustJson),
     now,
   });
   return { place, day, now, host };
@@ -307,12 +309,21 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            {l.t("mosque.calcNote", { method: place.calcMethod, madhab: place.asrMadhab, zone: place.timezone })}
+            {l.t("mosque.calcNote", { method: methodLabel(place.calcMethod), madhab: place.asrMadhab, zone: place.timezone })}
+            {place.adhanAdjustJson ? l.t("mosque.adhanCommunity") : null}
             {contributions ? l.t("mosque.communityNote") : null}
             {contributions ? (
               <Link href={l.href(`/m/${place.slug}/history`)} className="font-semibold text-foreground underline">
                 {l.t("mosque.history")}
               </Link>
+            ) : null}
+            {contributions ? (
+              <>
+                {" · "}
+                <UpdateLink href={`${updateHref}?tab=adhan`} className="font-semibold text-foreground underline">
+                  {l.t("mosque.adhanDiffers")}
+                </UpdateLink>
+              </>
             ) : null}
             {seasons ? (
               <>
@@ -503,12 +514,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           </div>
         ) : null}
         <div className="overflow-hidden rounded-2xl border border-input">
-          <iframe
-            title={l.t("mosque.map")}
-            className="h-48 w-full border-0"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${place.lng - 0.01}%2C${place.lat - 0.01}%2C${place.lng + 0.01}%2C${place.lat + 0.01}&layer=mapnik&marker=${place.lat}%2C${place.lng}`}
-          />
-          <p className="px-4 py-2 text-xs text-muted-foreground">© OpenStreetMap contributors</p>
+          <MiniMap lat={place.lat} lng={place.lng} label={l.t("mosque.map")} />
         </div>
         {contributions ? (
           <section>

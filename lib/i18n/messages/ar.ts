@@ -88,6 +88,8 @@ export const ar: Messages = {
   "mosque.update": "حدّث المواقيت",
   "mosque.jumuahToday": "الجمعة اليوم · انظر أدناه",
   "mosque.calcNote": "مواقيت الأذان محسوبة بطريقة {method}، والعصر على مذهب {madhab}، بتوقيت {zone}. وهي ليست أوقات إقامة المسجد.",
+  "mosque.adhanCommunity": " يتبع الأذان جدول هذا المسجد حيث حدّده المجتمع.",
+  "mosque.adhanDiffers": "أذان المسجد مختلف؟",
   "mosque.communityNote": " أوقات الإقامة من المسجد ويحدّثها المجتمع. ",
   "mosque.history": "سجل هذه الأوقات",
   "mosque.monthly": "الجدول الشهري",

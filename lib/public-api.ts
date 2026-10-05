@@ -3,7 +3,7 @@ import { placeById, resolvePlaceSlug, type DirectoryPlace } from "@/lib/db/queri
 import { amenityRows } from "@/lib/places/amenities";
 import { iqamahCells, localInstant } from "@/lib/places/mosque";
 import { madhabOf } from "@/lib/places/present";
-import { formatHm, getPrayerDay, type PrayerDay } from "@/lib/prayer/times";
+import { formatHm, getPrayerDay, type PrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { iqamahValue, jumuahValue } from "@/lib/trust/facts";
 import type { FactView } from "@/lib/trust/read";
 
@@ -134,6 +134,7 @@ export function prayerDayFor(place: DirectoryPlace, now: Date): PrayerDay {
     method: place.calcMethod,
     madhab: madhabOf(place.asrMadhab),
     highLat: place.highLatRule,
+    adjust: parseAdhanAdjust(place.adhanAdjustJson),
     now,
   });
 }
