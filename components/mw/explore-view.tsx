@@ -1,11 +1,10 @@
 "use client";
 
-import { CircleAlert, LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
+import { LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
-import { formatDistance } from "@/lib/geo/distance";
 import type { PlaceKindFilter } from "@/lib/places/view";
 import type { ExploreSort } from "@/lib/places/present";
 import { NEED_FILTERS, type NeedSlug } from "@/lib/places/needs";
@@ -14,6 +13,7 @@ import { FiltersDialog, NeedIcon } from "./filters-dialog";
 const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
+import { PlaceRowContent } from "./place-row";
 import type { AreaTimes } from "@/lib/places/area-times";
 
 type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string };
@@ -59,6 +59,7 @@ export function ExploreView({
   fillBbox = null,
   osm = false,
   areaTimes = null,
+  nextPrayer = null,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -79,6 +80,8 @@ export function ExploreView({
   osm?: boolean;
   /** Calculated adhan for the area, shown while it has no places listed. */
   areaTimes?: AreaTimes | null;
+  /** The next calculated adhan in this area, for the overline above the list. */
+  nextPrayer?: { label: string; time: string } | null;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -144,6 +147,47 @@ export function ExploreView({
       cancelled = true;
     };
   }, [fillKey, router]);
+
+  function locate() {
+    if (!("geolocation" in navigator)) {
+      setGeoProblem("Your browser can't share its location. Search for your city instead.");
+      return;
+    }
+    setGeoProblem(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        track("geolocation_granted", {});
+        goTo({ label: "Near you", lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      (error) =>
+        setGeoProblem(
+          error.code === error.PERMISSION_DENIED
+            ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
+            : "We couldn't find your location just now. Try again, or search for your city.",
+        ),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+    );
+  }
+
+  // Someone who already allowed location shouldn't be asked again on every visit: use it straight away.
+  // Denied hides the prompt; "prompt" keeps it, because asking unprompted on page load is rude.
+  const [geoPermission, setGeoPermission] = useState<"unknown" | "prompt" | "denied">("unknown");
+  useEffect(() => {
+    if (!showGeoPrompt || !navigator.permissions?.query) return;
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((status) => {
+        if (cancelled) return;
+        if (status.state === "granted") locate();
+        else setGeoPermission(status.state === "denied" ? "denied" : "prompt");
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+    // Once per page: locate() navigates, and the new URL carries coordinates so showGeoPrompt turns off.
+  }, [showGeoPrompt]);
 
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function onInput(value: string) {
@@ -354,6 +398,13 @@ export function ExploreView({
               ) : null}
             </label>
             <button
+              type="button"
+              onClick={locate}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary-soft px-3.5 text-sm font-bold text-primary sm:inline-flex"
+            >
+              <Navigation className="size-4" aria-hidden="true" /> Near me
+            </button>
+            <button
               type="submit"
               className="inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground"
               aria-label="Search"
@@ -362,10 +413,7 @@ export function ExploreView({
             </button>
           </form>
           <div className="mt-4 flex gap-2 overflow-x-auto">
-            <FilterChip active={kind === "all"} onClick={() => setKind("all")} icon={<Navigation className="size-4" />}>
-              Nearby
-            </FilterChip>
-            <FilterChip active={kind === "prayer_room"} onClick={() => setKind("prayer_room")}>
+            <FilterChip active={kind === "prayer_room"} onClick={() => setKind(kind === "prayer_room" ? "all" : "prayer_room")}>
               Prayer rooms
             </FilterChip>
             {community ? (
@@ -397,9 +445,14 @@ export function ExploreView({
         </div>
       </div>
       <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,680px)_1fr]">
-        <section className={cn("px-4 py-6 lg:px-6", mapMode && "hidden lg:block")}>
+        <section className={cn("px-4 pt-6 pb-24 lg:px-6 lg:pb-6", mapMode && "hidden lg:block")}>
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
+              {nextPrayer ? (
+                <p className="text-xs font-extrabold tracking-wide text-primary uppercase" data-testid="next-prayer">
+                  Next prayer · {nextPrayer.label} adhan {nextPrayer.time}
+                </p>
+              ) : null}
               <h1 className="text-2xl font-bold tracking-tight">
                 {cards.length} {cards.length === 1 ? "place" : "mosques & prayer spaces"} nearby
               </h1>
@@ -423,35 +476,8 @@ export function ExploreView({
               <p className="text-sm font-semibold">Distance</p>
             )}
           </div>
-          {showGeoPrompt ? (
-            <button
-              type="button"
-              className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm"
-              onClick={() => {
-                if (!("geolocation" in navigator)) {
-                  setGeoProblem("Your browser can't share its location. Search for your city instead.");
-                  return;
-                }
-                setGeoProblem(null);
-                navigator.geolocation.getCurrentPosition(
-                  (position) => {
-                    track("geolocation_granted", {});
-                    goTo({
-                      label: "Near you",
-                      lat: position.coords.latitude,
-                      lng: position.coords.longitude,
-                    });
-                  },
-                  (error) =>
-                    setGeoProblem(
-                      error.code === error.PERMISSION_DENIED
-                        ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
-                        : "We couldn't find your location just now. Try again, or search for your city.",
-                    ),
-                  { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
-                );
-              }}
-            >
+          {showGeoPrompt && geoPermission !== "denied" ? (
+            <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={locate}>
               <LocateFixed className="size-4 text-primary" />
               Use your location for a closer list. We only use it to centre the map.
             </button>
@@ -526,29 +552,7 @@ export function ExploreView({
                     onFocus={() => setActiveId(place.id)}
                     className={cn("flex items-center gap-4 rounded-2xl p-2.5 hover:bg-muted", activeId === place.id && "bg-muted ring-2 ring-primary")}
                   >
-                    <PlaceThumb place={place} />
-                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate font-bold">{place.name}</span>
-                        {place.verifiers > 0 ? (
-                          <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold text-muted-foreground">
-                            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-                            <span className="sr-only">confirmed by</span>
-                            {place.verifiers}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="truncate text-sm text-muted-foreground">
-                        {[place.locality, place.distanceKm !== null ? formatDistance(place.distanceKm) : null, place.tag].filter(Boolean).join(" · ")}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 flex-col items-end gap-1 text-end">
-                      {/* Calculated adhan is the same for every place nearby, so it stays quiet and community iqamah times stand out. */}
-                      <span className={cn("tabular text-base", place.nextKind === "iqamah" ? "font-extrabold" : "font-semibold text-muted-foreground")}>
-                        {place.nextLabel} {place.nextTime}
-                      </span>
-                      <CardStatus place={place} />
-                    </span>
+                    <PlaceRowContent place={place} />
                   </Link>
                 </li>
               ))}
@@ -615,47 +619,12 @@ export function ExploreView({
       ) : null}
       <button
         type="button"
-        className="fixed right-4 bottom-4 z-30 rounded-full bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"
+        className="fixed bottom-5 left-1/2 z-30 -translate-x-1/2 rounded-full bg-secondary px-5 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"
         onClick={() => setMapMode((value) => !value)}
       >
         {mapMode ? "List" : "Map"}
       </button>
     </div>
-  );
-}
-
-/** One trust word under the time, so the list reads at a glance: whose time it is and how sure we are. */
-function CardStatus({ place }: { place: ExplorePlace }) {
-  if (place.changeReported) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-bold text-warning">
-        <CircleAlert className="size-3" aria-hidden="true" /> iqamah · change reported
-      </span>
-    );
-  }
-  if (place.nextKind === "adhan") {
-    return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">adhan · no iqamah yet</span>;
-  }
-  const verified = place.verification === "verified";
-  return (
-    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", verified ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground")}>
-      iqamah · {verified ? "verified" : "unverified"}
-    </span>
-  );
-}
-
-function PlaceThumb({ place }: { place: ExplorePlace }) {
-  if (place.photo) {
-    return <img src={place.photo} alt="" loading="lazy" className="size-14 shrink-0 rounded-xl object-cover" />;
-  }
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-14 shrink-0 items-center justify-center rounded-xl text-base font-extrabold text-foreground/70"
-      style={{ background: place.tint }}
-    >
-      {place.monogram}
-    </span>
   );
 }
 

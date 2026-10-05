@@ -19,13 +19,17 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
   const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [stewarding, setStewarding] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!notifications || !user?.username) return;
     void fetch("/api/v1/notifications?count=1")
-      .then((response) => (response.ok ? (response.json() as Promise<{ unread: number }>) : null))
-      .then((body) => setUnread(body?.unread ?? 0))
+      .then((response) => (response.ok ? (response.json() as Promise<{ unread: number; stewarding?: boolean }>) : null))
+      .then((body) => {
+        setUnread(body?.unread ?? 0);
+        setStewarding(Boolean(body?.stewarding));
+      })
       .catch(() => undefined);
   }, [notifications, user?.username]);
 
@@ -125,11 +129,13 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
                         <Bell className="size-4" /> Notifications{unread > 0 ? ` (${unread})` : ""}
                       </Link>
                     </li>
-                    <li>
-                      <Link className={item} href="/steward">
-                        <ShieldCheck className="size-4" /> Steward
-                      </Link>
-                    </li>
+                    {stewarding || moderator ? (
+                      <li>
+                        <Link className={item} href="/steward">
+                          <ShieldCheck className="size-4" /> Steward
+                        </Link>
+                      </li>
+                    ) : null}
                   </>
                 ) : null}
               </>

@@ -14,7 +14,11 @@ export async function GET(request: Request) {
   const countOnly = new URL(request.url).searchParams.get("count") === "1";
   const unread = await database.prepare(`SELECT COUNT(*) AS n FROM notification WHERE user_id = ? AND read_at IS NULL`).bind(guarded.user.id).first<{ n: number }>();
   const headers = { "cache-control": "private, no-store" };
-  if (countOnly) return Response.json({ unread: unread?.n ?? 0 }, { headers });
+  if (countOnly) {
+    // The header menu shows "Steward" only to people who look after a mosque (or have asked to).
+    const stewarding = await database.prepare(`SELECT 1 AS yes FROM steward WHERE user_id = ? AND status IN ('requested', 'approved') LIMIT 1`).bind(guarded.user.id).first<{ yes: number }>();
+    return Response.json({ unread: unread?.n ?? 0, stewarding: Boolean(stewarding) }, { headers });
+  }
   const rows = await database
     .prepare(`SELECT id, topic, title, body, url, read_at, created_at FROM notification WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`)
     .bind(guarded.user.id)

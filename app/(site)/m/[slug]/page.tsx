@@ -24,6 +24,7 @@ import { CheckinButton } from "@/components/mw/checkin-button";
 import { SaveButton, ShareButton } from "@/components/mw/place-header-actions";
 import { defaultPrayer } from "@/lib/checkins";
 import { parseEnrichment } from "@/lib/enrich/wikidata";
+import { DirectionsLink } from "@/components/mw/directions-link";
 import { currentUser, isModerator } from "@/lib/session";
 import { placesContext } from "@/lib/places/context";
 import { liveFields } from "@/lib/places/google";
@@ -169,8 +170,6 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
     address: place.address,
     geo: { "@type": "GeoCoordinates", latitude: place.lat, longitude: place.lng },
   };
-  const maps = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}`;
-  const apple = `https://maps.apple.com/?daddr=${place.lat},${place.lng}`;
   const updateHref = l.href(`/m/${place.slug}/update`);
   const amenities = places ? amenityRows(facts) : [];
   const google = places && place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
@@ -268,7 +267,8 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             <PrayerTable
               day={day}
               initialNow={now.toISOString()}
-              extras={contributions ? { iqamah: cells, addHref: updateHref, jumuahNote: jumuah.length > 0 ? l.t("mosque.jumuahToday") : undefined } : undefined}
+              // With nothing set yet, one "Add iqamah times" button above the table beats an "Add" on every row.
+              extras={contributions ? { iqamah: cells, addHref: hasIqamah ? updateHref : undefined, jumuahNote: jumuah.length > 0 ? l.t("mosque.jumuahToday") : undefined } : undefined}
               labels={labels}
             />
             {disputes.map((item) => (
@@ -519,16 +519,12 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
         <div className="z-10 h-fit rounded-2xl border border-input bg-card p-5 shadow-[0_6px_20px_rgba(31,29,26,.12)] lg:sticky lg:top-24">
           <Countdown rows={rows} initialNow={now.toISOString()} labels={labels} />
           <div className="mt-4 flex flex-col gap-2">
-            <a
-              href={maps}
-              data-testid="directions"
+            <DirectionsLink
+              lat={place.lat}
+              lng={place.lng}
+              label={l.t("mosque.directions")}
               className="inline-flex h-12 items-center justify-center rounded-[12px] bg-primary font-bold text-primary-foreground"
-            >
-              {l.t("mosque.directions")}
-            </a>
-            <a href={apple} className="text-center text-sm underline">
-              {l.t("mosque.appleMaps")}
-            </a>
+            />
             {profiles && !closed ? (
               <CheckinButton placeId={place.id} placeName={place.name} defaultPrayer={defaultPrayer(day, now)} jumuah={day.jumuah} today={day.date} />
             ) : null}

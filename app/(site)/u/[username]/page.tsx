@@ -196,7 +196,8 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
             trustLevel={user.trustLevel}
             own={own}
             stats={[
-              { value: stat.verifications, label: "Verifications" },
+              // Every time added or confirmed counts: "0 verifications" right after adding five times read as nothing done.
+              { value: counts.all, label: counts.all === 1 ? "Contribution" : "Contributions" },
               { value: stat.placesAdded, label: "Places added" },
               { value: years.value, label: years.label },
             ]}

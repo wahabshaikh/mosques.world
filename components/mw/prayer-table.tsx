@@ -89,7 +89,8 @@ export function PrayerTable({
   }, []);
 
   const nextKey = nextKeyAt(day, now, extras);
-  const community = Boolean(extras);
+  // An all-empty "Community check" column is noise; it appears once there is something to check (or add per row).
+  const community = Boolean(extras && (Object.keys(extras.iqamah).length > 0 || extras.addHref));
 
   return (
     <table className="w-full text-sm">

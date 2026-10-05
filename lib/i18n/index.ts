@@ -85,11 +85,10 @@ export function translator(locale: Locale = DEFAULT_LOCALE) {
     return m === 0 ? t("duration.hours", { h }) : t("duration.hoursMinutes", { h, m });
   }
 
-  /** "2026-11-17" as a long local date; English keeps the ISO date the page always showed. */
+  /** "2026-11-17" as people write the date ("Tuesday 17 November 2026" in English). */
   function date(iso: string): string {
-    if (locale === DEFAULT_LOCALE) return iso;
     const [year = 2000, month = 1, day = 1] = iso.split("-").map(Number);
-    return new Intl.DateTimeFormat(numbering, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
+    return new Intl.DateTimeFormat(locale === DEFAULT_LOCALE ? "en-GB" : numbering, { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
       new Date(Date.UTC(year, month - 1, day)),
     );
   }

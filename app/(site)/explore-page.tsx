@@ -60,6 +60,7 @@ export async function ExplorePage({
     sort,
   ).slice(0, 60);
   const anchor = places[0];
+  let nextPrayer: { label: string; time: string } | null = null;
   const subline = anchor
     ? (() => {
         const day = getPrayerDay({
@@ -73,7 +74,8 @@ export async function ExplorePage({
           now,
         });
         const next = nextAdhanLabel(day);
-        return `${view.where} · ${day.hijri} · next ${next.label} adhan ${formatTime12(next.time)}`;
+        nextPrayer = { label: next.label, time: formatTime12(next.time) };
+        return `${view.where} · ${day.hijri}`;
       })()
     : `${view.where} · no places in this view yet`;
 
@@ -86,6 +88,7 @@ export async function ExplorePage({
       zoom={view.zoom}
       kind={view.kind}
       subline={subline}
+      nextPrayer={nextPrayer}
       showGeoPrompt={view.source !== "url"}
       turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
       sort={sort}
@@ -95,7 +98,8 @@ export async function ExplorePage({
       amenities={amenitiesOn}
       fillBbox={needsFill ? view.bbox : null}
       osm={osm}
-      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now) : null}
+      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, // The visitor's country only describes the area when the view is where they are, not a place they searched.
+            await countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null)) : null}
     />
   );
 }
@@ -110,4 +114,15 @@ function zoomForArea(bbox: { west: number; east: number; south: number; north: n
   if (span > 1) return 9;
   if (span > 0.3) return 11;
   return 13;
+}
+
+/** The country's usual calculation (calc_default), for an area with no mosques to take it from. */
+async function countryPreset(country: string | null): Promise<{ method: string; madhab: string } | null> {
+  if (!country || !/^[A-Z]{2}$/i.test(country)) return null;
+  const row = await appEnv()
+    .DB.prepare(`SELECT calc_method, asr_madhab FROM calc_default WHERE country_code = ?`)
+    .bind(country.toUpperCase())
+    .first<{ calc_method: string; asr_madhab: string }>()
+    .catch(() => null);
+  return row ? { method: row.calc_method, madhab: row.asr_madhab } : null;
 }
