@@ -1,6 +1,7 @@
 import { encodeGeohash } from "@/lib/geo/geohash";
 import type { Bbox } from "@/lib/geo/distance";
 import { nameArea, type AreaName } from "@/lib/geocode";
+import { likelyDuplicates } from "@/lib/places/duplicates";
 import { osmPlaceRow, overpassQuery, stepFreeStatements, type OsmElement, type OsmPlaceRow } from "@/lib/osm";
 import { slugify } from "@/lib/slug";
 
@@ -235,8 +236,8 @@ export async function areaNeedsFill(db: D1Database, bbox: Bbox, now: number): Pr
 }
 
 const INSERT_PLACE = `INSERT INTO place (id, slug, name, name_local, kind, status, lat, lng, geohash6, address, locality, region, country_code, city_slug, timezone,
-    calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, created_at, updated_at)
-  VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`;
+    calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, wikidata_id, created_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`;
 
 async function insertElements(
   db: D1Database,
@@ -287,7 +288,7 @@ async function insertElements(
       .bind(
         row.id, row.slug, row.name, row.nameLocal, row.kind, row.lat, row.lng, row.geohash6, row.address, row.locality, row.region,
         row.countryCode, row.citySlug, row.timezone, preset?.calc_method ?? "MuslimWorldLeague", preset?.asr_madhab ?? "shafi",
-        row.osmType, row.osmId, row.website, row.phone, row.wheelchair, now, now,
+        row.osmType, row.osmId, row.website, row.phone, row.wheelchair, row.wikidataId, now, now,
       );
   };
 
@@ -313,6 +314,19 @@ async function insertElements(
     });
   }
   inserted = landed.length;
+  // New rows that look like a place already here (or each other) go to the moderators' duplicate queue.
+  const nearby = await db
+    .prepare(`SELECT id, name, lat, lng, geohash6 FROM place WHERE status = 'active' AND geohash6 >= ? AND geohash6 < ?`)
+    .bind(cell, `${cell}~`)
+    .all<{ id: string; name: string; lat: number; lng: number; geohash6: string }>();
+  const fresh = new Set(landed.map((row) => row.id));
+  const duplicates = likelyDuplicates(nearby.results ?? []).filter((pair) => fresh.has(pair.aId) || fresh.has(pair.bId));
+  const queue = duplicates.map((pair) =>
+    db
+      .prepare(`INSERT INTO place_duplicate_candidate (a_id, b_id, distance_m, name_similarity, status, created_at) VALUES (?, ?, ?, ?, 'open', ?) ON CONFLICT DO NOTHING`)
+      .bind(pair.aId, pair.bId, pair.distanceM, pair.similarity, now),
+  );
+  for (let start = 0; start < queue.length; start += BATCH) await db.batch(queue.slice(start, start + BATCH));
   const stepFree = landed.flatMap((row) => stepFreeStatements(db, row.id, row.wheelchair, now));
   for (let start = 0; start < stepFree.length; start += BATCH * 2) await db.batch(stepFree.slice(start, start + BATCH * 2));
   return inserted;

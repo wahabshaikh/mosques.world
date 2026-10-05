@@ -30,6 +30,16 @@ describe("osm", () => {
     expect(overpassQuery({ south: 1, west: 2, north: 3, east: 4 })).toContain("(1,2,3,4)");
   });
 
+  it("keeps the most local area name, the Arabic-script name and the mappers' Wikidata link", () => {
+    const row = osmPlaceRow(
+      { type: "node", id: 10, lat: 24.86, lon: 67.0, tags: { name: "Masjid Tooba", "name:ur": "مسجد طوبیٰ", "addr:neighbourhood": "DHA Phase 2", "addr:city": "Karachi", wikidata: "Q1474577" } },
+      { country: "PK", citySlug: "karachi", cityName: "Karachi", taken: new Set(), now: 1 },
+    );
+    expect(row).toMatchObject({ locality: "DHA Phase 2", nameLocal: "مسجد طوبیٰ", wikidataId: "Q1474577" });
+    const plain = osmPlaceRow({ type: "node", id: 11, lat: 24.86, lon: 67.0, tags: { name: "مسجد", "name:ar": "مسجد", wikidata: "not-an-id" } }, { country: "PK", citySlug: "karachi", cityName: "Karachi", taken: new Set(), now: 1 });
+    expect(plain).toMatchObject({ nameLocal: null, wikidataId: null, locality: "Karachi" });
+  });
+
   it("adds only new places, never overwriting community edits", async () => {
     const fetcher = vi.fn(async () => Response.json({ elements }));
     const inserted = await syncCity(d1, { country_code: "GB", city_slug: "london", name: "London", bbox_json: null }, fetcher as unknown as typeof fetch, 5);

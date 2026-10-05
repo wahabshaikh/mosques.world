@@ -45,6 +45,8 @@ export type OsmPlaceRow = {
   website: string | null;
   phone: string | null;
   wheelchair: string | null;
+  /** The Wikidata item OSM mappers linked (about 5,000 mosques worldwide), for an exact enrichment match. */
+  wikidataId: string | null;
 };
 
 /** Normalises one Overpass element into a place row (shared by the import script and the weekly sync). */
@@ -58,7 +60,8 @@ export function osmPlaceRow(
   const lat = element.lat ?? element.center?.lat;
   const lng = element.lon ?? element.center?.lon;
   if (lat === undefined || lng === undefined) return null;
-  const tagged = tags["addr:suburb"] ?? tags["addr:city"];
+  // The most local name mappers gave, so a city of thousands of mosques doesn't list them all as "Karachi".
+  const tagged = tags["addr:suburb"] ?? tags["addr:neighbourhood"] ?? tags["addr:quarter"] ?? tags["addr:district"] ?? tags["addr:city"];
   // Keep the page readable in the site's language: a locality in another script falls back to the city.
   const locality = tagged && (slugify(tagged) || !slugify(context.cityName)) ? tagged : context.cityName;
   const kind = /prayer room|musalla/i.test(name) ? "prayer_room" : "mosque";
@@ -70,7 +73,7 @@ export function osmPlaceRow(
     id: ulid(context.now),
     slug,
     name,
-    nameLocal: tags["name:en"] && tags.name !== tags["name:en"] ? (tags.name ?? null) : null,
+    nameLocal: tags["name:en"] && tags.name !== tags["name:en"] ? (tags.name ?? null) : localName(tags, name),
     kind,
     lat,
     lng,
@@ -86,7 +89,17 @@ export function osmPlaceRow(
     website: tags.website ?? tags["contact:website"] ?? null,
     phone: tags.phone ?? tags["contact:phone"] ?? null,
     wheelchair: tags.wheelchair ?? null,
+    wikidataId: /^Q\d+$/.test(tags.wikidata ?? "") ? tags.wikidata! : null,
   };
+}
+
+/** The name in Arabic script (Arabic, Urdu, Persian) when OSM has one and the main name is in another script. */
+function localName(tags: Record<string, string>, name: string): string | null {
+  for (const key of ["name:ar", "name:ur", "name:fa"]) {
+    const value = tags[key];
+    if (value && value !== name && !/[\u0600-\u06FF]/.test(name)) return value;
+  }
+  return null;
 }
 
 /** Initial step-free value from the OSM wheelchair tag, authored by the system account (as in 0004). */
@@ -173,8 +186,8 @@ export async function syncCity(db: D1Database, city: CityRow, fetcher: typeof fe
     const result = await db
       .prepare(
         `INSERT INTO place (id, slug, name, name_local, kind, status, lat, lng, geohash6, address, locality, region, country_code, city_slug, timezone,
-           calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+           calc_method, asr_madhab, osm_type, osm_id, website, phone, wheelchair, wikidata_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
       )
       .bind(
         row.id,
@@ -198,6 +211,7 @@ export async function syncCity(db: D1Database, city: CityRow, fetcher: typeof fe
         row.website,
         row.phone,
         row.wheelchair,
+        row.wikidataId,
         now,
         now,
       )

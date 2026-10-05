@@ -112,6 +112,18 @@ describe("matching places to Wikidata", () => {
     expect(duplicates).toEqual([]);
   });
 
+  it("trusts the Wikidata link OSM mappers added over any distance or name guess", () => {
+    const { matches } = matchPlaces(
+      [
+        { id: "tagged", name: "Jamia Masjid", lat: 51.5, lng: -0.1, wikidataId: "Q42" },
+        { id: "lookalike", name: "Grand Mosque", lat: 51.6, lng: -0.2 },
+      ],
+      [item({ id: "Q42", label: "Grand Mosque", lat: 51.6, lng: -0.2 })],
+    );
+    expect(matches.get("tagged")?.id).toBe("Q42");
+    expect(matches.has("lookalike")).toBe(false);
+  });
+
   it("gives each item to one place and reports two places that both are it", () => {
     const { matches, duplicates } = matchPlaces(
       [

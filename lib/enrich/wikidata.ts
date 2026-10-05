@@ -1,6 +1,9 @@
 import { haversineKm } from "@/lib/geo/distance";
 import { geohashBounds } from "@/lib/osm-fill";
 import type { Bbox } from "@/lib/geo/distance";
+import { nameSimilarity } from "@/lib/places/duplicates";
+
+export { nameSimilarity };
 
 /**
  * Free open-data enrichment on top of OpenStreetMap (spec 2.5 data sources): match each place to its
@@ -84,30 +87,7 @@ export function parseSparql(json: unknown): WikidataMosque[] {
   return [...byId.values()];
 }
 
-const FILLER = new Set(["the", "and", "of", "al", "el", "mosque", "masjid", "masjed", "mesjid", "mescidi", "camii", "cami", "jamia", "jami", "jame", "islamic", "muslim", "centre", "center", "community", "cultural", "society", "trust", "e", "ul", "i"]);
-
-function tokens(name: string): Set<string> {
-  return new Set(
-    name
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter((word) => word.length > 1 && !FILLER.has(word)),
-  );
-}
-
-/** Overlap of the telling words in two names, 0–1 (Dice coefficient). */
-export function nameSimilarity(a: string, b: string): number {
-  const left = tokens(a);
-  const right = tokens(b);
-  if (left.size === 0 || right.size === 0) return 0;
-  let shared = 0;
-  for (const word of left) if (right.has(word)) shared += 1;
-  return (2 * shared) / (left.size + right.size);
-}
-
-type PlaceRef = { id: string; name: string; lat: number; lng: number };
+type PlaceRef = { id: string; name: string; lat: number; lng: number; wikidataId?: string | null };
 
 /**
  * Pairs places with Wikidata items. Wikidata coordinates are often a building centroid or rounded,
@@ -129,6 +109,14 @@ export function matchPlaces(places: PlaceRef[], items: WikidataMosque[]): { matc
   candidates.sort((a, b) => b.score - a.score);
   const matches = new Map<string, WikidataMosque>();
   const taken = new Set<string>();
+  // OSM mappers' own wikidata=Q… link beats any guess.
+  const byItem = new Map(items.map((item) => [item.id, item]));
+  for (const place of places) {
+    const item = place.wikidataId ? byItem.get(place.wikidataId) : undefined;
+    if (!item || taken.has(item.id)) continue;
+    matches.set(place.id, item);
+    taken.add(item.id);
+  }
   const claims = new Map<string, Set<string>>();
   for (const candidate of candidates) {
     if (candidate.item.label && nameSimilarity(candidate.place.name, candidate.item.label) >= 0.8) {
@@ -258,7 +246,7 @@ export async function enrichCell(db: D1Database, cell: string, fetcher: typeof f
   try {
     const bbox = geohashBounds(cell);
     const places = await db
-      .prepare(`SELECT id, name, lat, lng, website FROM place WHERE status != 'merged' AND geohash6 >= ? AND geohash6 < ?`)
+      .prepare(`SELECT id, name, lat, lng, website, wikidata_id AS wikidataId FROM place WHERE status != 'merged' AND geohash6 >= ? AND geohash6 < ?`)
       .bind(cell, `${cell}~`)
       .all<PlaceRef & { website: string | null }>();
     const rows = places.results ?? [];
