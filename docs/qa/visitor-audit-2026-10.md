@@ -36,14 +36,14 @@ Severity: **P0** stops a visitor getting what they came for, **P1** visibly brok
 
 | # | Sev | Finding | Status |
 |---|---|---|---|
-| 1 | P0 | **Production shows 0 mosques outside the seeded cities.** `places.osm` is off, so the on-demand OpenStreetMap fill (built in #32) never runs: New York renders "0 mosques & prayer spaces nearby". | **Needs a human**: turn on `places.osm` (Rollout). |
+| 1 | P0 | **Production shows 0 mosques outside the seeded cities.** `places.osm` is off, so the on-demand OpenStreetMap fill (built in #32) never runs: New York renders "0 mosques & prayer spaces nearby". | Fixed: `places.osm` turned on in production KV (5 Oct 2026). |
 | 2 | P1 | An empty area was a dead end: "0 mosques nearby" and a link to add one, nothing else. | Fixed: **"Prayer times here today"** (calculated, labelled) shows above the empty/finding state, so the visitor still leaves knowing when to pray. |
 | 3 | P1 | **Two clock styles in one list**: iqamah "5:00 PM" next to adhan "16:35" on cards, pins, the subline, the prayer table and the countdown. | Fixed: one clock style everywhere (`l.adhan()` follows the locale like `l.time()`). |
 | 4 | P1 | The card grid was 60 identical blank tiles with an "Adhan" chip; at 3 columns the London page was 7,000 px tall, and 40 cards in a row read "Maghrib 6:32 PM adhan". | Fixed: a single-column list. Each row has a Commons photo or a two-letter monogram, locality · distance · amenity, and the next time with one trust word (*iqamah · verified / unverified / change reported*, or *adhan · no iqamah yet* in muted type so community times stand out). |
-| 5 | P2 | The "Nearby" chip looks like a filter but is the reset state; "Prayer rooms" sits among amenities. | Open: make "Nearby" a sort, move place type into Filters. |
-| 6 | P2 | Location already granted? The home still asks "Use your location…" every visit. | Open: check `navigator.permissions` and use it silently when granted. |
-| 7 | P2 | City pages are a bare list with a vague "Times" link: no next prayer, no map. | Open: reuse the explore rows on `/cities/…`. |
-| 8 | P2 | On a phone the floating "Map" button covers the last row and the footer. | Open. |
+| 5 | P2 | The "Nearby" chip looks like a filter but is the reset state; "Prayer rooms" sits among amenities. | Fixed: "Nearby" chip removed (it was the reset state); "Prayer rooms" is a toggle; "Near me" sits in the search bar. |
+| 6 | P2 | Location already granted? The home still asks "Use your location…" every visit. | Fixed: a granted permission is used at once; a denied one hides the prompt. |
+| 7 | P2 | City pages are a bare list with a vague "Times" link: no next prayer, no map. | Fixed: city pages use the same rows (next time, trust word, photo) and say how many places have community iqamah times. |
+| 8 | P2 | On a phone the floating "Map" button covers the last row and the footer. | Fixed: the button is centred and the list leaves room for it. |
 
 ### The mosque page
 
@@ -52,11 +52,11 @@ Severity: **P0** stops a visitor getting what they came for, **P1** visibly brok
 | 9 | P1 | **Times were below the fold.** A full-width placeholder illustration and a large "Iqamah times not yet added" box came first; on a phone the table started on the fifth screen. | Fixed: **Today's prayer times** comes first; the "not yet added" prompt is one compact row with a single *Add iqamah times* button above the table; photos move below. |
 | 10 | P1 | The sticky next-prayer card had no background, so the activity feed scrolled *through* it. | Fixed (`bg-card`, `z-10`). |
 | 11 | P1 | "Unverified" next to "**100% agreement**" when one person has added times. | Fixed: agreement is a dash until two people have voted. |
-| 12 | P2 | Ten-plus calls to action on an empty page (five "Add" links, Add iqamah, Update timings, email, Add facilities, Suggest an edit, Add Eid…). | Partly: the big box is gone. Open: drop the per-row "Add" links when nothing is set (the one button covers it). |
+| 12 | P2 | Ten-plus calls to action on an empty page (five "Add" links, Add iqamah, Update timings, email, Add facilities, Suggest an edit, Add Eid…). | Fixed: one "Add iqamah times" button; per-row "Add" links and the empty "Community check" column only appear once something is set. |
 | 13 | P2 | Copy: "hanafi asr" in lower case; the timetable footnote printed `MoonsightingCommittee`; the website as a raw `http://www…/` URL; the next-prayer time wrapped mid-time in the sidebar. | Fixed. |
 | 14 | P2 | No photo, no description: every page looked the same until someone uploaded a photo. | Fixed with free data: a credited **Wikimedia Commons** photo and a **Wikipedia** summary, founding year and website from **Wikidata** (`places.enrich`). |
-| 15 | P2 | Today's date shows as `2026-10-05`. | Open: format with `l.date` in the place's locale ("Mon 5 Oct"). |
-| 16 | P2 | "Apple Maps" is a second link under *Get directions*; the spec asks for one button that picks the app by device. | Open. |
+| 15 | P2 | Today's date shows as `2026-10-05`. | Fixed: "Monday 5 October 2026" (`l.date` in every language). |
+| 16 | P2 | "Apple Maps" is a second link under *Get directions*; the spec asks for one button that picks the app by device. | Fixed: one *Get directions* button, Apple Maps on Apple devices, Google Maps elsewhere. |
 | 17 | P2 | Non-English pages computed dispute labels from the *localised* adhan string (e.g. Arabic digits), so an "N min after adhan" challenger could show the wrong time. | Fixed: arithmetic reads the raw day; only display rows are localised. |
 
 ### Contributing (update dialog, check-ins, verify)
@@ -64,19 +64,19 @@ Severity: **P0** stops a visitor getting what they came for, **P1** visibly brok
 | # | Sev | Finding | Status |
 |---|---|---|---|
 | 18 | P1 | **The thank-you screen disappeared** about a second after submitting (`router.refresh()` re-rendered the intercepted route) and the form came back as "Confirm times are correct", applying from *tomorrow*. People could submit twice and never saw "Share this mosque". | Fixed: the dialog refreshes the page underneath when it closes. Verified: results stay up; after *Done* the page shows the new times. |
-| 19 | P2 | "Applies from" uses the browser's date format (`10/05/2026`) while the rest of the page is en-GB style. | Open. |
-| 20 | P2 | Every row carries "Use minutes after adhan": jargon, repeated five times. | Open: one "Times follow the adhan (e.g. +10 min)" switch for the tab. |
-| 21 | P2 | The design's one-tap "Are these still right? → Yes, all 5" is still a full form on a phone. | Designed (Quick update artboard); not built. |
-| 22 | P2 | `/verify` on desktop: a phone sheet in the middle of an empty map. | Open (low traffic on desktop). |
+| 19 | P2 | "Applies from" uses the browser's date format (`10/05/2026`) while the rest of the page is en-GB style. | Fixed: *Today* / *Tomorrow* chips next to the date field. |
+| 20 | P2 | Every row carries "Use minutes after adhan": jargon, repeated five times. | Fixed: shown on Maghrib (where it is usual) and on rows already using it; one link reveals it for the rest. |
+| 21 | P2 | The design's one-tap "Are these still right? → Yes, all 5" is still a full form on a phone. | Partly: with all five times set the tab opens with "Are these still right?" and one *Confirm times are correct* button. The at-the-mosque `/verify` flow already asks one question at a time. |
+| 22 | P2 | `/verify` on desktop: a phone sheet in the middle of an empty map. | Fixed: a centred card on desktop. |
 
 ### Profile, saved, account
 
 | # | Sev | Finding | Status |
 |---|---|---|---|
-| 23 | P2 | "0 Verifications" right after adding five live times; the list says "Suggested Isha" with amber icons although they are live. | Open: count submissions that went live; label them "Added". |
-| 24 | P2 | Long usernames break mid-word in the profile card. | Open (`break-words`, smaller display size). |
-| 25 | P2 | "Steward" is in everyone's account menu. | Open: show it to stewards only (the page's empty state is good). |
-| 26 | P2 | Saved shows blank tint squares as thumbnails. | Open: reuse the monogram/photo thumb. |
+| 23 | P2 | "0 Verifications" right after adding five live times; the list says "Suggested Isha" with amber icons although they are live. | Fixed: the card counts all contributions; the list says "Reported Isha" like the activity feed. |
+| 24 | P2 | Long usernames break mid-word in the profile card. | Fixed: smaller display size. |
+| 25 | P2 | "Steward" is in everyone's account menu. | Fixed: shown to stewards (approved or requested) and moderators. |
+| 26 | P2 | Saved shows blank tint squares as thumbnails. | Fixed: same photo/monogram thumbnail as the list. |
 | 27 | P2 | About page said iqamah times come "in a later release". | Fixed. |
 
 ### Data quality
@@ -84,7 +84,7 @@ Severity: **P0** stops a visitor getting what they came for, **P1** visibly brok
 | # | Sev | Finding | Status |
 |---|---|---|---|
 | 28 | P1 | Duplicates sit side by side: "East London Mosque" and "The East London Mosque". | Fixed going forward: two places that match one Wikidata item are queued in `place_duplicate_candidate` for the moderators' merge page (never merged automatically). Found this one locally. |
-| 29 | P2 | Localities are often just "London"; the London city page includes "Surrey Muslim Centre (Runnymede)". | Open: reverse-geocode a neighbourhood with Photon (free) during the area fill. |
+| 29 | P2 | Localities are often just "London"; the London city page includes "Surrey Muslim Centre (Runnymede)". | Partly: the fill now takes the most local OSM address tag (`addr:suburb` → `neighbourhood` → `quarter` → `district` → `city`). Photon reverse geocoding for untagged places is still open. |
 
 ## What changed in this PR
 
@@ -112,21 +112,22 @@ and distance (≤60 m on distance alone; ≤400 m with half the name; anywhere w
 because Wikidata coordinates are often rounded). Commons photos are kept only under PD/CC0/CC BY/CC BY-SA and always
 credited. Website is filled only when empty. Failures retry after a day; matches refresh quarterly.
 
+**Done in this PR, from what OSM actually holds.** [taginfo](https://taginfo.openstreetmap.org/tags/religion=muslim)
+(free) shows which tags mappers use with `religion=muslim`: `wikidata` on 5,151 mosques, `name:ar` on 17,582,
+`addr:district`/`addr:neighbourhood` on thousands; women's-section tags are effectively unused, so seeding amenities
+from OSM would add almost nothing. So the fill now stores the mappers' `wikidata` link (an exact enrichment match),
+an Arabic-script name (`name:ar`/`name:ur`/`name:fa`) and the most local address tag; flags new rows that look like an
+existing place (within 80 m, nearly the same name) into the duplicate queue; and the empty-area times card uses the
+visitor's country's usual method (`calc_default`) when the view is where they are.
+
 **Next, in order of value**
 
-1. **Turn on `places.osm` in production.** Nothing else matters for a visitor in New York until this is on.
-2. **Read more OSM tags during the fill**, already in the Overpass response: `female=yes` / `women=yes`
-   (women's section), `toilets:wheelchair`, `wheelchair`, `opening_hours`, `name:ar`/`name:ur`, `denomination` (store
-   only; we don't show sect labels), `phone`, `website`. Seed them as low-weight `amenity.*` candidates marked "from
-   OpenStreetMap", so the community confirms rather than starts from nothing.
-3. **Better localities**: Photon reverse geocoding (free) for the neighbourhood instead of the city name.
-4. **Duplicates**: besides Wikidata, flag OSM node + way pairs of the same mosque (same name within 80 m) into the
-   existing duplicate queue.
-5. **Country calculation defaults**: the area-times card uses Muslim World League for a point with no mosques.
-   Look the country up with Photon's reverse result (free) and use `calc_default` like the fill does.
-6. **Give back**: the monthly ODbL export already exists; add a "fix this on OpenStreetMap" link (OSM's edit URL)
+1. **Photon reverse geocoding** (free) for the neighbourhood of places with no address tags.
+2. **Ask, don't import, amenities**: OSM has almost no women's-section data, so the quick-verify flow should ask
+   "Is there a women's section?" the first time someone checks in, not wait for the update dialog.
+3. **Give back**: the monthly ODbL export already exists; add a "fix this on OpenStreetMap" link (OSM's edit URL)
    on pages where the address or location is wrong, so corrections flow upstream.
-7. **Not free / not used**: Mapillary street-level photos need a token and have per-image licences; Google Places
+4. **Not free / not used**: Mapillary street-level photos need a token and have per-image licences; Google Places
    stays as the paid fallback only while `places.osm` is off.
 
 ## Learnings
@@ -150,9 +151,8 @@ credited. Website is filled only when empty. Failures retry after a day; matches
 
 1. Merge: migration `0012_enrichment.sql` adds two nullable `place` columns, an index and the `enrich_cell` table.
    Additive; changes no existing data.
-2. Turn on `places.osm` (P0, finding 1), then `places.enrich`:
-   `wrangler kv key put --binding FLAGS places.enrich on --remote`. The nightly cron enriches 3 areas a night;
-   a moderator can run an area now with `POST /api/v1/admin/enrich {"lat":…,"lng":…}`.
+2. `places.osm` and `places.enrich` are on in production KV (set 5 Oct 2026). The nightly cron enriches 3 areas a
+   night; a moderator can run an area now with `POST /api/v1/admin/enrich {"lat":…,"lng":…}`.
 3. Watch Workers Logs for `Enrichment failed` and `Possible duplicate places`, and the merge page for new pairs.
 
 ## Not verified
@@ -160,4 +160,4 @@ credited. Website is filled only when empty. Failures retry after a day; matches
 - Wikimedia Commons and Wikipedia from production Workers (they worked from the local Worker; plain curl from this
   sandbox got 429). The code stores the Wikidata match even when they fail.
 - WebKit E2E suites (run in CI); the phone checks here used Chromium with the iPhone 13 viewport.
-- Production flags were not changed.
+- The first production area fill after turning on `places.osm`: it runs on the first real visit to an area.
