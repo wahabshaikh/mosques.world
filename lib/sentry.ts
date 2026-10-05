@@ -2,24 +2,52 @@ export const SENTRY_TRACES_SAMPLE_RATE = 0.1;
 
 type HttpBody = "incomingRequest" | "outgoingRequest" | "incomingResponse" | "outgoingResponse";
 
+/**
+ * Shared by the Worker and the browser. @sentry/* 11 collects headers, query
+ * strings and AI prompts unless each category is turned off (`sendDefaultPii`
+ * was removed). Leave user info, cookies and bodies off.
+ */
+export const sentryDataCollection = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: false,
+  httpBodies: [] as HttpBody[],
+  urlQueryParams: false,
+  databaseQueryData: false,
+  queues: false,
+  stackFrameVariables: false,
+  genAI: { inputs: false, outputs: false },
+};
+
 export type SentryRuntimeEnv = {
   SENTRY_DSN?: string;
   ENVIRONMENT?: string;
 };
+
+type EventWithUser = {
+  user?: { ip_address?: string | null } | null;
+  sdk?: { settings?: { infer_ip?: string } };
+};
+
+/**
+ * The browser SDK sets `sdk.settings.infer_ip` to `never` when user info is off.
+ * `@sentry/cloudflare` leaves that unset, so Relay stores the envelope sender's IP.
+ * The event has to say not to.
+ */
+export function withoutSentryUserIp<Event extends EventWithUser>(event: Event): Event {
+  return {
+    ...event,
+    user: { ...event.user, ip_address: null },
+    sdk: { ...event.sdk, settings: { ...event.sdk?.settings, infer_ip: "never" } },
+  };
+}
 
 export type WorkerSentryOptions = {
   dsn?: string;
   enabled: boolean;
   tracesSampleRate: number;
   environment?: string;
-  dataCollection?: {
-    userInfo: false;
-    cookies: false;
-    httpBodies: HttpBody[];
-    databaseQueryData: false;
-    queues: false;
-    stackFrameVariables: false;
-  };
+  dataCollection?: typeof sentryDataCollection;
 };
 
 export function sentryOptions(env: SentryRuntimeEnv): WorkerSentryOptions {
@@ -30,13 +58,42 @@ export function sentryOptions(env: SentryRuntimeEnv): WorkerSentryOptions {
     enabled: true,
     tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE,
     environment: env.ENVIRONMENT,
-    dataCollection: {
-      userInfo: false,
-      cookies: false,
-      httpBodies: [],
-      databaseQueryData: false,
-      queues: false,
-      stackFrameVariables: false,
-    },
+    dataCollection: sentryDataCollection,
+  };
+}
+
+export type BrowserSentryOptions = {
+  dsn: string;
+  enabled: true;
+  tracesSampleRate: number;
+  environment?: string;
+  dataCollection: typeof sentryDataCollection;
+};
+
+type ClientExceptionCapture = (error: unknown) => void;
+
+let captureClientError: ClientExceptionCapture = () => {};
+
+/** Reports a browser error when the client SDK was initialised. No-op otherwise. */
+export function captureClientException(error: unknown): void {
+  captureClientError(error);
+}
+
+/** Installed by instrumentation-client after Sentry.init. */
+export function setClientExceptionCapture(capture: ClientExceptionCapture): void {
+  captureClientError = capture;
+}
+
+/** Browser init options, or null when the public DSN is missing so Sentry stays uninitialized. */
+export function browserSentryOptions(input: { dsn?: string; environment?: string }): BrowserSentryOptions | null {
+  const dsn = input.dsn?.trim();
+  if (!dsn) return null;
+  const environment = input.environment?.trim();
+  return {
+    dsn,
+    enabled: true,
+    tracesSampleRate: SENTRY_TRACES_SAMPLE_RATE,
+    ...(environment ? { environment } : {}),
+    dataCollection: sentryDataCollection,
   };
 }

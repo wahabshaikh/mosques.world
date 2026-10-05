@@ -41,6 +41,7 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-slot": "^1.2.3",
     "@sentry/cloudflare": "^11.0.0",
+    "@sentry/react": "11.0.0",
     "@vinext/cloudflare": "1.0.0-beta.10",
     "adhan": "^4.4.3",
     "better-auth": "^1.7.6",

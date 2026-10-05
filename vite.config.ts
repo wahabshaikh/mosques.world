@@ -4,6 +4,11 @@ import { defineConfig } from "vite";
 import vinext from "vinext";
 
 export default defineConfig({
+  // vinext only inlines NEXT_PUBLIC_* keys that exist at config time. Always
+  // replace this one so a build without the variable does not read `process` in the browser.
+  define: {
+    "process.env.NEXT_PUBLIC_SENTRY_DSN": JSON.stringify(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() ?? ""),
+  },
   plugins: [
     vinext(),
     tailwindcss(),
