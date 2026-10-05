@@ -89,7 +89,8 @@ export function PrayerTable({
   }, []);
 
   const nextKey = nextKeyAt(day, now, extras);
-  const community = Boolean(extras);
+  // An all-empty "Community check" column is noise; it appears once there is something to check (or add per row).
+  const community = Boolean(extras && (Object.keys(extras.iqamah).length > 0 || extras.addHref));
 
   return (
     <table className="w-full text-sm">
@@ -192,8 +193,8 @@ export function Countdown({ rows, initialNow, labels = ENGLISH_LABELS }: { rows:
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{labels.nextPrayer}</p>
-        <p className="tabular mt-1 text-2xl font-extrabold tracking-tight lg:text-3xl">
-          {next.label} · {next.iqamah ?? next.adhan}
+        <p className="tabular mt-1 text-2xl font-extrabold tracking-tight">
+          {next.label} · <span className="whitespace-nowrap">{next.iqamah ?? next.adhan}</span>
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {next.iqamah ? fill(labels.adhanIqamah, { time: next.adhan, meta: next.meta ?? labels.iqamahWord }) : labels.calculated}

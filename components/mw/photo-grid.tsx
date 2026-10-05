@@ -1,5 +1,6 @@
 import { Camera } from "lucide-react";
 import Link from "next/link";
+import type { CommonsImage } from "@/lib/enrich/wikidata";
 import { photoUrl, type PhotoView } from "@/lib/photos";
 import { cn } from "@/lib/utils";
 import { AddPhotoButton } from "./add-photo";
@@ -17,7 +18,7 @@ function Illustration({ tint }: { tint: { bg: string; fg: string } }) {
   );
 }
 
-/** 1 large + up to 4 small photos (spec 3.5 PhotoGrid); the tinted illustration when there are none. */
+/** 1 large + up to 4 small photos (spec 3.5 PhotoGrid); a credited Commons photo, or a slim prompt, when there are none. */
 export function PhotoGrid({
   photos,
   total,
@@ -26,6 +27,7 @@ export function PhotoGrid({
   placeId,
   canAdd,
   turnstileSiteKey,
+  commons = null,
   text = (source: string, vars?: Record<string, string | number>) => source.replace(/\{(\w+)\}/g, (match, name: string) => String(vars?.[name] ?? match)),
 }: {
   photos: PhotoView[];
@@ -35,19 +37,50 @@ export function PhotoGrid({
   placeId: string;
   canAdd: boolean;
   turnstileSiteKey?: string;
+  /** A freely licensed photo from Wikimedia Commons, shown with its credit until the community adds photos. */
+  commons?: CommonsImage | null;
   /** Localizes the button labels (spec P8); English by default. */
   text?: (source: string, vars?: Record<string, string | number>) => string;
 }) {
+  if (photos.length === 0 && commons) {
+    return (
+      <figure className="mt-6" data-testid="commons-photo">
+        <div className="relative aspect-[16/7] overflow-hidden rounded-2xl" style={{ background: tint.bg }}>
+          <img src={commons.thumb} alt={text("Photo of this place")} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          {canAdd ? (
+            <div className="absolute right-4 bottom-4">
+              <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label={text("Add photos")} />
+            </div>
+          ) : null}
+        </div>
+        <figcaption className="mt-1.5 text-xs text-muted-foreground">
+          {text("Photo")}: {commons.author ? `${commons.author}, ` : ""}
+          {commons.licenseUrl ? (
+            <a href={commons.licenseUrl} className="underline" rel="noopener license">
+              {commons.license}
+            </a>
+          ) : (
+            commons.license
+          )}
+          {", "}
+          <a href={commons.page} className="underline" rel="noopener">
+            {text("via Wikimedia Commons")}
+          </a>
+        </figcaption>
+      </figure>
+    );
+  }
   if (photos.length === 0) {
     return (
-      <div className="relative mt-6 aspect-[16/7] overflow-hidden rounded-2xl" data-testid="photo-placeholder">
-        <Illustration tint={tint} />
-        <span className="sr-only">No photos yet</span>
-        {canAdd ? (
-          <div className="absolute right-4 bottom-4">
-            <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label={text("Add photos")} />
-          </div>
-        ) : null}
+      <div className="mt-6 flex items-center gap-4 rounded-2xl border border-dashed border-border p-3" data-testid="photo-placeholder">
+        <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl">
+          <Illustration tint={tint} />
+        </div>
+        <p className="flex-1 text-sm text-muted-foreground">
+          <span className="sr-only">No photos yet. </span>
+          {text("A photo of the entrance helps people find their way.")}
+        </p>
+        {canAdd ? <AddPhotoButton placeId={placeId} turnstileSiteKey={turnstileSiteKey} label={text("Add photos")} /> : null}
       </div>
     );
   }

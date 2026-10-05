@@ -7,7 +7,8 @@ import { UnsaveButton } from "@/components/mw/unsave-button";
 import { savedPlaces } from "@/lib/db/queries";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow, toCard } from "@/lib/places/present";
-import { phase4Enabled, phase5Enabled, phase7Enabled } from "@/lib/phase";
+import { enrichEnabled, phase4Enabled, phase5Enabled, phase7Enabled } from "@/lib/phase";
+import { PlaceThumb } from "@/components/mw/place-row";
 import { CalendarLink } from "@/components/mw/calendar-link";
 import { appEnv } from "@/lib/db/client";
 import { feedToken } from "@/lib/ics";
@@ -25,7 +26,8 @@ export default async function SavedPage() {
   const headerList = await headers();
   const host = headerList.get("host")?.split(":")[0] ?? "";
   const now = readNow(headerList.get("x-mw-now"), isNonProductionHost(host));
-  const cards = (await savedPlaces(user.id)).map((place) => toCard(place, now));
+  const photos = await enrichEnabled();
+  const cards = (await savedPlaces(user.id)).map((place) => toCard(place, now, { photos }));
   const offline = await phase5Enabled();
   const feed = (await phase7Enabled()) ? `/calendar/${await feedToken(secretOf(appEnv(), host), user.id)}/saved.ics` : null;
   return (
@@ -44,7 +46,7 @@ export default async function SavedPage() {
         <ul className="mt-8 flex flex-col">
           {cards.map((card) => (
             <li key={card.id} className="flex items-center gap-4 border-b border-border py-4" data-saved={card.slug}>
-              <span className="size-14 shrink-0 rounded-xl" style={{ background: card.tint }} aria-hidden="true" />
+              <PlaceThumb place={card} />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <Link href={`/m/${card.slug}`} className="truncate font-bold hover:underline">
                   {card.name}

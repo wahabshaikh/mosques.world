@@ -1,11 +1,10 @@
 "use client";
 
-import { CircleAlert, LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
+import { LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
-import { formatDistance } from "@/lib/geo/distance";
 import type { PlaceKindFilter } from "@/lib/places/view";
 import type { ExploreSort } from "@/lib/places/present";
 import { NEED_FILTERS, type NeedSlug } from "@/lib/places/needs";
@@ -14,6 +13,8 @@ import { FiltersDialog, NeedIcon } from "./filters-dialog";
 const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
+import { PlaceRowContent } from "./place-row";
+import type { AreaTimes } from "@/lib/places/area-times";
 
 type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string };
 
@@ -35,6 +36,9 @@ export type ExplorePlace = {
   verifiers: number;
   tag: string | null;
   tint: string;
+  monogram: string;
+  /** A free-licence photo (Wikimedia Commons) when the place has no community photo yet. */
+  photo?: string | null;
 };
 
 export function ExploreView({
@@ -54,6 +58,8 @@ export function ExploreView({
   amenities = false,
   fillBbox = null,
   osm = false,
+  areaTimes = null,
+  nextPrayer = null,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -72,6 +78,10 @@ export function ExploreView({
   /** Set when this area has not been loaded from OpenStreetMap yet; the client asks the server to fill it. */
   fillBbox?: { west: number; south: number; east: number; north: number } | null;
   osm?: boolean;
+  /** Calculated adhan for the area, shown while it has no places listed. */
+  areaTimes?: AreaTimes | null;
+  /** The next calculated adhan in this area, for the overline above the list. */
+  nextPrayer?: { label: string; time: string } | null;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -137,6 +147,47 @@ export function ExploreView({
       cancelled = true;
     };
   }, [fillKey, router]);
+
+  function locate() {
+    if (!("geolocation" in navigator)) {
+      setGeoProblem("Your browser can't share its location. Search for your city instead.");
+      return;
+    }
+    setGeoProblem(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        track("geolocation_granted", {});
+        goTo({ label: "Near you", lat: position.coords.latitude, lng: position.coords.longitude });
+      },
+      (error) =>
+        setGeoProblem(
+          error.code === error.PERMISSION_DENIED
+            ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
+            : "We couldn't find your location just now. Try again, or search for your city.",
+        ),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+    );
+  }
+
+  // Someone who already allowed location shouldn't be asked again on every visit: use it straight away.
+  // Denied hides the prompt; "prompt" keeps it, because asking unprompted on page load is rude.
+  const [geoPermission, setGeoPermission] = useState<"unknown" | "prompt" | "denied">("unknown");
+  useEffect(() => {
+    if (!showGeoPrompt || !navigator.permissions?.query) return;
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((status) => {
+        if (cancelled) return;
+        if (status.state === "granted") locate();
+        else setGeoPermission(status.state === "denied" ? "denied" : "prompt");
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+    // Once per page: locate() navigates, and the new URL carries coordinates so showGeoPrompt turns off.
+  }, [showGeoPrompt]);
 
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function onInput(value: string) {
@@ -347,6 +398,13 @@ export function ExploreView({
               ) : null}
             </label>
             <button
+              type="button"
+              onClick={locate}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary-soft px-3.5 text-sm font-bold text-primary sm:inline-flex"
+            >
+              <Navigation className="size-4" aria-hidden="true" /> Near me
+            </button>
+            <button
               type="submit"
               className="inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground"
               aria-label="Search"
@@ -355,10 +413,7 @@ export function ExploreView({
             </button>
           </form>
           <div className="mt-4 flex gap-2 overflow-x-auto">
-            <FilterChip active={kind === "all"} onClick={() => setKind("all")} icon={<Navigation className="size-4" />}>
-              Nearby
-            </FilterChip>
-            <FilterChip active={kind === "prayer_room"} onClick={() => setKind("prayer_room")}>
+            <FilterChip active={kind === "prayer_room"} onClick={() => setKind(kind === "prayer_room" ? "all" : "prayer_room")}>
               Prayer rooms
             </FilterChip>
             {community ? (
@@ -389,10 +444,15 @@ export function ExploreView({
           </div>
         </div>
       </div>
-      <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,840px)_1fr]">
-        <section className={cn("px-4 py-6 lg:px-6", mapMode && "hidden lg:block")}>
+      <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,680px)_1fr]">
+        <section className={cn("px-4 pt-6 pb-24 lg:px-6 lg:pb-6", mapMode && "hidden lg:block")}>
           <div className="mb-4 flex items-end justify-between gap-3">
             <div>
+              {nextPrayer ? (
+                <p className="text-xs font-extrabold tracking-wide text-primary uppercase" data-testid="next-prayer">
+                  Next prayer · {nextPrayer.label} adhan {nextPrayer.time}
+                </p>
+              ) : null}
               <h1 className="text-2xl font-bold tracking-tight">
                 {cards.length} {cards.length === 1 ? "place" : "mosques & prayer spaces"} nearby
               </h1>
@@ -416,35 +476,8 @@ export function ExploreView({
               <p className="text-sm font-semibold">Distance</p>
             )}
           </div>
-          {showGeoPrompt ? (
-            <button
-              type="button"
-              className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm"
-              onClick={() => {
-                if (!("geolocation" in navigator)) {
-                  setGeoProblem("Your browser can't share its location. Search for your city instead.");
-                  return;
-                }
-                setGeoProblem(null);
-                navigator.geolocation.getCurrentPosition(
-                  (position) => {
-                    track("geolocation_granted", {});
-                    goTo({
-                      label: "Near you",
-                      lat: position.coords.latitude,
-                      lng: position.coords.longitude,
-                    });
-                  },
-                  (error) =>
-                    setGeoProblem(
-                      error.code === error.PERMISSION_DENIED
-                        ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
-                        : "We couldn't find your location just now. Try again, or search for your city.",
-                    ),
-                  { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
-                );
-              }}
-            >
+          {showGeoPrompt && geoPermission !== "denied" ? (
+            <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={locate}>
               <LocateFixed className="size-4 text-primary" />
               Use your location for a closer list. We only use it to centre the map.
             </button>
@@ -459,6 +492,22 @@ export function ExploreView({
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
               Loading more mosques in this area…
             </p>
+          ) : null}
+          {cards.length === 0 && areaTimes ? (
+            <section className="mb-4 rounded-2xl bg-muted p-4" aria-labelledby="area-times" data-testid="area-times">
+              <h2 id="area-times" className="text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
+                Prayer times here today
+              </h2>
+              <ol className="mt-3 grid grid-cols-5 gap-1.5 text-center">
+                {areaTimes.rows.map((row) => (
+                  <li key={row.key} className={cn("rounded-xl px-1 py-2", row.next ? "bg-primary text-primary-foreground" : "bg-card")}>
+                    <span className={cn("block text-xs", row.next ? "text-primary-foreground/80" : "text-muted-foreground")}>{row.label}</span>
+                    <span className="tabular block text-xs font-extrabold whitespace-nowrap sm:text-sm">{row.time}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-2 text-xs text-muted-foreground">Adhan, calculated ({areaTimes.method}). Each mosque&apos;s iqamah is on its page.</p>
+            </section>
           ) : null}
           {cards.length === 0 && filling === "loading" ? (
             <div role="status" className="flex items-center gap-3 rounded-2xl bg-muted p-6 text-sm" data-testid="area-filling">
@@ -492,7 +541,7 @@ export function ExploreView({
               ) : null}
             </div>
           ) : (
-            <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="-mx-2 flex flex-col">
               {cards.map((place) => (
                 <li key={place.id}>
                   <Link
@@ -501,39 +550,9 @@ export function ExploreView({
                     onMouseEnter={() => setActiveId(place.id)}
                     onMouseLeave={() => setActiveId(null)}
                     onFocus={() => setActiveId(place.id)}
-                    className={cn(
-                      "block overflow-hidden rounded-2xl border border-border bg-card",
-                      activeId === place.id && "ring-2 ring-primary",
-                    )}
+                    className={cn("flex items-center gap-4 rounded-2xl p-2.5 hover:bg-muted", activeId === place.id && "bg-muted ring-2 ring-primary")}
                   >
-                    <div className="relative aspect-[4/3.3]" style={{ background: place.tint }}>
-                      <CardChip place={place} />
-                    </div>
-                    <div className="space-y-1 p-3">
-                      <h2 className="font-bold">
-                        {place.name}
-                        {place.verifiers > 0 ? (
-                          <span className="ml-1.5 inline-flex items-center gap-0.5 align-middle text-xs font-semibold text-muted-foreground">
-                            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-                            <span className="sr-only">confirmed by</span>
-                            {place.verifiers}
-                          </span>
-                        ) : null}
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        {place.locality}
-                        {place.distanceKm !== null ? ` · ${formatDistance(place.distanceKm)}` : ""}
-                      </p>
-                      <p className="text-sm">
-                        <span className="tabular text-base font-extrabold">
-                          {place.nextLabel} {place.nextTime}
-                        </span>{" "}
-                        <span className="text-muted-foreground">
-                          {place.nextKind === "iqamah" ? "iqamah" : "· adhan"}
-                          {place.tag ? ` · ${place.tag}` : ""}
-                        </span>
-                      </p>
-                    </div>
+                    <PlaceRowContent place={place} />
                   </Link>
                 </li>
               ))}
@@ -600,34 +619,12 @@ export function ExploreView({
       ) : null}
       <button
         type="button"
-        className="fixed right-4 bottom-4 z-30 rounded-full bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"
+        className="fixed bottom-5 left-1/2 z-30 -translate-x-1/2 rounded-full bg-secondary px-5 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"
         onClick={() => setMapMode((value) => !value)}
       >
         {mapMode ? "List" : "Map"}
       </button>
     </div>
-  );
-}
-
-function CardChip({ place }: { place: ExplorePlace }) {
-  if (place.changeReported) {
-    return (
-      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-warning shadow-sm">
-        <CircleAlert className="size-3.5" aria-hidden="true" /> Change reported
-      </span>
-    );
-  }
-  if (place.verification === "verified") {
-    return (
-      <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-1 text-[11px] font-bold text-primary shadow-sm">
-        <ShieldCheck className="size-3.5" aria-hidden="true" /> Community verified
-      </span>
-    );
-  }
-  return (
-    <span className="absolute top-3 left-3 rounded-full bg-background/90 px-2 py-1 text-[11px] font-bold">
-      {place.nextKind === "iqamah" ? "Iqamah" : "Adhan"}
-    </span>
   );
 }
 

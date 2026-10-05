@@ -43,6 +43,11 @@ export type CalcMethodValue = (typeof CALC_METHODS)[number]["v"];
 export function methodLabel(method: string): string {
   return CALC_METHODS.find((item) => item.v === method)?.label ?? method;
 }
+
+/** "Hanafi" or "Shafi'i", as people write the Asr school. */
+export function madhabLabel(madhab: string): string {
+  return madhab === "hanafi" ? "Hanafi" : "Shafi'i";
+}
 /** Amenity registry (spec 5.3). `bit` is the place.amenity_bits position; never reorder or reuse. */
 export const AMENITIES = [
   { key: "amenity.women_section", slug: "women_section", label: "Women's section", bit: 0 },

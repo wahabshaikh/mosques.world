@@ -341,7 +341,7 @@ test.describe("phase 2 trusted iqamah times", () => {
     await resetPlace(request, slug);
     const setter = await newUser(browser, "adhan", { trustLevel: 2 });
     await visit(setter.page, `/m/${slug}`);
-    const calculated = (await setter.page.locator('[data-prayer="isha"]').innerText()).match(/\d\d:\d\d/)?.[0];
+    const calculated = (await setter.page.locator('[data-prayer="isha"]').innerText()).match(/\d{1,2}:\d\d [AP]M/)?.[0];
     await setter.page.getByRole("link", { name: "Mosque's adhan different?" }).click();
     await expect(setter.page.getByTestId("adhan-tab")).toBeVisible();
     await setToday(setter.page);
@@ -356,8 +356,9 @@ test.describe("phase 2 trusted iqamah times", () => {
     await expect(setter.page.getByTestId("update-results")).toContainText("Isha adhan is live");
     await expect(setter.page.getByRole("button", { name: /Share this mosque|Link copied/ })).toBeVisible();
     await setter.page.getByRole("button", { name: "Done" }).click();
-    await expect(setter.page.locator('[data-prayer="isha"]')).toContainText("21:45");
-    expect(calculated).not.toBe("21:45");
+    await expect(setter.page.locator('[data-prayer="isha"]')).toContainText("9:45 PM");
+    expect(calculated).toBeTruthy();
+    expect(calculated).not.toBe("9:45 PM");
     await expect(setter.page.getByText(/calculated with ISNA \(North America\)/)).toBeVisible();
     await expect(setter.page.getByText(/follows this mosque's own timetable/)).toBeVisible();
     expect(await seriousViolations(setter.page)).toEqual([]);

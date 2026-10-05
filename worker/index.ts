@@ -7,7 +7,8 @@ import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
 import { resyncStaleCells } from "@/lib/osm-fill";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
-import { flagsOnForSite, OSM_FLAG, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
+import { ENRICH_FLAG, flagsOnForSite, OSM_FLAG, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
+import { enrichStaleCells } from "@/lib/enrich/wikidata";
 import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
@@ -61,6 +62,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     }
     ctx.waitUntil(env.DB.prepare(CITY_RECOUNT).run());
     ctx.waitUntil(nightly(env));
+    // Free open data (Wikidata, Commons, Wikipedia) for a few areas a night, busiest first.
+    if (await flagsOnForSite(env, [ENRICH_FLAG])) ctx.waitUntil(enrichStaleCells(env.DB, fetch, Date.now()));
     // Monthly open-data export (spec P8), run from the queue so it has a consumer's time budget.
     if (await flagsOnForSite(env, PHASE8_FLAGS)) ctx.waitUntil(queueMonthlyExport(env, Date.now()));
     // Safety net for the outbox: anything the queue missed goes out with the nightly run.

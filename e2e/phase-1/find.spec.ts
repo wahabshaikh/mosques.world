@@ -51,7 +51,7 @@ test.describe("phase 1 find a mosque", () => {
     await page.goto("/m/east-london-mosque-whitechapel");
     await expect(page.getByRole("heading", { name: "East London Mosque" })).toBeVisible();
     if (frozenClock) {
-      for (const time of ["05:18", "06:51", "12:57", "16:55", "18:55", "20:09"]) {
+      for (const time of ["5:18 AM", "6:51 AM", "12:57 PM", "4:55 PM", "6:55 PM", "8:09 PM"]) {
         await expect(page.getByRole("cell", { name: time, exact: true })).toBeVisible();
       }
       await expect(page.getByRole("rowheader", { name: "Jumu'ah" })).toBeVisible();
@@ -59,7 +59,7 @@ test.describe("phase 1 find a mosque", () => {
       for (const name of ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"]) {
         await expect(page.getByRole("rowheader", { name })).toBeVisible();
       }
-      await expect(page.getByRole("cell", { name: /^\d{2}:\d{2}$/ }).first()).toBeVisible();
+      await expect(page.getByRole("cell", { name: /^\d{1,2}:\d{2} [AP]M$/ }).first()).toBeVisible();
     }
     await expect(page.getByText("Not yet added").first()).toBeVisible();
     const directions = page.getByTestId("directions");

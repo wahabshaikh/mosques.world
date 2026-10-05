@@ -10,7 +10,7 @@ import { madhabOf, readNow } from "@/lib/places/present";
 import { phase7Enabled } from "@/lib/phase";
 import { civilDate, formatHijri, getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { daysIn, monthValues } from "@/lib/timetable";
-import { formatTime12, IQAMAH_PRAYERS } from "@/lib/trust/facts";
+import { formatTime12, IQAMAH_PRAYERS, madhabLabel, methodLabel } from "@/lib/trust/facts";
 import { iqamahToday, parseSummary } from "@/lib/trust/summary";
 import { cn } from "@/lib/utils";
 
@@ -165,7 +165,7 @@ export default async function TimetablePage({ params, searchParams }: { params: 
         </table>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Bold times are iqamah (congregation). Adhan times are calculated ({place.calcMethod}, {place.asrMadhab} Asr). Always check the board
+        Bold times are iqamah (congregation). Adhan times are calculated ({methodLabel(place.calcMethod)}, {madhabLabel(place.asrMadhab)} Asr). Always check the board
         on special days.
       </p>
     </div>

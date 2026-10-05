@@ -101,9 +101,10 @@ export function OnboardingForm({
         <p id="username-help" className="text-xs text-muted-foreground" aria-live="polite">
           {localProblem ?? availability ?? "3–30 lowercase letters, numbers, dots or underscores."}
         </p>
-        {suggestions.length > 0 ? (
+        {/* A chip that repeats what's already typed reads as a second, different choice. */}
+        {suggestions.some((item) => item !== username) ? (
           <div className="flex flex-wrap gap-2">
-            {suggestions.map((item) => (
+            {suggestions.filter((item) => item !== username).map((item) => (
               <button key={item} type="button" className="rounded-full border border-border px-3 py-1 text-xs font-semibold" onClick={() => setUsername(item)}>
                 @{item}
               </button>

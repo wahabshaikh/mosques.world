@@ -107,7 +107,7 @@ test.describe("phase 8 global and open", () => {
         const row = body.prayers.find((item) => item.prayer === prayer);
         expect(row, prayer).toBeTruthy();
         const cells = developer.page.locator(`tr[data-prayer="${prayer}"] td`);
-        await expect(cells.first()).toHaveText(row!.adhan);
+        expect(to24h((await cells.first().textContent()) ?? "")).toBe(row!.adhan);
         const iqamah = developer.page.locator(`td[data-iqamah="${prayer}"]`);
         if (row!.iqamah) {
           expect(to24h((await iqamah.textContent()) ?? "")).toBe(row!.iqamah);

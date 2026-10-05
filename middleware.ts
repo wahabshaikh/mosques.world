@@ -5,7 +5,7 @@ import { isNonProductionHost } from "@/lib/environment";
 import { flagEnabled, PHASE8_FLAG } from "@/lib/flags";
 import { DEFAULT_LOCALE, splitLocale, type Locale } from "@/lib/i18n/config";
 
-type CfFields = { latitude?: string | number; longitude?: string | number };
+type CfFields = { latitude?: string | number; longitude?: string | number; country?: string };
 
 export async function middleware(request: NextRequest) {
   const host = request.nextUrl.hostname;
@@ -48,11 +48,13 @@ export async function middleware(request: NextRequest) {
     headers.delete("x-mw-latitude");
     headers.delete("x-mw-longitude");
     headers.delete("x-mw-now");
+    headers.delete("x-mw-country");
   }
   const hasTestGeo = nonProd && headers.get("x-mw-latitude") && headers.get("x-mw-longitude");
   if (!hasTestGeo && cf?.latitude != null && cf.longitude != null) {
     headers.set("x-mw-latitude", String(cf.latitude));
     headers.set("x-mw-longitude", String(cf.longitude));
+    if (cf.country) headers.set("x-mw-country", cf.country);
   }
 
   let response: NextResponse;

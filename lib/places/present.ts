@@ -2,6 +2,8 @@ import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab, parseAdhanAdjus
 import { formatTime12, toMinutes } from "@/lib/trust/facts";
 import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
 import { cardTag } from "./needs";
+import { placeMonogram } from "./monogram";
+import { commonsThumb, parseEnrichment } from "@/lib/enrich/wikidata";
 import { coverTint } from "@/lib/utils";
 import type { DirectoryPlace } from "@/lib/db/queries";
 import type { ExplorePlace } from "@/components/mw/explore-view";
@@ -10,7 +12,7 @@ export function madhabOf(value: string): AsrMadhab {
   return value === "hanafi" ? "hanafi" : "shafi";
 }
 
-export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
+export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boolean } = {}): ExplorePlace {
   const day = getPrayerDay({
     lat: place.lat,
     lng: place.lng,
@@ -24,7 +26,8 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
   const summary = parseSummary(place.iqamahSummaryJson);
   const nowLocal = formatHm(now, place.timezone);
   const jamaah = summary ? nextJamaah(summary, day, nowLocal) : null;
-  const adhan = nextAdhanLabel(day);
+  const nextAdhan = nextAdhanLabel(day);
+  const adhan = { label: nextAdhan.label, time: formatTime12(nextAdhan.time) };
   const iqamah = jamaah?.kind === "iqamah" ? jamaah : null;
   const next = iqamah ? { label: iqamah.label, time: formatTime12(iqamah.time) } : adhan;
   const verifiers = summary ? Math.max(0, ...Object.values(summary.iqamah).map((entry) => entry?.n ?? 0)) : 0;
@@ -46,6 +49,8 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
     tag: cardTag(place.amenityBits),
     verifiers,
     tint: coverTint(place.id).bg,
+    monogram: placeMonogram(place.name),
+    photo: options.photos ? photoOf(place) : null,
   };
 }
 
@@ -84,4 +89,10 @@ export function sortCards(cards: ExplorePlace[], sort: ExploreSort): ExplorePlac
     sorted.sort((a, b) => distance(a) - distance(b));
   }
   return sorted;
+}
+
+/** A small free-licence thumbnail for list rows; the mosque page shows the credit. */
+function photoOf(place: DirectoryPlace): string | null {
+  const thumb = parseEnrichment(place.enrichmentJson)?.image?.thumb;
+  return thumb ? commonsThumb(thumb, 120) : null;
 }

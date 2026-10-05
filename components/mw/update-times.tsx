@@ -129,7 +129,18 @@ function initialJumuah(data: UpdateData): JumuahRow[] {
     .filter((row): row is JumuahRow => row !== null);
 }
 
-export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: UpdateData; onDone?: () => void; initialTab?: UpdateTab }) {
+export function UpdateTimes({
+  data,
+  onDone,
+  onSubmitted,
+  initialTab = "iqamah",
+}: {
+  data: UpdateData;
+  onDone?: () => void;
+  /** Set by the dialog, which refreshes the page underneath once it closes. */
+  onSubmitted?: () => void;
+  initialTab?: UpdateTab;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<UpdateTab>(initialTab);
   const [amenities, setAmenities] = useState<Record<string, AmenityChoice>>({});
@@ -152,6 +163,8 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
   const [evidence, setEvidence] = useState<{ id: string; status: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [shared, setShared] = useState(false);
+  // "N minutes after adhan" is how Maghrib usually works; for other prayers the switch is one tap away, not on every row.
+  const [showRules, setShowRules] = useState(false);
   const [results, setResults] = useState<Array<{ label: string; status: string; message: string }> | null>(null);
   const level = asTrustLevel(data.trustLevel);
 
@@ -269,7 +282,9 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
       if (choice && choice !== "unsure") track("amenity_vote_cast", { amenity: amenity.key });
     }
     setResults(body?.results ?? []);
-    router.refresh();
+    // Refreshing now would re-render the dialog's route and drop the thank-you screen, so the dialog
+    // refreshes the page underneath when it closes; the full-page form navigates on Done instead.
+    onSubmitted?.();
   }
 
   if (results) {
@@ -355,20 +370,35 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pt-5 pb-6">
         {tab !== "amenities" ? (
-        <label className="flex items-center justify-between gap-3 rounded-[12px] border border-input px-4 py-3">
-          <span className="flex flex-col">
-            <span className="text-xs font-extrabold tracking-wide">APPLIES FROM</span>
-            <span className="text-sm text-muted-foreground">{from === data.today ? "Today" : from === data.tomorrow ? "Tomorrow" : "Chosen date"}</span>
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-input px-4 py-3">
+          <span className="text-xs font-extrabold tracking-wide">APPLIES FROM</span>
+          <span className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                [data.today, "Today"],
+                [data.tomorrow, "Tomorrow"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={from === value}
+                onClick={() => setFrom(value)}
+                className={cn("h-9 rounded-full border px-3.5 text-sm font-bold", from === value ? "border-foreground bg-secondary text-secondary-foreground" : "border-input")}
+              >
+                {label}
+              </button>
+            ))}
           <input
             type="date"
             aria-label="Applies from"
             value={from}
             min={data.today}
             onChange={(event) => setFrom(event.target.value || data.tomorrow)}
-            className="rounded-[10px] border border-input bg-background px-2 py-1.5"
+            className={cn("h-9 rounded-full border border-input bg-background px-3 text-sm", from !== data.today && from !== data.tomorrow && "border-foreground")}
           />
-        </label>
+          </span>
+        </div>
         ) : null}
 
         {tab === "amenities" ? (
@@ -490,6 +520,12 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
             </ul>
           </div>
         ) : tab === "iqamah" ? (
+          <div className="flex flex-col">
+          {data.prayers.every((prayer) => prayer.current) ? (
+            <p className="pb-1 text-sm text-muted-foreground" data-testid="still-right">
+              <strong className="text-foreground">Are these still right?</strong> Compare with the board, change any that differ, then confirm.
+            </p>
+          ) : null}
           <ul className="flex flex-col" aria-label="Iqamah times">
             {data.prayers.map((prayer) => {
               const row = rows[prayer.key];
@@ -510,14 +546,19 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
                       ) : null}
                     </span>
                     <span className="text-[13px] text-muted-foreground">
-                      Adhan {formatTime12(prayer.adhan)} ·{" "}
-                      <button
-                        type="button"
-                        className="underline"
-                        onClick={() => set(row.mode === "clock" ? { mode: "offset", offset: Math.max(0, row.clock - toMinutes(prayer.adhan)) || 5 } : { mode: "clock" })}
-                      >
-                        {row.mode === "clock" ? "Use minutes after adhan" : "Use a fixed time"}
-                      </button>
+                      Adhan {formatTime12(prayer.adhan)}
+                      {prayer.key === "maghrib" || row.mode === "offset" || showRules ? (
+                        <>
+                          {" · "}
+                          <button
+                            type="button"
+                            className="underline"
+                            onClick={() => set(row.mode === "clock" ? { mode: "offset", offset: Math.max(0, row.clock - toMinutes(prayer.adhan)) || 5 } : { mode: "clock" })}
+                          >
+                            {row.mode === "clock" ? "Use minutes after adhan" : "Use a fixed time"}
+                          </button>
+                        </>
+                      ) : null}
                     </span>
                   </span>
                   {row.set ? (
@@ -535,6 +576,12 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
               );
             })}
           </ul>
+          {!showRules ? (
+            <button type="button" className="mt-3 self-start text-[13px] font-semibold underline" onClick={() => setShowRules(true)}>
+              Some iqamahs are a set number of minutes after the adhan?
+            </button>
+          ) : null}
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             {jumuah.filter((row) => !row.removed).length === 0 ? (

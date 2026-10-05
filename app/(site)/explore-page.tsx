@@ -3,13 +3,15 @@ import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
-import { osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { enrichEnabled, osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
 import { geocodeWhere } from "@/lib/geocode";
+import { formatTime12 } from "@/lib/trust/facts";
 import { areaNeedsFill } from "@/lib/osm-fill";
 import { parseNeeds } from "@/lib/places/amenities";
 import { isNonProductionHost } from "@/lib/environment";
 import { asSort, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
+import { areaTimes } from "@/lib/places/area-times";
 
 export async function ExplorePage({
   searchParams,
@@ -45,6 +47,7 @@ export async function ExplorePage({
   const verifiedOnly = community && one("verified") === "1";
   const amenitiesOn = community && (await phase3Enabled());
   const needs = amenitiesOn ? parseNeeds(params.needs) : [];
+  const photos = await enrichEnabled();
   const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
   const needsFill = osm
     ? await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
@@ -53,10 +56,11 @@ export async function ExplorePage({
       })
     : false;
   const cards = sortCards(
-    places.map((place) => toCard(place, now)),
+    places.map((place) => toCard(place, now, { photos })),
     sort,
   ).slice(0, 60);
   const anchor = places[0];
+  let nextPrayer: { label: string; time: string } | null = null;
   const subline = anchor
     ? (() => {
         const day = getPrayerDay({
@@ -70,7 +74,8 @@ export async function ExplorePage({
           now,
         });
         const next = nextAdhanLabel(day);
-        return `${view.where} · ${day.hijri} · next ${next.label} ${next.time} adhan`;
+        nextPrayer = { label: next.label, time: formatTime12(next.time) };
+        return `${view.where} · ${day.hijri}`;
       })()
     : `${view.where} · no places in this view yet`;
 
@@ -83,6 +88,7 @@ export async function ExplorePage({
       zoom={view.zoom}
       kind={view.kind}
       subline={subline}
+      nextPrayer={nextPrayer}
       showGeoPrompt={view.source !== "url"}
       turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
       sort={sort}
@@ -92,6 +98,8 @@ export async function ExplorePage({
       amenities={amenitiesOn}
       fillBbox={needsFill ? view.bbox : null}
       osm={osm}
+      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, // The visitor's country only describes the area when the view is where they are, not a place they searched.
+            await countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null)) : null}
     />
   );
 }
@@ -106,4 +114,15 @@ function zoomForArea(bbox: { west: number; east: number; south: number; north: n
   if (span > 1) return 9;
   if (span > 0.3) return 11;
   return 13;
+}
+
+/** The country's usual calculation (calc_default), for an area with no mosques to take it from. */
+async function countryPreset(country: string | null): Promise<{ method: string; madhab: string } | null> {
+  if (!country || !/^[A-Z]{2}$/i.test(country)) return null;
+  const row = await appEnv()
+    .DB.prepare(`SELECT calc_method, asr_madhab FROM calc_default WHERE country_code = ?`)
+    .bind(country.toUpperCase())
+    .first<{ calc_method: string; asr_madhab: string }>()
+    .catch(() => null);
+  return row ? { method: row.calc_method, madhab: row.asr_madhab } : null;
 }

@@ -212,7 +212,7 @@ export function QuickVerify({ placeHint, username, vapidKey }: { placeHint: stri
 
       <section
         aria-live="polite"
-        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[75vh] min-h-[46vh] max-w-[520px] flex-col gap-[18px] overflow-y-auto rounded-t-3xl bg-white px-5 pt-2.5 pb-[34px] shadow-[0_-6px_24px_rgba(0,0,0,0.12)]"
+        className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[75vh] min-h-[46vh] max-w-[520px] flex-col md:top-0 md:my-auto md:h-fit md:min-h-0 md:rounded-3xl gap-[18px] overflow-y-auto rounded-t-3xl bg-white px-5 pt-2.5 pb-[34px] shadow-[0_-6px_24px_rgba(0,0,0,0.12)]"
         data-testid="verify-sheet"
       >
         <span className="h-[5px] w-10 self-center rounded-full bg-[#D6D1C7]" aria-hidden="true" />

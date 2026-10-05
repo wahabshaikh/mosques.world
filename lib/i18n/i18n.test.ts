@@ -41,10 +41,12 @@ describe("locale routing", () => {
 });
 
 describe("translator", () => {
-  it("keeps English output identical to the pre-Phase 8 strings", () => {
+  it("formats English like the rest of the site (12h times, long dates)", () => {
     const l = translator("en");
     expect(l.time("19:24")).toBe("7:24 PM");
-    expect(l.adhan("05:12")).toBe("05:12");
+    expect(l.adhan("05:12")).toBe("5:12 AM");
+    expect(l.adhan("16:35")).toBe("4:35 PM");
+    expect(l.date("2026-11-17")).toMatch(/^Tuesday,? 17 November 2026$/);
     expect(l.plural("status.people", 1)).toBe("1 person");
     expect(l.plural("status.people", 3)).toBe("3 people");
     expect(l.relative(1000, 1000 + 3 * 3_600_000)).toBe(relativeAge(1000, 1000 + 3 * 3_600_000));

@@ -60,7 +60,7 @@ export function ProfileCard(props: {
     <div className="grid grid-cols-2 items-center gap-5 rounded-3xl p-7 shadow-[0_6px_24px_rgba(31,29,26,0.14)]">
       <div className="flex min-w-0 flex-col items-center gap-2.5 text-center">
         <ProfileAvatar id={props.id} name={props.name} avatarKey={props.avatarKey} verified={props.verified} size="lg" />
-        <span className="w-full text-[26px] leading-tight font-extrabold [overflow-wrap:anywhere]">{props.name}</span>
+        <span className="w-full text-[22px] leading-tight font-extrabold [overflow-wrap:anywhere]">{props.name}</span>
         <TrustBadge level={props.trustLevel} />
         {props.own ? (
           <Link href="/settings/profile" className="text-sm font-semibold underline">
@@ -172,7 +172,8 @@ function contributionText(row: ContributionRow): { what: string; detail: string 
     case "confirmed":
       return { what: `Confirmed ${label} ${value}`.trim(), detail: null };
     case "proposed":
-      return { what: `Suggested ${label}`.trim(), detail: row.payload.held ? `${value} · awaiting review` : value || null };
+      // Same word as the mosque's activity feed; "Suggested" read as not live even when the time went live at once.
+      return { what: `Reported ${label}`.trim(), detail: row.payload.held ? `${value} · awaiting review` : value || null };
     case "promoted":
       return { what: row.payload.replaced ? `Updated ${label}` : `Added ${label}`, detail: value ? `Now ${value} after community confirmation` : null };
     case "reverted":

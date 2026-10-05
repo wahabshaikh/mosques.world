@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PlaceRowContent } from "@/components/mw/place-row";
 import { cityBySlug, placesInCity } from "@/lib/db/queries";
+import { enrichEnabled } from "@/lib/phase";
+import { toCard } from "@/lib/places/present";
 import { countryName } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +27,10 @@ export default async function CityPage({ params }: { params: Promise<Params> }) 
   const city = await cityBySlug(country, citySlug);
   if (!city) notFound();
   const places = await placesInCity(country, citySlug);
+  const now = new Date();
+  const photos = await enrichEnabled();
+  const cards = places.map((place) => toCard(place, now, { photos }));
+  const iqamahCount = cards.filter((card) => card.verifiers > 0).length;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -43,16 +50,15 @@ export default async function CityPage({ params }: { params: Promise<Params> }) 
         <Link href={`/countries/${country.toLowerCase()}`}>{countryName(country)}</Link>
       </p>
       <h1 className="mt-1 text-3xl font-bold tracking-tight">Mosques in {city.name}</h1>
-      <p className="mt-2 text-muted-foreground">{places.length} places from OpenStreetMap, with calculated adhan times.</p>
-      <ul className="mt-6 divide-y divide-border rounded-2xl border border-border">
-        {places.map((place) => (
-          <li key={place.id}>
-            <Link href={`/m/${place.slug}`} className="flex items-center justify-between px-4 py-3 hover:bg-muted">
-              <span>
-                <span className="font-semibold">{place.name}</span>
-                <span className="mt-0.5 block text-sm text-muted-foreground">{place.locality}</span>
-              </span>
-              <span className="text-sm text-primary">Times</span>
+      <p className="mt-2 text-muted-foreground">
+        {places.length} {places.length === 1 ? "place" : "places"}
+        {iqamahCount > 0 ? `, ${iqamahCount} with iqamah times from the community` : ""}. Adhan times are calculated.
+      </p>
+      <ul className="mt-6 flex flex-col">
+        {cards.map((card) => (
+          <li key={card.id}>
+            <Link href={`/m/${card.slug}`} className="flex items-center gap-4 rounded-2xl p-2.5 hover:bg-muted">
+              <PlaceRowContent place={card} showDistance={false} />
             </Link>
           </li>
         ))}

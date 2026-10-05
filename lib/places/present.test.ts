@@ -35,6 +35,8 @@ const place: DirectoryPlace = {
   amenityBits: 0,
   accessNotes: null,
   adhanAdjustJson: null,
+  wikidataId: null,
+  enrichmentJson: null,
   createdAt: 0,
   updatedAt: 0,
   highLatRule: "twilightangle",
@@ -46,10 +48,19 @@ describe("place cards", () => {
     const card = toCard(place, new Date("2026-09-25T11:00:00Z"));
     expect(card.slug).toBe(place.slug);
     expect(card.nextLabel).toBe("Jumu'ah");
-    expect(card.nextTime).toBe("12:57");
+    expect(card.nextTime).toBe("12:57 PM");
+    expect(card.monogram).toBe("EL");
+    expect(card.photo).toBeNull();
     expect(card.tint).toMatch(/^#/);
     expect(madhabOf("hanafi")).toBe("hanafi");
     expect(madhabOf("other")).toBe("shafi");
+  });
+
+  it("shows a small Commons thumbnail only when photos are on", () => {
+    const enriched = { ...place, enrichmentJson: JSON.stringify({ wikidata: "Q1", image: { thumb: "https://upload.wikimedia.org/x/thumb/a/b/A.jpg/960px-A.jpg" } }) };
+    expect(toCard(enriched, new Date("2026-09-25T11:00:00Z"), { photos: true }).photo).toBe("https://upload.wikimedia.org/x/thumb/a/b/A.jpg/120px-A.jpg");
+    expect(toCard(enriched, new Date("2026-09-25T11:00:00Z")).photo).toBeNull();
+    expect(toCard(place, new Date("2026-09-25T11:00:00Z"), { photos: true }).photo).toBeNull();
   });
 
   it("reads a clock override only off production", () => {

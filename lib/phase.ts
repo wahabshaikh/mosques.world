@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { appEnv } from "@/lib/db/client";
-import { flagEnabled, OSM_FLAG, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAGS, PHASE7_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
+import { ENRICH_FLAG, flagEnabled, OSM_FLAG, PHASE2_FLAG, PHASE3_FLAG, PHASE4_FLAG, PHASE5_FLAG, PHASE6_FLAGS, PHASE7_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
 
 function flagInput(source: Headers) {
   const host = (source.get("host") ?? "").split(":")[0] ?? "";
@@ -10,6 +10,11 @@ function flagInput(source: Headers) {
 /** Free OSM data (area fill + Photon geocoding) builds on Phase 1 only, behind `places.osm`. */
 export async function osmEnabled(): Promise<boolean> {
   return flagEnabled(appEnv().FLAGS, OSM_FLAG, flagInput(new Headers(await headers())));
+}
+
+/** Photos and summaries from Wikimedia (Commons, Wikipedia) on mosque pages and in the explore list. */
+export async function enrichEnabled(): Promise<boolean> {
+  return flagEnabled(appEnv().FLAGS, ENRICH_FLAG, flagInput(new Headers(await headers())));
 }
 
 export async function osmEnabledFor(request: Request): Promise<boolean> {
