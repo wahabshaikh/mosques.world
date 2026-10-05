@@ -16,6 +16,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173",
     trace: "retain-on-failure",
+    // Area fill answers from an in-app fixture instead of Overpass and Photon (non-production hosts only).
+    storageState: { cookies: [{ name: "mw_osm_fixture", value: "1", domain: "127.0.0.1", path: "/", expires: -1, httpOnly: false, secure: false, sameSite: "Lax" }], origins: [] },
     screenshot: "only-on-failure",
   },
   projects: [

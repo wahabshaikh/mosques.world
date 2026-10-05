@@ -34,7 +34,8 @@ test.describe("phase 1 find a mosque", () => {
     await where.click();
     await where.fill("");
     await where.pressSequentially("Istanbul");
-    await page.getByRole("button", { name: "Istanbul", exact: true }).click();
+    // "Istanbul" from the city list, or "Istanbul, Türkiye" from the geocoder.
+    await page.getByRole("button", { name: /^Istanbul(,|$)/ }).first().click();
     await expect(page).toHaveURL(/where=Istanbul/);
     await expect(page).toHaveURL(/lat=41/);
     const url = page.url();
@@ -99,5 +100,27 @@ test.describe("phase 1 find a mosque", () => {
     const path = new URL(link ?? "").pathname + new URL(link ?? "").search;
     await page.goto(path.replace("https://mosques.world", ""));
     await expect(page.getByRole("heading", { name: "You are confirmed" })).toBeVisible();
+  });
+
+  test("an area with no mosques yet fills from OpenStreetMap on the first visit", async ({ page }) => {
+    // A random point in the US Midwest so each run is likely to start with an empty cell; Overpass and Photon are
+    // answered by the in-app fixture (x-mw-osm-fixture, non-production only).
+    const lat = (40 + Math.random() * 4).toFixed(4);
+    const lng = (-100 + Math.random() * 6).toFixed(4);
+    await page.setExtraHTTPHeaders({ "x-mw-osm-fixture": "1" });
+    await page.goto(`/search?where=Testville&lat=${lat}&lng=${lng}&z=12`);
+    await waitForApp(page);
+    await expect.poll(async () => page.locator("[data-place-card]").count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(3);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("mosques & prayer spaces nearby");
+    await expect(page.getByTestId("area-filling")).toHaveCount(0);
+    // A second visit is served from the directory without filling again.
+    await page.reload();
+    await waitForApp(page);
+    await expect(page.getByTestId("area-filling")).toHaveCount(0);
+    expect(await page.locator("[data-place-card]").count()).toBeGreaterThanOrEqual(3);
+    await page.locator("[data-place-card]").first().click();
+    await expect(page).toHaveURL(/\/m\//);
+    await waitForApp(page);
+    await expect(page.getByText("Fixtureville").first()).toBeVisible();
   });
 });

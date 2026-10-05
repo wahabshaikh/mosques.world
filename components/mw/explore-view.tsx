@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
+import { CircleAlert, LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,6 +14,8 @@ import { FiltersDialog, NeedIcon } from "./filters-dialog";
 const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
 import { PlaceMap } from "./place-map";
+
+type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string };
 
 export type ExplorePlace = {
   id: string;
@@ -50,6 +52,8 @@ export function ExploreView({
   community = false,
   needs = [],
   amenities = false,
+  fillBbox = null,
+  osm = false,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -65,11 +69,16 @@ export function ExploreView({
   community?: boolean;
   needs?: NeedSlug[];
   amenities?: boolean;
+  /** Set when this area has not been loaded from OpenStreetMap yet; the client asks the server to fill it. */
+  fillBbox?: { west: number; south: number; east: number; north: number } | null;
+  osm?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
   const queryRef = useRef(where);
-  const [suggestions, setSuggestions] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [filling, setFilling] = useState<"idle" | "loading" | "error">(fillBbox ? "loading" : "idle");
+  const [geoProblem, setGeoProblem] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState(false);
   const [searchAsMove, setSearchAsMove] = useState(true);
@@ -81,6 +90,62 @@ export function ExploreView({
   }, [where]);
 
   const cards = useMemo(() => places, [places]);
+
+  const fillKey = fillBbox ? `${fillBbox.west},${fillBbox.south},${fillBbox.east},${fillBbox.north}` : "";
+  useEffect(() => {
+    if (!fillKey) {
+      setFilling("idle");
+      return;
+    }
+    let cancelled = false;
+    const [west = 0, south = 0, east = 0, north = 0] = fillKey.split(",").map(Number);
+    setFilling("loading");
+    (async () => {
+      // Nearest cells first; each call fills up to two and says how many are left. Cells another visitor
+      // is filling count as busy: wait for them, then look again.
+      for (let round = 0; round < 12 && !cancelled; round += 1) {
+        const response = await fetch("/api/v1/places/fill", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ bbox: { west, south, east, north } }),
+        }).catch(() => null);
+        if (cancelled) return;
+        const body = response?.ok ? ((await response.json().catch(() => null)) as { ok: boolean; inserted: number; remaining: number; busy?: boolean } | null) : null;
+        if (!body) {
+          setFilling("error");
+          return;
+        }
+        if (body.inserted > 0) router.refresh();
+        if (body.remaining === 0 && body.busy) {
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+          continue;
+        }
+        if (body.remaining === 0) {
+          if (!cancelled) {
+            router.refresh();
+            setFilling(body.ok ? "idle" : "error");
+          }
+          return;
+        }
+      }
+      if (!cancelled) {
+        router.refresh();
+        setFilling("idle");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fillKey, router]);
+
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function onInput(value: string) {
+    queryRef.current = value;
+    setQuery(value);
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    // One lookup per pause in typing, not per keystroke (each counts toward the per-IP search budget).
+    typingTimer.current = setTimeout(() => void onType(value), 250);
+  }
 
   async function onType(value: string, token?: string) {
     queryRef.current = value;
@@ -101,7 +166,7 @@ export function ExploreView({
       }
     }
     if (!response.ok || queryRef.current !== value) return;
-    const body = (await response.json()) as { suggestions: Array<{ label: string; lat: number; lng: number }> };
+    const body = (await response.json()) as { suggestions: Suggestion[] };
     if (queryRef.current !== value) return;
     setChallenge(false);
     setSuggestions(body.suggestions);
@@ -175,6 +240,24 @@ export function ExploreView({
     return params;
   }
 
+  async function choose(item: Suggestion) {
+    setSuggestions([]);
+    if (item.slug) {
+      router.push(`/m/${item.slug}`);
+      return;
+    }
+    if (item.lat != null && item.lng != null) {
+      goTo({ label: item.label, lat: item.lat, lng: item.lng });
+      return;
+    }
+    // Google suggestions carry only a place id; resolve it before moving the map.
+    const query = item.placeId ? `placeId=${encodeURIComponent(item.placeId)}` : `q=${encodeURIComponent(item.label)}`;
+    const details = (await fetch(`/api/v1/geocode/details?${query}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null)) as { lat: number | null; lng: number | null } | null;
+    if (details?.lat != null && details.lng != null) goTo({ label: item.label, lat: details.lat, lng: details.lng });
+  }
+
   function goTo(next: { label: string; lat: number; lng: number }) {
     const params = new URLSearchParams({
       where: next.label,
@@ -224,7 +307,8 @@ export function ExploreView({
             onSubmit={(event) => {
               event.preventDefault();
               const first = suggestions[0];
-              if (first) goTo(first);
+              if (first) void choose(first);
+              else if (query.trim().length >= 2) router.push(`/search?where=${encodeURIComponent(query.trim())}`);
             }}
           >
             <label className="relative min-w-0 flex-1">
@@ -232,7 +316,12 @@ export function ExploreView({
               <input
                 aria-label="Where"
                 value={query}
-                onChange={(event) => void onType(event.target.value)}
+                onChange={(event) => onInput(event.target.value)}
+                onFocus={(event) => {
+                  // Deferred, or the click's mouseup drops the selection: typing then replaces "Near you".
+                  const input = event.currentTarget;
+                  requestAnimationFrame(() => input.select());
+                }}
                 className="w-full bg-transparent px-3 pb-2 text-sm outline-none"
                 placeholder="City or mosque"
                 autoComplete="off"
@@ -243,13 +332,14 @@ export function ExploreView({
               {suggestions.length > 0 ? (
                 <ul className="absolute top-full right-0 left-0 z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">
                   {suggestions.map((item) => (
-                    <li key={`${item.label}-${item.lat}`}>
+                    <li key={`${item.label}-${item.lat}-${item.slug ?? ""}`}>
                       <button
                         type="button"
-                        className="block w-full px-4 py-3 text-start text-sm hover:bg-muted"
-                        onClick={() => goTo(item)}
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start text-sm hover:bg-muted"
+                        onClick={() => void choose(item)}
                       >
-                        {item.label}
+                        <span>{item.label}</span>
+                        {item.slug ? <span className="shrink-0 text-xs text-muted-foreground">Mosque</span> : null}
                       </button>
                     </li>
                   ))}
@@ -331,35 +421,76 @@ export function ExploreView({
               type="button"
               className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm"
               onClick={() => {
-                navigator.geolocation.getCurrentPosition((position) => {
-                  track("geolocation_granted", {});
-                  goTo({
-                    label: "Near you",
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                  });
-                });
+                if (!("geolocation" in navigator)) {
+                  setGeoProblem("Your browser can't share its location. Search for your city instead.");
+                  return;
+                }
+                setGeoProblem(null);
+                navigator.geolocation.getCurrentPosition(
+                  (position) => {
+                    track("geolocation_granted", {});
+                    goTo({
+                      label: "Near you",
+                      lat: position.coords.latitude,
+                      lng: position.coords.longitude,
+                    });
+                  },
+                  (error) =>
+                    setGeoProblem(
+                      error.code === error.PERMISSION_DENIED
+                        ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
+                        : "We couldn't find your location just now. Try again, or search for your city.",
+                    ),
+                  { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+                );
               }}
             >
               <LocateFixed className="size-4 text-primary" />
               Use your location for a closer list. We only use it to centre the map.
             </button>
           ) : null}
-          {cards.length === 0 ? (
-            <p className="rounded-2xl bg-muted p-6 text-sm">
-              No places in this area yet. The directory is seeded from OpenStreetMap and grows city by city.{" "}
-              <Link href="/search?where=London&lat=51.5074&lng=-0.1278&z=11" className="font-semibold text-primary">
-                Browse London
-              </Link>
-              {amenities ? (
-                <>
-                  {" "}or{" "}
-                  <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
-                    add a place here
-                  </Link>
-                </>
-              ) : null}
+          {geoProblem ? (
+            <p role="status" className="mb-4 rounded-2xl bg-muted px-4 py-3 text-sm">
+              {geoProblem}
             </p>
+          ) : null}
+          {filling === "loading" && cards.length > 0 ? (
+            <p role="status" className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+              Loading more mosques in this area…
+            </p>
+          ) : null}
+          {cards.length === 0 && filling === "loading" ? (
+            <div role="status" className="flex items-center gap-3 rounded-2xl bg-muted p-6 text-sm" data-testid="area-filling">
+              <LoaderCircle className="size-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
+              <span>Finding mosques and prayer spaces in this area. This takes a few seconds the first time anyone looks here.</span>
+            </div>
+          ) : cards.length === 0 ? (
+            <div className="rounded-2xl bg-muted p-6 text-sm">
+              <p>
+                {filling === "error"
+                  ? "We couldn't load this area just now."
+                  : osm
+                    ? "No mosques or prayer spaces are mapped here yet."
+                    : "No places in this area yet."}{" "}
+                {amenities ? (
+                  <>
+                    Know one?{" "}
+                    <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
+                      Add it to the map
+                    </Link>{" "}
+                    and the community can fill in its times.
+                  </>
+                ) : (
+                  "Try zooming out or searching for a nearby city."
+                )}
+              </p>
+              {filling === "error" ? (
+                <button type="button" className="mt-3 font-semibold text-primary" onClick={() => router.refresh()}>
+                  Try again
+                </button>
+              ) : null}
+            </div>
           ) : (
             <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {cards.map((place) => (

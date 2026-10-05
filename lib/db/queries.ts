@@ -28,6 +28,11 @@ function withMeta(row: PlaceRow, highLat: string | null, origin?: { lat: number;
   };
 }
 
+/** Degrees of longitude shrink with latitude; this keeps the SQL distance ordering roughly isotropic. */
+function lngScale(lat: number): number {
+  return Math.max(0.01, Math.cos((lat * Math.PI) / 180));
+}
+
 export async function placesInBbox(
   bbox: Bbox,
   kind: "all" | "mosque" | "prayer_room",
@@ -53,6 +58,8 @@ export async function placesInBbox(
     .from(place)
     .leftJoin(calcDefault, eq(place.countryCode, calcDefault.countryCode))
     .where(and(...filters))
+    // Nearest first in SQL, so a dense city (thousands of mosques in view) still returns the closest ones.
+    .orderBy(sql`((${place.lat} - ${origin.lat}) * (${place.lat} - ${origin.lat}) + ((${place.lng} - ${origin.lng}) * ${lngScale(origin.lat)}) * ((${place.lng} - ${origin.lng}) * ${lngScale(origin.lat)}))`)
     .limit(500);
   return rows
     .map((row) => withMeta(row.place, row.highLat, origin))
@@ -134,9 +141,14 @@ export async function allCities() {
   return db().select().from(city).orderBy(asc(city.countryCode), asc(city.name));
 }
 
+/** Mosques in our directory matching a name, for the "Where" box (they open the mosque page). */
+export async function suggestMosques(match: string) {
+  return (await appFts(match)).slice(0, 3);
+}
+
 export async function suggestPlaces(
   match: string,
-): Promise<Array<{ label: string; lat: number; lng: number; kind: "city" | "place"; country?: string }>> {
+): Promise<Array<{ label: string; lat: number; lng: number; kind: "city" | "place"; country?: string; slug?: string }>> {
   const like = `%${match.replaceAll("%", "")}%`;
   const cities = await db()
     .select()
@@ -161,18 +173,19 @@ async function appFts(match: string) {
   const database = appEnv().DB;
   const result = await database
     .prepare(
-      `SELECT place.name, place.locality, place.lat, place.lng
+      `SELECT place.name, place.locality, place.lat, place.lng, place.slug
        FROM place_fts JOIN place ON place.rowid = place_fts.rowid
        WHERE place_fts MATCH ? AND place.status = 'active'
        LIMIT 6`,
     )
     .bind(query)
-    .all<{ name: string; locality: string | null; lat: number; lng: number }>();
+    .all<{ name: string; locality: string | null; lat: number; lng: number; slug: string }>();
   return (result.results ?? []).map((row) => ({
     label: row.locality ? `${row.name}, ${row.locality}` : row.name,
     lat: row.lat,
     lng: row.lng,
     kind: "place" as const,
+    slug: row.slug,
   }));
 }
 

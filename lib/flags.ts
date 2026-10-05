@@ -7,6 +7,8 @@ export const PHASE5_FLAG = "phase5.mobile";
 export const PHASE6_FLAG = "phase6.stewards";
 export const PHASE7_FLAG = "phase7.timetables";
 export const PHASE8_FLAG = "phase8.global";
+/** Free OpenStreetMap data: on-demand area fill from Overpass and Photon geocoding instead of Google. */
+export const OSM_FLAG = "places.osm";
 
 const TTL_MS = 60_000;
 const cache = new Map<string, { value: string | null; at: number }>();

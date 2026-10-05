@@ -40,5 +40,6 @@ describe("explore view", () => {
     expect(geocodeDecision(3, false)).toBe("allow");
     expect(geocodeDecision(20, true)).toBe("challenge");
     expect(geocodeDecision(20, false)).toBe("block");
+    expect(geocodeDecision(150, true, 200)).toBe("allow");
   });
 });

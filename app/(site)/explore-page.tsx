@@ -2,8 +2,10 @@ import { headers } from "next/headers";
 import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
-import { getPrayerDay, nextAdhanLabel } from "@/lib/prayer/times";
-import { phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
+import { osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
+import { geocodeWhere } from "@/lib/geocode";
+import { areaNeedsFill } from "@/lib/osm-fill";
 import { parseNeeds } from "@/lib/places/amenities";
 import { isNonProductionHost } from "@/lib/environment";
 import { asSort, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
@@ -21,11 +23,17 @@ export async function ExplorePage({
     const value = params[key];
     return Array.isArray(value) ? value[0] : value;
   };
+  const osm = await osmEnabled();
+  // A shared link like /search?where=Karachi has no coordinates: look the place up instead of
+  // silently showing the visitor's own area under someone else's label.
+  const where = one("where")?.trim();
+  const hasPoint = Number.isFinite(Number(one("lat") ?? "x")) && Number.isFinite(Number(one("lng") ?? "x"));
+  const found = osm && where && !hasPoint ? await geocodeWhere(where, { cache: appEnv().CACHE }).catch(() => null) : null;
   const view = resolveExploreView({
-    where: one("where"),
-    lat: one("lat"),
-    lng: one("lng"),
-    z: one("z"),
+    where: found?.label ?? one("where"),
+    lat: found?.lat != null ? String(found.lat) : one("lat"),
+    lng: found?.lng != null ? String(found.lng) : one("lng"),
+    z: found ? String(zoomForArea(found.bbox)) : one("z"),
     kind: one("kind"),
     bbox: one("bbox"),
     headerLat: headerList.get("x-mw-latitude"),
@@ -38,6 +46,12 @@ export async function ExplorePage({
   const amenitiesOn = community && (await phase3Enabled());
   const needs = amenitiesOn ? parseNeeds(params.needs) : [];
   const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
+  const needsFill = osm
+    ? await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
+        console.error("Area fill check failed", error);
+        return false;
+      })
+    : false;
   const cards = sortCards(
     places.map((place) => toCard(place, now)),
     sort,
@@ -52,6 +66,7 @@ export async function ExplorePage({
           method: anchor.calcMethod,
           madhab: madhabOf(anchor.asrMadhab),
           highLat: anchor.highLatRule,
+          adjust: parseAdhanAdjust(anchor.adhanAdjustJson),
           now,
         });
         const next = nextAdhanLabel(day);
@@ -75,6 +90,20 @@ export async function ExplorePage({
       community={community}
       needs={needs}
       amenities={amenitiesOn}
+      fillBbox={needsFill ? view.bbox : null}
+      osm={osm}
     />
   );
+}
+
+/** Map zoom that roughly fits a geocoded area (a country needs ~5, a city ~11). */
+function zoomForArea(bbox: { west: number; east: number; south: number; north: number } | null | undefined): number {
+  if (!bbox) return 12;
+  const span = Math.max(bbox.east - bbox.west, bbox.north - bbox.south);
+  if (span > 20) return 4;
+  if (span > 8) return 5;
+  if (span > 3) return 7;
+  if (span > 1) return 9;
+  if (span > 0.3) return 11;
+  return 13;
 }

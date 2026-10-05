@@ -37,11 +37,14 @@ async function json<T>(response: Response): Promise<T & { error?: string }> {
   return (await response.json().catch(() => ({}))) as T & { error?: string };
 }
 
+/** Google suggestions resolve through the details route; free (OSM) ones carry details, listed ones a slug. */
+type Suggestion = PlaceSuggestion & { slug?: string; details?: PlaceDetails };
+
 export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng: number } }) {
   const session = useRef(crypto.randomUUID());
   const started = useRef(false);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searchNote, setSearchNote] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [duplicates, setDuplicates] = useState<NearbyPlace[] | null>(null);
@@ -64,8 +67,8 @@ export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng:
       setSuggestions([]);
       return;
     }
-    const response = await fetch(`/api/v1/places/lookup?q=${encodeURIComponent(text)}&session=${session.current}`);
-    const body = await json<{ suggestions: PlaceSuggestion[]; available?: boolean }>(response);
+    const response = await fetch(`/api/v1/places/lookup?q=${encodeURIComponent(text)}&session=${session.current}&lat=${initialCenter.lat}&lng=${initialCenter.lng}`);
+    const body = await json<{ suggestions: Suggestion[]; available?: boolean }>(response);
     if (!response.ok) {
       setSearchNote(body.error ?? "Search is unavailable. Add the place on the map instead.");
       return;
@@ -87,16 +90,23 @@ export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng:
     if (places.length > 0) track("duplicate_detected", { count: places.length });
   }
 
-  async function choose(item: PlaceSuggestion) {
+  async function choose(item: Suggestion) {
     setSuggestions([]);
-    const response = await fetch(`/api/v1/places/lookup/details?id=${encodeURIComponent(item.placeId)}&session=${session.current}`);
-    session.current = crypto.randomUUID();
-    const body = await json<{ details: PlaceDetails }>(response);
-    if (!response.ok || !body.details) {
-      setSearchNote(body.error ?? "That place could not be loaded.");
+    if (item.slug) {
+      window.location.assign(`/m/${item.slug}`);
       return;
     }
-    const details = body.details;
+    let details = item.details;
+    if (!details) {
+      const response = await fetch(`/api/v1/places/lookup/details?id=${encodeURIComponent(item.placeId)}&session=${session.current}`);
+      session.current = crypto.randomUUID();
+      const body = await json<{ details: PlaceDetails }>(response);
+      if (!response.ok || !body.details) {
+        setSearchNote(body.error ?? "That place could not be loaded.");
+        return;
+      }
+      details = body.details;
+    }
     const next: Draft = {
       name: details.name,
       kind: /prayer room|musalla/i.test(details.name) ? "prayer_room" : "mosque",
@@ -107,7 +117,7 @@ export function AddPlace({ initialCenter }: { initialCenter: { lat: number; lng:
       region: details.region,
       country: details.country,
       accessNotes: "",
-      googlePlaceId: details.placeId,
+      googlePlaceId: details.placeId.startsWith("osm:") ? null : details.placeId,
     };
     setDraft(next);
     await checkDuplicates(next);

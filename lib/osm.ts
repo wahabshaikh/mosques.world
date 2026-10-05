@@ -1,7 +1,7 @@
 import tzLookup from "tz-lookup";
 import { encodeGeohash } from "@/lib/geo/geohash";
 import { ulid } from "@/lib/id";
-import { placeSlug, uniqueSlug } from "@/lib/slug";
+import { placeSlug, slugify, uniqueSlug } from "@/lib/slug";
 
 export type OsmElement = {
   type: "node" | "way" | "relation";
@@ -58,15 +58,20 @@ export function osmPlaceRow(
   const lat = element.lat ?? element.center?.lat;
   const lng = element.lon ?? element.center?.lon;
   if (lat === undefined || lng === undefined) return null;
-  const locality = tags["addr:suburb"] ?? tags["addr:city"] ?? context.cityName;
-  const slug = uniqueSlug(placeSlug(name, locality) || "place", context.taken);
+  const tagged = tags["addr:suburb"] ?? tags["addr:city"];
+  // Keep the page readable in the site's language: a locality in another script falls back to the city.
+  const locality = tagged && (slugify(tagged) || !slugify(context.cityName)) ? tagged : context.cityName;
+  const kind = /prayer room|musalla/i.test(name) ? "prayer_room" : "mosque";
+  // Names in non-Latin scripts slug to nothing, so fall back to "mosque-<locality>" rather than the bare locality.
+  const label = slugify(name) ? name : (tags["int_name"] ?? tags["name:latin"] ?? (kind === "mosque" ? "Mosque" : "Prayer room"));
+  const slug = uniqueSlug(placeSlug(label, locality) || "place", context.taken);
   context.taken.add(slug);
   return {
     id: ulid(context.now),
     slug,
     name,
     nameLocal: tags["name:en"] && tags.name !== tags["name:en"] ? (tags.name ?? null) : null,
-    kind: /prayer room|musalla/i.test(name) ? "prayer_room" : "mosque",
+    kind,
     lat,
     lng,
     geohash6: encodeGeohash(lat, lng),

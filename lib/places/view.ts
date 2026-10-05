@@ -79,8 +79,9 @@ export function ftsMatch(input: string): string {
   return terms.map((term) => `"${term}"*`).join(" ");
 }
 
-export function geocodeDecision(count: number, hasTurnstile: boolean): "allow" | "challenge" | "block" {
-  if (count < 20) return "allow";
+/** Searches per IP per hour before Turnstile; the free geocoder (KV-cached Photon) can afford far more than Google. */
+export function geocodeDecision(count: number, hasTurnstile: boolean, limit = 20): "allow" | "challenge" | "block" {
+  if (count < limit) return "allow";
   if (hasTurnstile) return "challenge";
   return "block";
 }

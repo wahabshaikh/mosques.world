@@ -35,6 +35,22 @@ pnpm exec tsx scripts/import-osm.ts --bbox 51.28,-0.52,51.70,0.30 --country GB -
 
 A nightly cron recounts `city.place_count`.
 
+### On-demand area fill (`places.osm` flag)
+
+With `places.osm` on, the explore page asks `POST /api/v1/places/fill` to load any area that has no
+OpenStreetMap mosques yet: one geohash-4 cell per Overpass query, nearest first, two cells per request
+(the browser calls again until `remaining` is 0). Cells live in `osm_cell`; failures retry after 30
+minutes, finished cells re-sync after 30 days via the weekly cron. Cells with 10+ OSM places from the
+original seed (London, Istanbul) are left to the weekly city sync. The same flag switches "Where" search,
+`/search?where=` links and add-a-place search from Google Places to Photon (free, KV-cached).
+
+- Turn on: `wrangler kv key put --binding FLAGS places.osm on --remote` (human step).
+- Watch: Workers Logs for `Area fill failed for …` (Overpass 429/504 on every mirror).
+- Inspect: `SELECT status, COUNT(*), SUM(inserted) FROM osm_cell GROUP BY status`.
+- Turn off: set the flag to `off`; filled places stay (they are ordinary directory rows).
+- Locally and in E2E, Overpass and Photon are answered by `lib/osm-fixture.ts` when the request has the
+  `x-mw-osm-fixture: 1` header or `mw_osm_fixture=1` cookie (non-production hosts only).
+
 ## Deploy
 
 Production is the `mosques-world` Worker on `mosques.world`. Workers Builds deploys every push to `main`

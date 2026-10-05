@@ -1,0 +1,10 @@
+[{"type":"node","id":252160588,"lat":24.9237178,"lon":67.0877572,"tags":{"addr:city":"Karachi","name":"Masjid Ahsan Ul Uloom","name:ur":"احسن العالوم"}},
+{"type":"node","id":290871380,"lat":24.93996,"lon":67.0720062,"tags":{"name":"Masjid e Quba"}},
+{"type":"node","id":290871526,"lat":24.9372836,"lon":67.0688635,"tags":{"addr:city":"Karachi","addr:street":"Shahrah e Aal-e-Aba","name":"Masjid O Imambargah Aal-e-Aba"}},
+{"type":"node","id":290872135,"lat":24.93196,"lon":67.0652157,"tags":{"name":"Medina"}},
+{"type":"node","id":291024265,"lat":24.9243478,"lon":67.0687478,"tags":{}},
+{"type":"way","id":26516976,"center":{"lat":24.9590599,"lon":67.0711666},"tags":{"addr:city":"Karachi","name":"Al-Huda Masjid","wheelchair":"yes"}},
+{"type":"way","id":26516940,"center":{"lat":24.9577873,"lon":67.0644308},"tags":{"name":"Taha"}},
+{"type":"node","id":479803410,"lat":24.8762259,"lon":67.0871296,"tags":{"name":"مسجد بلال","name:en":"Bilal Masjid","name:ur":"مسجد بلال"}},
+{"type":"node","id":3856410492,"lat":24.914814,"lon":67.1248935,"tags":{"addr:city":"کراچی","name":"مسجد عثمان غنی","name:ur":"مسجد عثمان غنی"}},
+{"type":"node","id":4791846925,"lat":24.8333584,"lon":67.081028,"tags":{"addr:city":"Karachi"}}]
