@@ -22,6 +22,34 @@ export type PrayerRow = {
   at: string;
 };
 
+/** Community-agreed changes to the calculated adhan (denormalised from the adhan.* facts). */
+export type AdhanAdjust = Partial<Record<"fajr" | "dhuhr" | "asr" | "maghrib" | "isha", { min: number } | { t: string }>>;
+
+/** Reads `place.adhan_adjust_json`, ignoring anything malformed. */
+export function parseAdhanAdjust(json: string | null | undefined): AdhanAdjust | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    const out: AdhanAdjust = {};
+    for (const key of ["fajr", "dhuhr", "asr", "maghrib", "isha"] as const) {
+      const value = parsed[key] as { min?: unknown; t?: unknown } | undefined;
+      if (typeof value?.min === "number" && Number.isInteger(value.min) && Math.abs(value.min) <= 120) out[key] = { min: value.min };
+      else if (typeof value?.t === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value.t)) out[key] = { t: value.t };
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+function adjusted(instant: Date, key: PrayerKey, adjust: AdhanAdjust | null | undefined, civil: { year: number; month: number; day: number }, timeZone: string): Date {
+  const rule = key === "sunrise" ? undefined : adjust?.[key];
+  if (!rule) return instant;
+  if ("min" in rule) return new Date(instant.getTime() + rule.min * 60_000);
+  const [hours = 0, minutes = 0] = rule.t.split(":").map(Number);
+  return new Date(new TZDate(civil.year, civil.month - 1, civil.day, hours, minutes, 0, timeZone).getTime());
+}
+
 export type PrayerDay = {
   date: string;
   hijri: string;
@@ -125,6 +153,8 @@ export function getPrayerDay(input: {
   madhab: AsrMadhab;
   highLat: HighLatRule;
   now?: Date;
+  /** The mosque's own adhan, where the community has recorded it. */
+  adjust?: AdhanAdjust | null;
 }): PrayerDay {
   const now = input.now ?? new Date();
   const civil = civilDate(now, input.timeZone);
@@ -138,14 +168,16 @@ export function getPrayerDay(input: {
     params,
   );
 
+  const at = (key: PrayerKey, instant: Date) => adjusted(instant, key, input.adjust, civil, input.timeZone);
   const times: Record<PrayerKey, Date> = {
-    fajr: today.fajr,
+    fajr: at("fajr", today.fajr),
     sunrise: today.sunrise,
-    dhuhr: today.dhuhr,
-    asr: today.asr,
-    maghrib: today.maghrib,
-    isha: today.isha,
+    dhuhr: at("dhuhr", today.dhuhr),
+    asr: at("asr", today.asr),
+    maghrib: at("maghrib", today.maghrib),
+    isha: at("isha", today.isha),
   };
+  const tomorrowFajr = adjusted(tomorrow.fajr, "fajr", input.adjust, tomorrowCivil, input.timeZone);
 
   const jumuah = isFriday(today.dhuhr, input.timeZone);
   const rows: PrayerRow[] = PRAYER_KEYS.map((key) => ({
@@ -163,8 +195,8 @@ export function getPrayerDay(input: {
     nextKey = "fajr";
     const fajrRow = rows[0];
     if (fajrRow) {
-      fajrRow.adhan = formatHm(tomorrow.fajr, input.timeZone);
-      fajrRow.at = tomorrow.fajr.toISOString();
+      fajrRow.adhan = formatHm(tomorrowFajr, input.timeZone);
+      fajrRow.at = tomorrowFajr.toISOString();
       fajrRow.label = "Fajr";
     }
   }

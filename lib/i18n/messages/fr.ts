@@ -86,6 +86,8 @@ export const fr: Messages = {
   "mosque.update": "Mettre à jour les horaires",
   "mosque.jumuahToday": "Joumou'a aujourd'hui · voir plus bas",
   "mosque.calcNote": "Les horaires d'adhan sont calculés selon {method}, Asr {madhab}, fuseau {zone}. Ce ne sont pas les horaires d'iqama de la mosquée.",
+  "mosque.adhanCommunity": " L'adhan suit l'horaire propre à cette mosquée lorsque la communauté l'a renseigné.",
+  "mosque.adhanDiffers": "L'adhan de la mosquée est différent ?",
   "mosque.communityNote": " Les horaires d'iqama viennent de la mosquée et sont tenus à jour par la communauté. ",
   "mosque.history": "Historique de ces horaires",
   "mosque.monthly": "Calendrier mensuel",

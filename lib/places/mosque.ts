@@ -1,7 +1,7 @@
 import { TZDate } from "@date-fns/tz";
 import { civilDate, type PrayerDay, type PrayerKey } from "@/lib/prayer/times";
 import type { IqamahCell, NextRow } from "@/components/mw/prayer-table";
-import { AMENITIES, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type JumuahValue } from "@/lib/trust/facts";
+import { ADHAN_METHOD_KEY, AMENITIES, ASR_MADHAB_KEY, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type JumuahValue } from "@/lib/trust/facts";
 import type { FactView } from "@/lib/trust/read";
 import { translator, type Translator } from "@/lib/i18n";
 
@@ -111,9 +111,11 @@ export type UpdateCurrent = { candidateId: string; value: unknown; score: number
 
 /** Props for the Update timings dialog: current values, today's adhan, and the date window. */
 export function updateData(input: {
-  place: { id: string; slug: string; name: string };
+  place: { id: string; slug: string; name: string; method?: string; madhab?: string };
   facts: FactView[];
   day: PrayerDay;
+  /** Times before community adhan adjustments (defaults to `day`). */
+  calculated?: PrayerDay;
   trustLevel: number;
   amenities?: boolean;
 }) {
@@ -150,6 +152,16 @@ export function updateData(input: {
           current: current(facts.find((fact) => fact.key === amenity.key)),
         }))
       : [],
+    adhan: {
+      method: { value: input.place.method ?? "MuslimWorldLeague", current: current(facts.find((fact) => fact.key === ADHAN_METHOD_KEY)) },
+      madhab: { value: input.place.madhab ?? "shafi", current: current(facts.find((fact) => fact.key === ASR_MADHAB_KEY)) },
+      prayers: IQAMAH_PRAYERS.map((prayer) => ({
+        key: `adhan.${prayer}`,
+        label: `${prayer.charAt(0).toUpperCase()}${prayer.slice(1)}`,
+        calculated: (input.calculated ?? day).rows.find((item) => item.key === prayer)?.adhan ?? "12:00",
+        current: current(facts.find((fact) => fact.key === `adhan.${prayer}`)),
+      })),
+    },
     jumuah: facts
       .filter((fact) => fact.key === "jumuah.jamaah")
       .map((fact) => ({ qualifier: fact.qualifier, current: current(fact) }))

@@ -335,4 +335,32 @@ test.describe("phase 2 trusted iqamah times", () => {
     await expect(page.getByTestId("directions")).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   });
+
+  test("the community sets a mosque's own adhan and calculation, and the page uses them", async ({ browser, request }) => {
+    const slug = "baitul-ahad-leyton";
+    await resetPlace(request, slug);
+    const setter = await newUser(browser, "adhan", { trustLevel: 2 });
+    await visit(setter.page, `/m/${slug}`);
+    const calculated = (await setter.page.locator('[data-prayer="isha"]').innerText()).match(/\d\d:\d\d/)?.[0];
+    await setter.page.getByRole("link", { name: "Mosque's adhan different?" }).click();
+    await expect(setter.page.getByTestId("adhan-tab")).toBeVisible();
+    await setToday(setter.page);
+    await setter.page.getByLabel("Calculation method").selectOption("NorthAmerica");
+    const isha = setter.page.locator('[data-adhan-row="adhan.isha"]');
+    await isha.getByRole("button", { name: "Set mosque's adhan" }).click();
+    await isha.getByRole("checkbox", { name: "Same time every day" }).check();
+    await isha.getByRole("spinbutton").click();
+    await isha.getByLabel(/adhan time$/).fill("21:45");
+    await isha.getByLabel(/adhan time$/).press("Enter");
+    await setter.page.getByRole("button", { name: /^Submit 2 changes$/ }).click();
+    await expect(setter.page.getByTestId("update-results")).toContainText("Isha adhan is live");
+    await expect(setter.page.getByRole("button", { name: /Share this mosque|Link copied/ })).toBeVisible();
+    await setter.page.getByRole("button", { name: "Done" }).click();
+    await expect(setter.page.locator('[data-prayer="isha"]')).toContainText("21:45");
+    expect(calculated).not.toBe("21:45");
+    await expect(setter.page.getByText(/calculated with ISNA \(North America\)/)).toBeVisible();
+    await expect(setter.page.getByText(/follows this mosque's own timetable/)).toBeVisible();
+    expect(await seriousViolations(setter.page)).toEqual([]);
+    await setter.context.close();
+  });
 });

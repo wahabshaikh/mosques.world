@@ -89,6 +89,8 @@ export const en = {
   "mosque.update": "Update timings",
   "mosque.jumuahToday": "Jumu'ah today · see below",
   "mosque.calcNote": "Adhan times are calculated with {method}, {madhab} asr, in {zone}. They are not the mosque's iqamah.",
+  "mosque.adhanCommunity": " The adhan follows this mosque's own timetable where the community has set it.",
+  "mosque.adhanDiffers": "Mosque's adhan different?",
   "mosque.communityNote": " Iqamah times come from the mosque and are kept current by the community. ",
   "mosque.history": "History of these times",
   "mosque.monthly": "Monthly timetable",

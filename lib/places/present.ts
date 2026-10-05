@@ -1,4 +1,4 @@
-import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab } from "@/lib/prayer/times";
+import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab, parseAdhanAdjust } from "@/lib/prayer/times";
 import { formatTime12, toMinutes } from "@/lib/trust/facts";
 import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
 import { cardTag } from "./needs";
@@ -18,6 +18,7 @@ export function toCard(place: DirectoryPlace, now: Date): ExplorePlace {
     method: place.calcMethod,
     madhab: madhabOf(place.asrMadhab),
     highLat: place.highLatRule,
+    adjust: parseAdhanAdjust(place.adhanAdjustJson),
     now,
   });
   const summary = parseSummary(place.iqamahSummaryJson);

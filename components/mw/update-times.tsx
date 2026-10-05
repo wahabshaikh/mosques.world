@@ -7,7 +7,22 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
 import { asTrustLevel, confirmationsNeeded, shouldHold, voteWeight, type FactState } from "@/lib/trust/engine";
-import { amenityValue, canonicalJson, formatTime12, fromMinutes, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, toMinutes, type VoteSource } from "@/lib/trust/facts";
+import {
+  adhanAdjustValue,
+  amenityValue,
+  CALC_METHODS,
+  canonicalJson,
+  formatTime12,
+  fromMinutes,
+  iqamahValue,
+  jumuahValue,
+  languageName,
+  methodLabel,
+  ordinal,
+  resolveIqamah,
+  toMinutes,
+  type VoteSource,
+} from "@/lib/trust/facts";
 import { cn } from "@/lib/utils";
 import { TimeStepper } from "./time-stepper";
 
@@ -25,9 +40,37 @@ export type UpdateData = {
   jumuah: Array<{ qualifier: string; current: CurrentValue | null }>;
   amenities: Array<{ key: string; label: string; current: CurrentValue | null }>;
   dhuhrAdhan: string;
+  adhan?: {
+    method: { value: string; current: CurrentValue | null };
+    madhab: { value: string; current: CurrentValue | null };
+    prayers: Array<{ key: string; label: string; calculated: string; current: CurrentValue | null }>;
+  };
 };
 
-export type UpdateTab = "iqamah" | "jumuah" | "amenities";
+export type UpdateTab = "iqamah" | "adhan" | "jumuah" | "amenities";
+
+type AdhanRow = { set: boolean; clock: number; fixed: boolean };
+
+/** Minutes from the calculated adhan to a clock time, the short way round midnight. */
+function minutesFrom(calculated: string, clock: number): number {
+  return ((((clock - toMinutes(calculated)) % 1440) + 2160) % 1440) - 720;
+}
+
+function adhanRowFrom(current: CurrentValue | null, calculated: string): AdhanRow {
+  const parsed = current ? adhanAdjustValue.safeParse(current.value) : null;
+  if (parsed?.success) {
+    return "t" in parsed.data
+      ? { set: true, clock: toMinutes(parsed.data.t), fixed: true }
+      : { set: true, clock: toMinutes(calculated) + parsed.data.min, fixed: false };
+  }
+  return { set: false, clock: toMinutes(calculated), fixed: false };
+}
+
+/** Stored relative to the calculation (so it follows the seasons) unless the mosque keeps a fixed time. */
+function adhanRowValue(row: AdhanRow, calculated: string): unknown {
+  const min = minutesFrom(calculated, row.clock);
+  return row.fixed || Math.abs(min) > 120 ? { t: fromMinutes(row.clock) } : { min };
+}
 type AmenityChoice = "yes" | "no" | "unsure";
 
 const SOURCES: Array<{ value: VoteSource; label: string }> = [
@@ -41,6 +84,11 @@ const LANGUAGES = ["en", "ar", "ur", "bn", "tr", "fr", "id", "ms", "so", "de"];
 
 type Row = { set: boolean; mode: "clock" | "offset"; clock: number; offset: number };
 type JumuahRow = { qualifier: string; time: number; khutbah: number | null; lang: string[]; current: CurrentValue | null; removed: boolean };
+
+function currentV(current: CurrentValue | null | undefined): string | null {
+  const v = (current?.value as { v?: unknown } | undefined)?.v;
+  return typeof v === "string" ? v : null;
+}
 
 function rowFromCurrent(current: CurrentValue | null, adhan: string): Row {
   const parsed = current ? iqamahValue.safeParse(current.value) : null;
@@ -92,10 +140,18 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
   const initialRows = useMemo(() => Object.fromEntries(data.prayers.map((prayer) => [prayer.key, rowFromCurrent(prayer.current, prayer.adhan)])), [data]);
   const [rows, setRows] = useState<Record<string, Row>>(initialRows);
   const [jumuah, setJumuah] = useState<JumuahRow[]>(() => initialJumuah(data));
+  const initialAdhan = useMemo(
+    () => Object.fromEntries((data.adhan?.prayers ?? []).map((prayer) => [prayer.key, adhanRowFrom(prayer.current, prayer.calculated)])),
+    [data],
+  );
+  const [adhanRows, setAdhanRows] = useState<Record<string, AdhanRow>>(initialAdhan);
+  const [method, setMethod] = useState(() => currentV(data.adhan?.method.current) ?? data.adhan?.method.value ?? "MuslimWorldLeague");
+  const [madhab, setMadhab] = useState(() => currentV(data.adhan?.madhab.current) ?? data.adhan?.madhab.value ?? "shafi");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [evidence, setEvidence] = useState<{ id: string; status: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [shared, setShared] = useState(false);
   const [results, setResults] = useState<Array<{ label: string; status: string; message: string }> | null>(null);
   const level = asTrustLevel(data.trustLevel);
 
@@ -109,6 +165,30 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
       if (visited.has("iqamah")) confirms.push(prayer.current.candidateId);
     } else if (row.set) {
       changes.push({ key: prayer.key, qualifier: "", value, current: prayer.current, label: prayer.label });
+    }
+  }
+  if (data.adhan) {
+    const settings = [
+      { key: "adhan.method", label: "Adhan calculation", chosen: method, setting: data.adhan.method },
+      { key: "asr_madhab", label: "Asr calculation", chosen: madhab, setting: data.adhan.madhab },
+    ];
+    for (const item of settings) {
+      const was = currentV(item.setting.current);
+      if (item.setting.current && was === item.chosen) {
+        if (visited.has("adhan")) confirms.push(item.setting.current.candidateId);
+      } else if (item.chosen !== (was ?? item.setting.value)) {
+        changes.push({ key: item.key, qualifier: "", value: { v: item.chosen }, current: item.setting.current, label: item.label });
+      }
+    }
+    for (const prayer of data.adhan.prayers) {
+      const row = adhanRows[prayer.key];
+      if (!row) continue;
+      const value = adhanRowValue(row, prayer.calculated);
+      if (prayer.current && canonicalJson(prayer.current.value) === canonicalJson(value)) {
+        if (visited.has("adhan")) confirms.push(prayer.current.candidateId);
+      } else if (row.set) {
+        changes.push({ key: prayer.key, qualifier: "", value, current: prayer.current, label: `${prayer.label} adhan` });
+      }
     }
   }
   for (const row of jumuah) {
@@ -135,7 +215,10 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
 
   const weight = voteWeight({ trustLevel: level, source: source ?? "other" });
   const helper = (() => {
-    if (changes.length === 0) return confirms.length > 0 ? "Your confirmation keeps these times fresh" : "Set at least one time";
+    if (changes.length === 0) {
+      if (confirms.length > 0) return "Your confirmation keeps these times fresh";
+      return tab === "amenities" ? "Choose yes or no for anything you've seen" : tab === "adhan" ? "Change a setting or set the mosque's adhan" : "Set at least one time";
+    }
     if (changes.some((change) => change.current && shouldHold({ trustLevel: level, currentState: change.current.state, currentConfirmations: change.current.backers }))) {
       return "A trusted member reviews changes to verified times from new accounts";
     }
@@ -151,7 +234,14 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
     return `Goes live after ${needed} more ${needed === 1 ? "person confirms" : "people confirm"}`;
   })();
 
-  const submitLabel = changes.length === 0 ? (tab === "amenities" ? "Confirm" : "Confirm times are correct") : `Submit ${changes.length} ${changes.length === 1 ? "change" : "changes"}`;
+  const submitLabel =
+    changes.length > 0
+      ? `Submit ${changes.length} ${changes.length === 1 ? "change" : "changes"}`
+      : confirms.length > 0
+        ? tab === "amenities"
+          ? "Confirm"
+          : "Confirm times are correct"
+        : "Submit";
 
   async function submit() {
     setPending(true);
@@ -201,6 +291,28 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
             </li>
           ))}
         </ul>
+        <div className="flex flex-col gap-2 rounded-xl bg-primary-soft p-4 text-sm">
+          <p className="font-semibold">Help your jamā&apos;ah find these times</p>
+          <p className="text-muted-foreground">Share the page in your mosque&apos;s group. Every confirmation makes the times more trusted.</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="self-start"
+            onClick={async () => {
+              const url = `${window.location.origin}/m/${data.slug}`;
+              const text = `Prayer times for ${data.placeName}, kept up to date by the community`;
+              track("share_click", { surface: "after_update" });
+              if (navigator.share) {
+                await navigator.share({ title: data.placeName, text, url }).catch(() => undefined);
+              } else {
+                await navigator.clipboard?.writeText(url).catch(() => undefined);
+                setShared(true);
+              }
+            }}
+          >
+            {shared ? "Link copied" : "Share this mosque"}
+          </Button>
+        </div>
         <Button
           type="button"
           variant="secondary"
@@ -217,10 +329,11 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div role="tablist" aria-label="What to update" className="flex shrink-0 gap-2 px-6 pt-4">
+      <div role="tablist" aria-label="What to update" className="flex shrink-0 gap-2 overflow-x-auto px-6 pt-4">
         {(
           [
             ["iqamah", "Iqamah times"],
+            ...(data.adhan ? ([["adhan", "Adhan"]] as const) : []),
             ["jumuah", "Jumu'ah"],
             ...(data.amenities.length > 0 ? ([["amenities", "Amenities"]] as const) : []),
           ] as Array<readonly [UpdateTab, string]>
@@ -230,7 +343,7 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
             type="button"
             role="tab"
             aria-selected={tab === value}
-            className={cn("rounded-full px-4 py-2.5 text-sm font-bold", tab === value ? "bg-secondary text-secondary-foreground" : "bg-muted")}
+            className={cn("shrink-0 rounded-full px-4 py-2.5 text-sm font-bold whitespace-nowrap", tab === value ? "bg-secondary text-secondary-foreground" : "bg-muted")}
             onClick={() => {
               setTab(value);
               setVisited((all) => new Set(all).add(value));
@@ -297,6 +410,84 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
                 </div>
               );
             })}
+          </div>
+        ) : tab === "adhan" && data.adhan ? (
+          <div className="flex flex-col gap-5" data-testid="adhan-tab">
+            <p className="text-sm text-muted-foreground">
+              Adhan times are calculated for this location. If the mosque calls the adhan at different times, set them here so everyone sees the mosque&apos;s own
+              timetable.
+            </p>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-bold">Calculation method</span>
+              <select
+                aria-label="Calculation method"
+                value={method}
+                onChange={(event) => setMethod(event.target.value)}
+                className="h-11 rounded-[12px] border border-input bg-background px-3 text-sm"
+              >
+                {CALC_METHODS.some((item) => item.v === method) ? null : <option value={method}>{methodLabel(method)}</option>}
+                {CALC_METHODS.map((item) => (
+                  <option key={item.v} value={item.v}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground">Usually printed at the bottom of the mosque&apos;s timetable.</span>
+            </label>
+            <div role="radiogroup" aria-label="Asr" className="flex flex-col gap-1.5">
+              <span className="text-sm font-bold">Asr</span>
+              <div className="flex overflow-hidden rounded-full border border-border-strong self-start">
+                {(
+                  [
+                    ["shafi", "Standard (Shafi'i, Maliki, Hanbali)"],
+                    ["hanafi", "Hanafi (later)"],
+                  ] as const
+                ).map(([value, label], index) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={madhab === value}
+                    className={cn("px-3.5 py-2 text-[13px] font-bold", index > 0 && "border-s border-border-strong", madhab === value && "bg-secondary text-secondary-foreground")}
+                    onClick={() => setMadhab(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <ul className="flex flex-col" aria-label="Adhan times">
+              {data.adhan.prayers.map((prayer) => {
+                const row = adhanRows[prayer.key];
+                if (!row) return null;
+                const set = (next: Partial<AdhanRow>) => setAdhanRows((all) => ({ ...all, [prayer.key]: { ...row, ...next, set: true } }));
+                const min = minutesFrom(prayer.calculated, row.clock);
+                return (
+                  <li key={prayer.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border py-3.5" data-adhan-row={prayer.key}>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-base font-bold">{prayer.label}</span>
+                      <span className="text-[13px] text-muted-foreground">
+                        Calculated {formatTime12(prayer.calculated)}
+                        {row.set && !row.fixed && min !== 0 ? ` · ${Math.abs(min)} min ${min > 0 ? "later" : "earlier"}` : ""}
+                      </span>
+                      {row.set ? (
+                        <label className="flex items-center gap-2 text-[13px]">
+                          <input type="checkbox" checked={row.fixed} onChange={(event) => set({ fixed: event.target.checked })} />
+                          Same time every day
+                        </label>
+                      ) : null}
+                    </span>
+                    {row.set ? (
+                      <TimeStepper label={`${prayer.label} adhan`} value={row.clock} onChange={(clock) => set({ clock })} />
+                    ) : (
+                      <Button type="button" variant="outline" size="sm" onClick={() => set({})}>
+                        <Plus className="size-4" /> Set mosque&apos;s adhan
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         ) : tab === "iqamah" ? (
           <ul className="flex flex-col" aria-label="Iqamah times">
@@ -497,11 +688,14 @@ export function UpdateTimes({ data, onDone, initialTab = "iqamah" }: { data: Upd
             setRows(initialRows);
             setJumuah(initialJumuah(data));
             setAmenities({});
+            setAdhanRows(initialAdhan);
+            setMethod(currentV(data.adhan?.method.current) ?? data.adhan?.method.value ?? "MuslimWorldLeague");
+            setMadhab(currentV(data.adhan?.madhab.current) ?? data.adhan?.madhab.value ?? "shafi");
           }}
         >
           Reset
         </button>
-        <span className="hidden max-w-[220px] text-end text-[13px] text-muted-foreground sm:block" data-testid="update-helper">
+        <span className="max-w-[220px] flex-1 text-end text-[12px] text-muted-foreground sm:flex-none sm:text-[13px]" data-testid="update-helper">
           {helper}
         </span>
         <Button type="button" variant="secondary" disabled={pending || changes.length + confirms.length === 0} onClick={() => void submit()}>

@@ -34,6 +34,7 @@ const place: DirectoryPlace = {
   createdBy: null,
   amenityBits: 0,
   accessNotes: null,
+  adhanAdjustJson: null,
   createdAt: 0,
   updatedAt: 0,
   highLatRule: "twilightangle",

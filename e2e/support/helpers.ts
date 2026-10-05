@@ -77,6 +77,8 @@ export async function newUser(
 ) {
   const person = identity(prefix);
   const context = await browser.newContext({ ...options, baseURL });
+  // Same as the project-level storageState: area fill uses its fixture, not Overpass.
+  await context.addCookies([{ name: "mw_osm_fixture", value: "1", url: baseURL }]);
   await signIn(context, person.email, { username: person.username, name: person.username, ...fixture });
   const page = await context.newPage();
   // Page-level, like a real client IP: per-IP rate limits stay per person, service worker fetches are unaffected.

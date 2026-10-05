@@ -8,7 +8,7 @@ import { resolvePlaceSlug } from "@/lib/db/queries";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
 import { phase7Enabled } from "@/lib/phase";
-import { civilDate, formatHijri, getPrayerDay } from "@/lib/prayer/times";
+import { civilDate, formatHijri, getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { daysIn, monthValues } from "@/lib/timetable";
 import { formatTime12, IQAMAH_PRAYERS } from "@/lib/trust/facts";
 import { iqamahToday, parseSummary } from "@/lib/trust/summary";
@@ -78,6 +78,7 @@ export default async function TimetablePage({ params, searchParams }: { params: 
       method: place.calcMethod,
       madhab: madhabOf(place.asrMadhab),
       highLat: place.highLatRule,
+      adjust: parseAdhanAdjust(place.adhanAdjustJson),
       now: noon,
     });
     const regular = iqamahToday(standing, prayerDay);

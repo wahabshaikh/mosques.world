@@ -20,7 +20,7 @@ import {
   type FactState,
   type TrustLevel,
 } from "./engine";
-import { amenityBit, IQAMAH_KEYS, isAmenityKey, JUMUAH_KEY, valueHash, type VoteSource } from "./facts";
+import { ADHAN_METHOD_KEY, amenityBit, ASR_MADHAB_KEY, IQAMAH_KEYS, isAdhanKey, isAmenityKey, JUMUAH_KEY, valueHash, type VoteSource } from "./facts";
 import type { PlaceSummary, SummaryEntry } from "./summary";
 
 /**
@@ -273,11 +273,27 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
     groups.set(id, [...(groups.get(id) ?? []), row]);
   }
   let amenityBits = 0;
+  const adhanAdjust: Record<string, unknown> = {};
+  let method: string | null = null;
+  let madhab: string | null = null;
   for (const group of groups.values()) {
     const current = group.find((row) => row.status === "current");
     if (!current) continue;
     if (isAmenityKey(current.key)) {
       if ((JSON.parse(current.value_json) as { v?: unknown }).v === true) amenityBits |= amenityBit(current.key);
+      continue;
+    }
+    // The community's adhan settings ride on the place row, so every surface that calculates times uses them.
+    if (isAdhanKey(current.key)) {
+      adhanAdjust[current.key.slice("adhan.".length)] = JSON.parse(current.value_json);
+      continue;
+    }
+    if (current.key === ADHAN_METHOD_KEY || current.key === ASR_MADHAB_KEY) {
+      const v = (JSON.parse(current.value_json) as { v?: unknown }).v;
+      if (typeof v === "string") {
+        if (current.key === ADHAN_METHOD_KEY) method = v;
+        else madhab = v;
+      }
       continue;
     }
     const previous = displayedOn(
@@ -320,8 +336,20 @@ export async function refreshPlaceSummary(db: D1Database, placeId: string, now: 
   );
   const hasAny = Object.keys(summary.iqamah).length > 0 || summary.jumuah.length > 0 || Boolean(summary.tt);
   await db
-    .prepare(`UPDATE place SET iqamah_summary_json = ?, verification_state = ?, last_verified_at = ?, amenity_bits = ? WHERE id = ?`)
-    .bind(hasAny ? JSON.stringify(summary) : null, verification, lastVerified, amenityBits, placeId)
+    .prepare(
+      `UPDATE place SET iqamah_summary_json = ?, verification_state = ?, last_verified_at = ?, amenity_bits = ?, adhan_adjust_json = ?,
+         calc_method = coalesce(?, calc_method), asr_madhab = coalesce(?, asr_madhab) WHERE id = ?`,
+    )
+    .bind(
+      hasAny ? JSON.stringify(summary) : null,
+      verification,
+      lastVerified,
+      amenityBits,
+      Object.keys(adhanAdjust).length > 0 ? JSON.stringify(adhanAdjust) : null,
+      method,
+      madhab,
+      placeId,
+    )
     .run();
   return summary;
 }

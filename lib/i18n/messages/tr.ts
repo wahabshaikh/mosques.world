@@ -83,6 +83,8 @@ export const tr: Messages = {
   "mosque.update": "Vakitleri güncelle",
   "mosque.jumuahToday": "Bugün Cuma · aşağıya bakın",
   "mosque.calcNote": "Ezan vakitleri {method} yöntemiyle, {madhab} ikindi ile, {zone} saat diliminde hesaplanır. Bunlar caminin kamet vakitleri değildir.",
+  "mosque.adhanCommunity": " Topluluğun belirlediği yerlerde ezan, bu caminin kendi vakit çizelgesine göre gösterilir.",
+  "mosque.adhanDiffers": "Caminin ezanı farklı mı?",
   "mosque.communityNote": " Kamet vakitleri camiden gelir ve topluluk tarafından güncel tutulur. ",
   "mosque.history": "Bu vakitlerin geçmişi",
   "mosque.monthly": "Aylık vakitler",

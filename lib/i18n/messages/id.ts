@@ -83,6 +83,8 @@ export const id: Messages = {
   "mosque.update": "Perbarui jadwal",
   "mosque.jumuahToday": "Hari ini Jumat · lihat di bawah",
   "mosque.calcNote": "Waktu azan dihitung dengan metode {method}, Asar {madhab}, di zona {zone}. Ini bukan waktu ikamah masjid.",
+  "mosque.adhanCommunity": " Azan mengikuti jadwal masjid ini jika sudah diatur oleh komunitas.",
+  "mosque.adhanDiffers": "Azan masjid berbeda?",
   "mosque.communityNote": " Waktu ikamah berasal dari masjid dan dijaga tetap terbaru oleh komunitas. ",
   "mosque.history": "Riwayat waktu ini",
   "mosque.monthly": "Jadwal bulanan",

@@ -34,6 +34,7 @@ export const place = sqliteTable(
     createdBy: text("created_by"),
     amenityBits: integer("amenity_bits").notNull().default(0),
     accessNotes: text("access_notes"),
+    adhanAdjustJson: text("adhan_adjust_json"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
@@ -318,4 +319,13 @@ export const savedPlace = sqliteTable("saved_place", {
   userId: text("user_id").notNull(),
   placeId: text("place_id").notNull(),
   createdAt: integer("created_at").notNull(),
+});
+
+export const osmCell = sqliteTable("osm_cell", {
+  geohash: text("geohash").primaryKey(),
+  status: text("status").notNull(),
+  startedAt: integer("started_at").notNull(),
+  syncedAt: integer("synced_at"),
+  inserted: integer("inserted").notNull().default(0),
+  error: text("error"),
 });

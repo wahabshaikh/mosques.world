@@ -344,3 +344,24 @@ describe("amenities", () => {
     expect(bits.iqamah_summary_json).toBeNull();
   });
 });
+
+describe("community adhan settings", () => {
+  it("copies the agreed method, Asr and adhan adjustments onto the place", async () => {
+    const a = addUser("adhan-a", 2);
+    await propose(a, "adhan.method", { v: "NorthAmerica" });
+    await propose(a, "asr_madhab", { v: "shafi" });
+    await propose(a, "adhan.fajr", { min: 15 });
+    await propose(a, "adhan.isha", { t: "20:30" });
+    const row = sqlite.prepare(`SELECT calc_method, asr_madhab, adhan_adjust_json FROM place WHERE id = ?`).get(PLACE) as Record<string, string>;
+    expect(row.calc_method).toBe("NorthAmerica");
+    expect(row.asr_madhab).toBe("shafi");
+    expect(JSON.parse(row.adhan_adjust_json)).toEqual({ fajr: { min: 15 }, isha: { t: "20:30" } });
+  });
+
+  it("keeps the country default until someone sets one", async () => {
+    const a = addUser("adhan-b", 2);
+    await propose(a, "iqamah.asr", { t: "17:00" });
+    const row = sqlite.prepare(`SELECT calc_method, asr_madhab, adhan_adjust_json FROM place WHERE id = ?`).get(PLACE) as Record<string, string | null>;
+    expect(row).toEqual({ calc_method: "MoonsightingCommittee", asr_madhab: "hanafi", adhan_adjust_json: null });
+  });
+});

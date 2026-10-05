@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { calcDefault, place } from "@/lib/db/schema";
-import { getPrayerDay } from "@/lib/prayer/times";
+import { getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
 
@@ -37,6 +37,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     method: row.place.calcMethod,
     madhab: madhabOf(row.place.asrMadhab),
     highLat: high === "middleofthenight" || high === "seventhofthenight" ? high : "twilightangle",
+    adjust: parseAdhanAdjust(row.place.adhanAdjustJson),
     now,
   });
   return Response.json(day);

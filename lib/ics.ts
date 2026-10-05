@@ -1,6 +1,6 @@
 import type { DirectoryPlace } from "@/lib/db/queries";
 import { madhabOf } from "@/lib/places/present";
-import { getPrayerDay } from "@/lib/prayer/times";
+import { getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { IQAMAH_PRAYERS } from "@/lib/trust/facts";
 import { iqamahToday, parseSummary } from "@/lib/trust/summary";
 
@@ -102,6 +102,7 @@ export function placeEvents(place: DirectoryPlace, now: number, days: number, ba
       method: place.calcMethod,
       madhab: madhabOf(place.asrMadhab),
       highLat: place.highLatRule,
+      adjust: parseAdhanAdjust(place.adhanAdjustJson),
       now: new Date(now + index * DAY),
     });
     const iqamah = iqamahToday(summary, day);

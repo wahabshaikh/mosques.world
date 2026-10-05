@@ -13,6 +13,36 @@ export function isTimetableKey(key: string): key is TimetableKey {
   return (TIMETABLE_KEYS as readonly string[]).includes(key);
 }
 export const ASR_MADHAB_KEY = "asr_madhab";
+/** The calculation the mosque's adhan follows; `asr_madhab` sets its Asr (spec 5.3). */
+export const ADHAN_METHOD_KEY = "adhan.method";
+/** Per-prayer adjustment to the calculated adhan: minutes after/before it, or a fixed clock time. */
+export const ADHAN_KEYS = IQAMAH_PRAYERS.map((prayer) => `adhan.${prayer}` as const);
+export type AdhanKey = (typeof ADHAN_KEYS)[number];
+
+export function isAdhanKey(key: string): key is AdhanKey {
+  return (ADHAN_KEYS as readonly string[]).includes(key);
+}
+
+/** adhan-js methods people can pick, named the way timetables name them. */
+export const CALC_METHODS = [
+  { v: "MuslimWorldLeague", label: "Muslim World League" },
+  { v: "NorthAmerica", label: "ISNA (North America)" },
+  { v: "MoonsightingCommittee", label: "Moonsighting Committee" },
+  { v: "Egyptian", label: "Egyptian General Authority" },
+  { v: "Karachi", label: "University of Islamic Sciences, Karachi" },
+  { v: "UmmAlQura", label: "Umm al-Qura, Makkah" },
+  { v: "Dubai", label: "Dubai" },
+  { v: "Qatar", label: "Qatar" },
+  { v: "Kuwait", label: "Kuwait" },
+  { v: "Singapore", label: "Singapore (MUIS)" },
+  { v: "Turkey", label: "Diyanet (Turkey)" },
+  { v: "Tehran", label: "Institute of Geophysics, Tehran" },
+] as const;
+export type CalcMethodValue = (typeof CALC_METHODS)[number]["v"];
+
+export function methodLabel(method: string): string {
+  return CALC_METHODS.find((item) => item.v === method)?.label ?? method;
+}
 /** Amenity registry (spec 5.3). `bit` is the place.amenity_bits position; never reorder or reuse. */
 export const AMENITIES = [
   { key: "amenity.women_section", slug: "women_section", label: "Women's section", bit: 0 },
@@ -31,7 +61,7 @@ export const AMENITY_KEYS = AMENITIES.map((amenity) => amenity.key);
 export const INFO_KEYS = ["info.phone", "info.website", "info.languages"] as const;
 export const CLOSED_KEY = "status.closed";
 
-export const FACT_KEYS = [...IQAMAH_KEYS, ...TIMETABLE_KEYS, JUMUAH_KEY, ASR_MADHAB_KEY, ...AMENITY_KEYS, ...INFO_KEYS, CLOSED_KEY] as const;
+export const FACT_KEYS = [...IQAMAH_KEYS, ...TIMETABLE_KEYS, JUMUAH_KEY, ASR_MADHAB_KEY, ADHAN_METHOD_KEY, ...ADHAN_KEYS, ...AMENITY_KEYS, ...INFO_KEYS, CLOSED_KEY] as const;
 
 export function isAmenityKey(key: string): key is AmenityKey {
   return (AMENITY_KEYS as readonly string[]).includes(key);
@@ -66,6 +96,14 @@ export const jumuahValue = z
 export type JumuahValue = z.infer<typeof jumuahValue>;
 
 export const madhabValue = z.object({ v: z.enum(["shafi", "hanafi"]) }).strict();
+
+export const methodValue = z.object({ v: z.enum(CALC_METHODS.map((item) => item.v) as [CalcMethodValue, ...CalcMethodValue[]]) }).strict();
+
+export const adhanAdjustValue = z.union([
+  z.object({ t: hm }).strict(),
+  z.object({ min: z.number().int().min(-120).max(120) }).strict(),
+]);
+export type AdhanAdjustValue = z.infer<typeof adhanAdjustValue>;
 
 export const amenityValue = z.object({ v: z.boolean(), note: z.string().trim().min(1).max(120).optional() }).strict();
 export type AmenityValue = z.infer<typeof amenityValue>;
@@ -102,6 +140,14 @@ export function validateFactValue(key: string, qualifier: string, value: unknown
   if (key === CLOSED_KEY) {
     const parsed = closedValue.safeParse(value);
     return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "Not a valid closure" };
+  }
+  if (key === ADHAN_METHOD_KEY) {
+    const parsed = methodValue.safeParse(value);
+    return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "Choose a calculation method" };
+  }
+  if (isAdhanKey(key)) {
+    const parsed = adhanAdjustValue.safeParse(value);
+    return parsed.success ? { ok: true, value: parsed.data } : { ok: false, error: "Enter a valid adhan time" };
   }
   if (key in infoValues) {
     const parsed = infoValues[key as keyof typeof infoValues].safeParse(value);
@@ -164,6 +210,17 @@ export function describeValue(key: string, value: unknown): string {
     const parsed = madhabValue.safeParse(value);
     return parsed.success ? (parsed.data.v === "hanafi" ? "Hanafi Asr" : "Shafi'i Asr") : "—";
   }
+  if (key === ADHAN_METHOD_KEY) {
+    const parsed = methodValue.safeParse(value);
+    return parsed.success ? methodLabel(parsed.data.v) : "—";
+  }
+  if (isAdhanKey(key)) {
+    const parsed = adhanAdjustValue.safeParse(value);
+    if (!parsed.success) return "—";
+    if ("t" in parsed.data) return formatTime12(parsed.data.t);
+    if (parsed.data.min === 0) return "as calculated";
+    return `${Math.abs(parsed.data.min)} min ${parsed.data.min > 0 ? "after" : "before"} the calculated time`;
+  }
   if (key === JUMUAH_KEY) {
     const parsed = jumuahValue.safeParse(value);
     if (!parsed.success) return "—";
@@ -190,6 +247,11 @@ export function factLabel(key: string, qualifier = ""): string {
   }
   if (key === JUMUAH_KEY) return `Jumu'ah ${ordinal(Number(qualifier) || 1)} jamā'ah`;
   if (key === ASR_MADHAB_KEY) return "Asr calculation";
+  if (key === ADHAN_METHOD_KEY) return "Adhan calculation";
+  if (isAdhanKey(key)) {
+    const prayer = key.slice("adhan.".length);
+    return `${prayer.charAt(0).toUpperCase()}${prayer.slice(1)} adhan`;
+  }
   const amenity = AMENITIES.find((item) => item.key === key);
   if (amenity) return amenity.label;
   if (key === CLOSED_KEY) return "Closed";

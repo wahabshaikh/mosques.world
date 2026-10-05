@@ -94,3 +94,25 @@ describe("phase 3 fact keys", () => {
     expect(isAmenityKey("amenity.toilets")).toBe(true);
   });
 });
+
+describe("adhan facts", () => {
+  it("validates, labels and describes the adhan method and per-prayer adjustments", async () => {
+    const { validateFactValue: validate, describeValue: describe_, factLabel: label, methodLabel } = await import("./facts");
+    expect(validate("adhan.method", "", { v: "NorthAmerica" })).toEqual({ ok: true, value: { v: "NorthAmerica" } });
+    expect(validate("adhan.method", "", { v: "Made up" }).ok).toBe(false);
+    expect(validate("adhan.fajr", "", { min: -10 })).toEqual({ ok: true, value: { min: -10 } });
+    expect(validate("adhan.isha", "", { t: "20:30" }).ok).toBe(true);
+    expect(validate("adhan.isha", "", { min: 200 }).ok).toBe(false);
+    expect(validate("adhan.sunrise", "", { min: 1 }).ok).toBe(false);
+    expect(describe_("adhan.method", { v: "Karachi" })).toBe("University of Islamic Sciences, Karachi");
+    expect(describe_("adhan.fajr", { min: 15 })).toBe("15 min after the calculated time");
+    expect(describe_("adhan.fajr", { min: -5 })).toBe("5 min before the calculated time");
+    expect(describe_("adhan.fajr", { min: 0 })).toBe("as calculated");
+    expect(describe_("adhan.isha", { t: "20:30" })).toBe("8:30 PM");
+    expect(describe_("adhan.isha", { bad: 1 })).toBe("—");
+    expect(describe_("adhan.method", { v: "x" })).toBe("—");
+    expect(label("adhan.maghrib")).toBe("Maghrib adhan");
+    expect(label("adhan.method")).toBe("Adhan calculation");
+    expect(methodLabel("SomethingNew")).toBe("SomethingNew");
+  });
+});

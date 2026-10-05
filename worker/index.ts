@@ -5,8 +5,9 @@ import { asMail, MAIL_FROM } from "@/lib/email/send";
 import { isPhotoMessage, isRecomputeMessage, nightly, recomputeFacts } from "@/lib/jobs";
 import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
+import { resyncStaleCells } from "@/lib/osm-fill";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
-import { flagsOnForSite, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
+import { flagsOnForSite, OSM_FLAG, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
 import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
@@ -48,6 +49,7 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     const deliveryEnv = { ...env, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" };
     if (controller.cron === WEEKLY_CRON) {
       ctx.waitUntil(weeklyOsmSync(env.DB, fetch, Date.now()));
+      if (await flagsOnForSite(env, [OSM_FLAG])) ctx.waitUntil(resyncStaleCells(env, fetch, Date.now()));
       if (notifications) {
         ctx.waitUntil(
           weeklyDigestStatement(env.DB, Date.now())
