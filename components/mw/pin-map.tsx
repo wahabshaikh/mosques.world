@@ -28,7 +28,7 @@ export default function PinMap({
           draggable={Boolean(onChange)}
           onDragEnd={(event) => onChange?.(Number(event.lngLat.lat.toFixed(7)), Number(event.lngLat.lng.toFixed(7)))}
         >
-          <span aria-label={onChange ? "Place location, draggable" : "Place location"} className="block size-9 rounded-full border-4 border-white bg-primary shadow-lg" />
+          <span role="img" aria-label={onChange ? "Place location, draggable" : "Place location"} className="block size-9 rounded-full border-4 border-white bg-primary shadow-lg" />
         </Marker>
       </Map>
     </div>

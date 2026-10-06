@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 import vinext from "vinext";
 
 export default defineConfig({
+  // Keep MapLibre's module worker paths intact in development (as halalfood.world does).
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   plugins: [
     vinext(),
     tailwindcss(),
