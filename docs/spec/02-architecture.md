@@ -52,7 +52,7 @@ Actions), JSON endpoints (Route Handlers under `/api/*`), better-auth (`/api/aut
 | Validation | **zod** v4 | Shared between Server Actions, Route Handlers and forms. |
 | Forms | react-hook-form + @hookform/resolvers/zod | shadcn `Form` pattern. |
 | Client state | URL search params (`nuqs`) for filters/map viewport; TanStack Query for client-side fetches (map bbox results) | Shareable URLs for every search. |
-| ORM | **Drizzle ORM** (`drizzle-orm/d1`) + drizzle-kit | Typed schema, SQL migrations in `/migrations`, applied with `wrangler d1 migrations apply`. |
+| ORM | **Drizzle ORM** (`drizzle-orm/d1`) | Typed schema, hand-written SQL migrations in `/migrations`, applied with `wrangler d1 migrations apply`. |
 | Auth | **better-auth** + Drizzle adapter; plugins: `username`, `emailOTP`, `admin`; social: Google | Auth instance created per request from `env`. Sessions in D1, cookie cache enabled. |
 | Email | **Cloudflare Email Service** `send_email` binding (`env.EMAIL.send`) + **React Email** templates rendered to HTML + text | Requires Workers Paid plan and an onboarded sending domain (`mail.mosques.world`, SPF/DKIM/DMARC). Sent via a Queue for retries. |
 | Storage | **R2** bucket `mosques-media`; delivered through the Worker with **Images binding** transforms (`env.IMAGES`) | Re-encoding strips EXIF/GPS. Signed, size-limited uploads. |
@@ -138,7 +138,7 @@ unused, so later phases need no infrastructure change.
   analytics.ts            # DataFast helpers (client + server)
   ratelimit.ts, turnstile.ts, images.ts
 /worker/index.ts          # Worker entry: vinext fetch + queue + scheduled handlers
-/migrations               # drizzle-kit generated SQL, append-only
+/migrations               # hand-written SQL, append-only
 /scripts                  # OSM import, seeding, backfills (run with tsx + wrangler d1)
 /public/map               # MapLibre styles, sprites, Natural Earth GeoJSON
 /e2e                      # Playwright specs, one folder per phase

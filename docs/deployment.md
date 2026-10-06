@@ -58,6 +58,15 @@ on every PR.
 4. Delete old Preview settings under **Settings → Previews** (base config) that `wrangler.jsonc` no longer declares,
    such as queue or email bindings. Secrets stay there.
 
+### Email (applied through the Cloudflare API on Oct 6, 2026)
+
+`mosques.world` is an Email Service sending domain (DKIM `cf-bounce._domainkey`, return path
+`cf-bounce.mosques.world`, DMARC `p=reject`); the Worker sends from `salam@mosques.world`. Email Routing forwards
+`salam@mosques.world` to the maintainer's verified inbox, so replies and security reports arrive.
+
+After the flag removal is deployed, delete what nothing binds any more: the `mosques-world-FLAGS` and
+`mosques-world-FLAGS-preview` KV namespaces, and the old `mail.mosques.world` sending subdomain.
+
 ## Secrets
 
 Secrets never go in `wrangler.jsonc` or the repo. Locally they go in `.dev.vars` (see

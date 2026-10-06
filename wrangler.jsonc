@@ -8,11 +8,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mosques-world",
   "account_id": "fbc18389ee167dc62b75c26c811e3e13",
-  "compatibility_date": "2026-09-01",
+  "compatibility_date": "2026-09-13",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./worker/index.ts",
   "upload_source_maps": true,
-  "observability": { "enabled": true },
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
 
   // Production is served only on its custom domains. `preview_urls` keeps workers.dev URLs for
   // Worker Previews (and production Version URLs, which `lib/environment.ts` still treats as

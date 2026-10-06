@@ -27,7 +27,7 @@ a map of every mosque they have prayed in.
 | App framework | [vinext](https://github.com/cloudflare/vinext) (Next.js App Router API on Vite) deployed to **Cloudflare Workers** |
 | UI | **shadcn/ui** (Radix + Tailwind CSS v4), lucide-react icons, vaul drawers, sonner toasts |
 | Auth | **better-auth** (email OTP / magic link, Google OAuth, username plugin) |
-| Database | **Cloudflare D1** via Drizzle ORM + drizzle-kit migrations; FTS5 for search |
+| Database | **Cloudflare D1** via Drizzle ORM + hand-written SQL migrations; FTS5 for search |
 | Storage | **Cloudflare R2** (photos) + Cloudflare Images binding (resize, strip EXIF) |
 | Email | **Cloudflare Email Service** (`send_email` binding) + React Email templates |
 | Analytics | **DataFast** (script + goals) |
