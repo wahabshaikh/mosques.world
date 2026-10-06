@@ -23,7 +23,7 @@ pnpm dev          # http://127.0.0.1:5173
 - [Deployment and environments](docs/deployment.md)
 - [Implementation spec](docs/spec/README.md) and [runbooks](docs/runbooks)
 - [Design](design/README.md) · [live canvas](https://claude.ai/artifact/C5AduujXjZbCEDLdvjVgmr)
-- [Security policy](SECURITY.md)
+- [Security policy](SECURITY.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Agent instructions](AGENTS.md)
 
 Map data © OpenStreetMap contributors (ODbL). See [/attribution](https://mosques.world/attribution).
 

@@ -27,6 +27,8 @@ Previews do not inherit anything from the top level, so the `previews` block lis
 pointed at preview resources. It deliberately has no queue producers (they would send onto the production queues,
 whose consumer reads production D1), no `send_email` (previews use the email sink), no routes and no crons.
 Rate limits use their own namespaces (`11xx`) so preview and E2E traffic never spends production's budgets.
+`lib/wrangler-config.test.ts` fails CI if the `previews` block ever shares a D1 database, R2 bucket, KV namespace
+or rate-limit namespace with production, or gains an email binding, queue, route or cron.
 
 All Previews share one D1 database. Migrations are additive (spec 2.10), so a PR that adds one can apply it to the
 shared database without breaking other Previews.

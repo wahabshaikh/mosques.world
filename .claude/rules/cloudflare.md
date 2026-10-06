@@ -20,7 +20,7 @@ in sync with any change here.
   runs with and inherits nothing from the top level.
 - Adding a binding or var:
   1. Top level (production resource) **and** `previews` (a `-preview` resource; rate limits use the
-     `11xx` namespaces). Never point a Preview at a production D1/R2/KV.
+     `11xx` namespaces). Never point a Preview at a production D1/R2/KV. `lib/wrangler-config.test.ts` checks this.
   2. Never add queue producers, `send_email`, routes, crons or queue consumers to `previews`. Previews
      run jobs inline and send mail to the KV sink.
   3. Add it to `AppEnv` in `lib/db/client.ts` (optional `?` unless every environment has it).

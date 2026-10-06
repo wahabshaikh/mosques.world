@@ -8,7 +8,8 @@ Keep this file short and true. When a rule here turns out wrong, fix the rule in
 mosques.world is a community directory of mosques with iqamah times kept accurate by the community,
 plus public profiles that map every mosque someone has prayed in. It is one Cloudflare Worker:
 [vinext](https://github.com/cloudflare/vinext) (the Next.js App Router API on Vite) with D1, R2, KV,
-Queues, Images, Email, Rate Limiting, Turnstile and Workers AI bindings.
+Queues, Images, Email, Rate Limiting, Turnstile and Workers AI bindings. Its sibling project
+[halalfood.world](https://github.com/wahabshaikh/halalfood.world) uses the same stack, layout and workflow.
 
 The spec in [`docs/spec`](docs/spec/README.md) is the source of truth for product, architecture, design
 system, data model and delivery phases. Read the relevant spec section before changing behaviour, and
@@ -93,7 +94,7 @@ design/              design canvas snapshot (reference only, not app code)
 From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 
 1. **Migrations are additive.** No `DROP`/`RENAME` of anything deployed code still reads. Expand,
-   migrate, contract across at least two releases.
+   migrate, contract across at least two releases. CI fails a PR that edits or deletes a merged migration.
 2. **URLs are permanent.** Never remove a route; a renamed route gets a 308.
 3. **Fact keys** (`iqamah.asr`, `amenity.women_section`) are stable strings: add, never repurpose.
 4. **New user-facing work ships behind a KV flag** in [`lib/flags.ts`](lib/flags.ts), gated via
@@ -107,7 +108,8 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 - TypeScript strict, ESM, `@/` imports from the repo root. Unused vars must start with `_`.
 - Read bindings with `appEnv()` from `@/lib/db/client`, never `process.env`. A new binding goes in
   `wrangler.jsonc` at the top level **and** in `previews` (pointed at a preview resource), and in the
-  `AppEnv` type. Never add queue producers, `send_email`, routes or crons to `previews`.
+  `AppEnv` type. Never add queue producers, `send_email`, routes or crons to `previews`;
+  `lib/wrangler-config.test.ts` fails CI if a Preview shares a production resource.
 - Test-only behaviour (fixtures, the email sink, `x-mw-*` headers) is gated with `isNonProductionHost`
   from `lib/environment.ts`, never a raw hostname check.
 - Validate every input at the boundary with zod. Use D1 prepared statements with `.bind()`; never
@@ -131,8 +133,8 @@ Never do these unless a human explicitly asked for that specific action in this 
 
 - `pnpm deploy`, `pnpm deploy:preview`, `pnpm cf:deploy`, `pnpm cf:preview`, `wrangler deploy`,
   `wrangler preview`, `wrangler rollback`, or anything with `--remote` (D1, KV, R2).
-- `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler secret put`, Cloudflare dashboard settings,
-  DNS, or production KV flags.
+- `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler versions upload` (it would publish a version
+  with production bindings), `wrangler secret put`, Cloudflare dashboard settings, DNS, or production KV flags.
 - Never commit secrets. Local secrets live in `.dev.vars` (gitignored).
 
 ## Git and PRs
