@@ -9,7 +9,6 @@ import { civilDate } from "@/lib/prayer/times";
 import { writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
 import { submitValue } from "@/lib/trust/store";
-import { phase2EnabledFor, phase3EnabledFor } from "@/lib/phase";
 import { toCard } from "@/lib/places/present";
 import { parseBbox } from "@/lib/places/view";
 
@@ -25,9 +24,8 @@ export async function GET(request: Request) {
     lat: (bbox.south + bbox.north) / 2,
     lng: (bbox.west + bbox.east) / 2,
   };
-  const community = await phase2EnabledFor(request);
-  const needs = (await phase3EnabledFor(request)) ? parseNeeds(url.searchParams.get("needs") ?? undefined) : [];
-  const verifiedOnly = community && url.searchParams.get("verified") === "1";
+  const needs = parseNeeds(url.searchParams.get("needs") ?? undefined);
+  const verifiedOnly = url.searchParams.get("verified") === "1";
   const places = await placesInBbox(bbox, kind, origin, { needs, verifiedOnly });
   const now = new Date();
   const features = places.slice(0, 500).map((place) => {
@@ -56,7 +54,6 @@ export async function GET(request: Request) {
 
 /** Adds a mosque or prayer space (flow F4), with the creator's initial times and amenities as candidates. */
 export async function POST(request: Request) {
-  if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

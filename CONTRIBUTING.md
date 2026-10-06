@@ -29,7 +29,7 @@ signed-in person, and specs use `newUser`/`signIn` from `e2e/support/helpers.ts`
 
 - Read the [spec](docs/spec/README.md), especially the compatibility rules in
   [2.10](docs/spec/02-architecture.md#210-compatibility-rules-so-phases-never-break-each-other): migrations are
-  append-only and additive, URLs are permanent, and new features ship behind a flag.
+  append-only and additive, URLs are permanent, and there are no feature flags: what merges is live.
 - New migrations go in `migrations/` with the next number. Never edit one that has been merged.
 - Bindings, environments and deploys are described in [docs/deployment.md](docs/deployment.md). A new binding must
   be added both at the top level of `wrangler.jsonc` and in its `previews` block, pointed at a preview resource.
@@ -43,7 +43,7 @@ components/ui   shadcn/ui primitives
 components/mw   product components
 lib/            domain logic, one folder or file per area (places, trust, prayer, email, …); tests sit beside code
 worker/         Worker entry: fetch, queue and scheduled handlers
-middleware.ts   locale routing, security headers, cache headers
+proxy.ts        locale routing, security headers, cache headers
 migrations/     D1 SQL migrations (append-only)
 scripts/        one-off and operational scripts (OSM import, roles, preview migrations)
 e2e/            Playwright suites, one folder per phase; shared helpers in e2e/support

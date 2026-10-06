@@ -2,7 +2,6 @@ import { appEnv } from "@/lib/db/client";
 import { chunk, type RecomputeMessage } from "@/lib/jobs";
 import { afterContribution } from "@/lib/notify";
 import { isNonProductionHost } from "@/lib/environment";
-import { phase6EnabledFor, phase7EnabledFor } from "@/lib/phase";
 import { scheduleUserStats } from "@/lib/profile/stats";
 import { writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
@@ -13,7 +12,6 @@ export const dynamic = "force-dynamic";
 
 /** Imports a reviewed month of iqamah times (spec P7): one dated value per day and prayer. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase7EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;
@@ -48,6 +46,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     for (const factId of result.pending) await recomputeFact(env.DB, factId, now, null, user.id);
   }
   await scheduleUserStats(env, user.id, isNonProductionHost(host)).catch(() => undefined);
-  await afterContribution(env, request, await phase6EnabledFor(request));
+  await afterContribution(env, request);
   return Response.json({ ok: true, ...result, pending: result.pending.length });
 }

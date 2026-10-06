@@ -2,14 +2,12 @@ import { savedPlaces } from "@/lib/db/queries";
 import { weekTimes } from "@/lib/offline";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase5EnabledFor } from "@/lib/phase";
-import { apiUser, jsonError } from "@/lib/session";
+import { apiUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 /** Saved places with 7 days of times; the service worker keeps the last copy for offline use. */
 export async function GET(request: Request) {
-  if (!(await phase5EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request);
   if ("response" in guarded) return guarded.response;
   const host = new URL(request.url).hostname;

@@ -81,7 +81,7 @@ lib/                 domain logic, one module per concern, tests beside the code
   i18n/messages/     server string catalogs, typed against en.ts
   testing/           Vitest stand-ins for cloudflare:workers
 worker/index.ts      Worker entry: fetch (vinext) + queue + scheduled handlers, wrapped in Sentry
-middleware.ts        locale rewrites, headers, CSP
+proxy.ts             locale rewrites, headers, CSP (Next 16 "proxy", formerly middleware)
 migrations/          hand-written D1 SQL, numbered, append-only
 e2e/phase-N/         Playwright suite per delivery phase;  e2e/support/  shared helpers;  e2e/auth/  test-session
 scripts/             ops and dev scripts (tsx): OSM import, preview migrations, shot, dev-session
@@ -89,7 +89,7 @@ docs/spec/           the spec;  docs/runbooks/  per-phase rollout;  docs/deploym
 design/              design canvas snapshot (reference only, not app code)
 ```
 
-## Rules that keep phases from breaking each other
+## Rules that keep production safe
 
 From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 
@@ -97,9 +97,8 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
    migrate, contract across at least two releases. CI fails a PR that edits or deletes a merged migration.
 2. **URLs are permanent.** Never remove a route; a renamed route gets a 308.
 3. **Fact keys** (`iqamah.asr`, `amenity.women_section`) are stable strings: add, never repurpose.
-4. **New user-facing work ships behind a KV flag** in [`lib/flags.ts`](lib/flags.ts), gated via
-   [`lib/phase.ts`](lib/phase.ts). Flags default **on** outside production (localhost and Previews, per
-   `lib/environment.ts`) and **off** in production.
+4. **No feature flags.** Everything on `main` is live. Ship complete, releasable slices; work that isn't
+   ready stays on its branch, where its Worker Preview shows it. `isNonProductionHost` gates test hooks only.
 5. **`/api/v1` is versioned**: additive changes only. Update [`lib/openapi.ts`](lib/openapi.ts) for public endpoints.
 6. **Email templates and analytics goal names are append-only.** Goals are `snake_case`, never carry PII.
 
@@ -115,7 +114,7 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 - Validate every input at the boundary with zod. Use D1 prepared statements with `.bind()`; never
   interpolate user input into SQL.
 - Mutating route handlers follow the pattern in [`app/api/v1/saved/route.ts`](app/api/v1/saved/route.ts):
-  flag check → `apiUser(request, { mutate: true })` → zod → rate limit (`writeAllowed`) → D1 →
+  `apiUser(request, { mutate: true })` → zod → rate limit (`writeAllowed`) → D1 →
   `Response.json` / `jsonError`. Error strings are user-facing sentences.
 - Dates and times are computed in the **place's** IANA timezone (`@date-fns/tz`), never the server's.
 - User-visible strings on localized pages go through the i18n catalogs; layouts use logical
@@ -134,15 +133,15 @@ Never do these unless a human explicitly asked for that specific action in this 
 - `pnpm deploy`, `pnpm deploy:preview`, `pnpm cf:deploy`, `pnpm cf:preview`, `wrangler deploy`,
   `wrangler preview`, `wrangler rollback`, or anything with `--remote` (D1, KV, R2).
 - `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler versions upload` (it would publish a version
-  with production bindings), `wrangler secret put`, Cloudflare dashboard settings, DNS, or production KV flags.
+  with production bindings), `wrangler secret put`, Cloudflare dashboard settings, DNS, or production KV.
 - Never commit secrets. Local secrets live in `.dev.vars` (gitignored).
 
 ## Git and PRs
 
 - Branch from `main`; never push to `main`. Open PRs as **drafts**.
 - Commit subjects are short imperative sentences ("Serve /favicon.ico and …"); one logical change per commit.
-- Fill in [the PR template](.github/pull_request_template.md): before/after, how, rollout (flags,
-  migrations, secrets) and checks, including the "Not verified:" line. Try UI changes on the PR's Preview URL.
+- Fill in [the PR template](.github/pull_request_template.md): before/after, how, rollout
+  (migrations, secrets) and checks, including the "Not verified:" line. Try UI changes on the PR's Preview URL.
 - A delivery phase also updates `docs/runbooks/phase-N.md` and its acceptance E2E in `e2e/phase-N/`.
 
 ## Agent tooling
@@ -154,6 +153,6 @@ plain Markdown, so other agents can read them too:
 | Playbook | Use it to |
 | --- | --- |
 | [`preflight`](.claude/skills/preflight/SKILL.md) | run the pre-push checks and report results |
-| [`ship-feature`](.claude/skills/ship-feature/SKILL.md) | build a feature end to end (flag, data, logic, UI, tests, runbook, PR) |
+| [`ship-feature`](.claude/skills/ship-feature/SKILL.md) | build a feature end to end (data, logic, UI, tests, runbook, PR) |
 | [`d1-migration`](.claude/skills/d1-migration/SKILL.md) | write and apply a D1 migration safely |
 | [`steward`](.claude/skills/steward/SKILL.md) | drive an open PR to green |

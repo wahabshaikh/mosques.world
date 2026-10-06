@@ -53,11 +53,8 @@ export function ExploreView({
   turnstileSiteKey,
   sort = "distance",
   verifiedOnly = false,
-  community = false,
   needs = [],
-  amenities = false,
   fillBbox = null,
-  osm = false,
   areaTimes = null,
   nextPrayer = null,
 }: {
@@ -72,12 +69,9 @@ export function ExploreView({
   turnstileSiteKey?: string;
   sort?: ExploreSort;
   verifiedOnly?: boolean;
-  community?: boolean;
   needs?: NeedSlug[];
-  amenities?: boolean;
   /** Set when this area has not been loaded from OpenStreetMap yet; the client asks the server to fill it. */
   fillBbox?: { west: number; south: number; east: number; north: number } | null;
-  osm?: boolean;
   /** Calculated adhan for the area, shown while it has no places listed. */
   areaTimes?: AreaTimes | null;
   /** The next calculated adhan in this area, for the overline above the list. */
@@ -416,31 +410,24 @@ export function ExploreView({
             <FilterChip active={kind === "prayer_room"} onClick={() => setKind(kind === "prayer_room" ? "all" : "prayer_room")}>
               Prayer rooms
             </FilterChip>
-            {community ? (
-              <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
-                Has verified times
-              </FilterChip>
-            ) : null}
-            {amenities
-              ? CATEGORY_NEEDS.map((slug) => {
-                  const filter = NEED_FILTERS.find((item) => item.slug === slug);
-                  return filter ? (
-                    <FilterChip key={slug} active={needs.includes(slug)} onClick={() => toggleNeed(slug)} icon={<NeedIcon slug={slug} />}>
-                      {filter.label}
-                    </FilterChip>
-                  ) : null;
-                })
-              : null}
-            {amenities ? (
-              <FiltersDialog
-                kind={kind}
-                needs={needs}
-                verified={verifiedOnly}
-                community={community}
-                bboxQuery={`lat=${lat}&lng=${lng}&z=${zoom}`}
-                onApply={applyFilters}
-              />
-            ) : null}
+            <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
+              Has verified times
+            </FilterChip>
+            {CATEGORY_NEEDS.map((slug) => {
+              const filter = NEED_FILTERS.find((item) => item.slug === slug);
+              return filter ? (
+                <FilterChip key={slug} active={needs.includes(slug)} onClick={() => toggleNeed(slug)} icon={<NeedIcon slug={slug} />}>
+                  {filter.label}
+                </FilterChip>
+              ) : null;
+            })}
+            <FiltersDialog
+              kind={kind}
+              needs={needs}
+              verified={verifiedOnly}
+              bboxQuery={`lat=${lat}&lng=${lng}&z=${zoom}`}
+              onApply={applyFilters}
+            />
           </div>
         </div>
       </div>
@@ -458,23 +445,19 @@ export function ExploreView({
               </h1>
               <p className="text-sm text-muted-foreground">{subline}</p>
             </div>
-            {community ? (
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <span className="sr-only sm:not-sr-only">Sort</span>
-                <select
-                  aria-label="Sort"
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as ExploreSort)}
-                  className="h-10 rounded-full border border-border bg-card px-3"
-                >
-                  <option value="iqamah">Soonest iqamah</option>
-                  <option value="distance">Distance</option>
-                  <option value="verified">Most verified</option>
-                </select>
-              </label>
-            ) : (
-              <p className="text-sm font-semibold">Distance</p>
-            )}
+            <label className="flex items-center gap-2 text-sm font-semibold">
+              <span className="sr-only sm:not-sr-only">Sort</span>
+              <select
+                aria-label="Sort"
+                value={sort}
+                onChange={(event) => setSort(event.target.value as ExploreSort)}
+                className="h-10 rounded-full border border-border bg-card px-3"
+              >
+                <option value="iqamah">Soonest iqamah</option>
+                <option value="distance">Distance</option>
+                <option value="verified">Most verified</option>
+              </select>
+            </label>
           </div>
           {showGeoPrompt && geoPermission !== "denied" ? (
             <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={locate}>
@@ -519,20 +502,14 @@ export function ExploreView({
               <p>
                 {filling === "error"
                   ? "We couldn't load this area just now."
-                  : osm
-                    ? "No mosques or prayer spaces are mapped here yet."
-                    : "No places in this area yet."}{" "}
-                {amenities ? (
-                  <>
-                    Know one?{" "}
-                    <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
-                      Add it to the map
-                    </Link>{" "}
-                    and the community can fill in its times.
-                  </>
-                ) : (
-                  "Try zooming out or searching for a nearby city."
-                )}
+                  : "No mosques or prayer spaces are mapped here yet."}{" "}
+                <>
+                  Know one?{" "}
+                  <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
+                    Add it to the map
+                  </Link>{" "}
+                  and the community can fill in its times.
+                </>
               </p>
               {filling === "error" ? (
                 <button type="button" className="mt-3 font-semibold text-primary" onClick={() => router.refresh()}>

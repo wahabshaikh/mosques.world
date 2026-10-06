@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TimetableImport } from "@/components/mw/timetable-import";
 import { placeBySlug } from "@/lib/db/queries";
-import { phase7Enabled } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { requireUser } from "@/lib/session";
 
@@ -11,7 +10,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Import a timetable", robots: { index: false } };
 
 export default async function TimetableImportPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!(await phase7Enabled())) notFound();
   const { slug } = await params;
   const place = await placeBySlug(slug);
   if (!place || place.status !== "active") notFound();

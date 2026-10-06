@@ -1,5 +1,9 @@
 # Phase 7 runbook — Timetables & seasons
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **Monthly timetable** `/m/:slug/timetable?month=YYYY-MM`: every day's calculated adhan and its iqamah. A date's

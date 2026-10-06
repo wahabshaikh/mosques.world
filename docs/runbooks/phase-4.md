@@ -1,5 +1,9 @@
 # Phase 4 runbook — Profiles & "I prayed here"
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **Check-ins**: "I prayed here" on the mosque page's next-prayer card opens a sheet (prayer defaults to the current or

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
 import { AddPlace } from "@/components/mw/add-place";
-import { phase3Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +12,6 @@ function coordinate(value: string | string[] | null | undefined, limit: number):
 }
 
 export default async function AddPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!(await phase3Enabled())) notFound();
   const params = await searchParams;
   const user = await requireUser("/add");
   const headerList = await headers();

@@ -149,9 +149,8 @@ describe("delivery kick", () => {
     await kickDelivery(queued, "mosques.world");
     expect(send).toHaveBeenCalledWith({ kind: "deliver" });
     expect(isDeliverMessage({ kind: "deliver" })).toBe(true);
-    await afterContribution(queued, new Request("https://localhost/x"), true);
+    await afterContribution(queued, new Request("https://localhost/x"));
     expect(sqlite.prepare(`SELECT email_status FROM notification`).get()).toEqual({ email_status: "sent" });
-    await afterContribution(queued, new Request("https://localhost/x"), false);
   });
 });
 

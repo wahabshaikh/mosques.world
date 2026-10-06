@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { AdminAction } from "@/components/mw/admin-action";
 import { appEnv } from "@/lib/db/client";
-import { phase6Enabled } from "@/lib/phase";
 import { requireModerator } from "@/lib/session";
 import { relativeAge } from "@/lib/trust/summary";
 import { AdminShell } from "../shell";
@@ -14,7 +12,6 @@ export const metadata: Metadata = { title: "Stewards", robots: { index: false } 
 type Row = { id: string; status: string; evidence: string; contact: string | null; created_at: number; name: string; slug: string; username: string | null; email: string; trust_level: number };
 
 export default async function StewardsAdminPage() {
-  if (!(await phase6Enabled())) notFound();
   await requireModerator("/admin/stewards");
   const database = appEnv().DB;
   const query = (status: string, limit: number) =>

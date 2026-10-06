@@ -11,7 +11,7 @@ flowchart LR
     W[Worker: vinext app<br/>RSC · Server Actions · Route Handlers]
     D1[(D1<br/>app + auth data)]
     R2[(R2<br/>photos, exports, tiles)]
-    KV[(KV<br/>flags, Places cache)]
+    KV[(KV<br/>Places cache, email sink)]
     Q[[Queues<br/>emails · recompute · media]]
     C((Cron Triggers))
     IMG[Images binding]
@@ -63,7 +63,6 @@ Actions), JSON endpoints (Route Handlers under `/api/*`), better-auth (`/api/aut
 | Search | D1 **FTS5** virtual table for names/localities; bbox + geohash-prefix index for geo | No external search service needed at MVP scale (≈400k places). |
 | Anti-abuse | **Turnstile** (sign-up, first contribution, anonymous reports), **Rate Limiting binding**, trust-level caps | |
 | Async | **Queues** (`q-email`, `q-recompute`, `q-media`), **Cron Triggers** (daily recompute, digests) | |
-| Feature flags | KV namespace `FLAGS` read at request start (cached 60s) | Dark-launch each phase. |
 | Analytics | **DataFast** script + goals (client) and server-side goals API | §2.10. |
 | Errors | `@sentry/cloudflare` (free tier) + Workers Logs / Observability | |
 | Tests | Vitest + `@cloudflare/vitest-pool-workers` (real D1/R2/KV in Miniflare), Playwright E2E | §2.8. |
@@ -78,7 +77,7 @@ Actions), JSON endpoints (Route Handlers under `/api/*`), better-auth (`/api/aut
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [{ "binding": "DB", "database_name": "mosques-world", "migrations_dir": "migrations" }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media" }],
-  "kv_namespaces": [{ "binding": "FLAGS" }, { "binding": "CACHE" }],
+  "kv_namespaces": [{ "binding": "CACHE" }],
   "images": { "binding": "IMAGES" },
   "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"] }],
   "queues": {
@@ -100,7 +99,7 @@ The live file is [`wrangler.jsonc`](../../wrangler.jsonc); [docs/deployment.md](
 environment and what a Preview may touch.
 
 Queues, Images, Email Service and Rate Limiting are all bound from Phase 1 even where they are
-unused, so later phases need no infrastructure change beyond feature flags.
+unused, so later phases need no infrastructure change.
 
 ### Secrets and vars
 
@@ -137,7 +136,7 @@ unused, so later phases need no infrastructure change beyond feature flags.
   places/                 # Google Places client + caching rules
   email/                  # React Email templates + send helper (enqueue)
   analytics.ts            # DataFast helpers (client + server)
-  flags.ts, ratelimit.ts, turnstile.ts, images.ts
+  ratelimit.ts, turnstile.ts, images.ts
 /worker/index.ts          # Worker entry: vinext fetch + queue + scheduled handlers
 /migrations               # drizzle-kit generated SQL, append-only
 /scripts                  # OSM import, seeding, backfills (run with tsx + wrangler d1)
@@ -202,7 +201,7 @@ unused, so later phases need no infrastructure change beyond feature flags.
 | Performance | Lighthouse CI on `/`, `/m/[slug]`, `/@user` (mobile) | LCP < 2.5 s, CLS < 0.1, JS < 200 KB gz on mosque page (map lazy-loaded) |
 
 E2E sign-in uses a test-only email OTP sink (preview env: OTPs written to a KV key readable by
-the test runner); it is disabled in production by a flag.
+the test runner); it is disabled in production by `lib/environment.ts`.
 
 ## 2.9 CI/CD
 
@@ -223,8 +222,8 @@ A D1 Time Travel restore point is recorded before each production migration.
 2. **URLs are permanent.** Routes are never removed; renamed routes get a 308 redirect.
 3. **Fact keys are stable strings** (`iqamah.asr`, `amenity.women_section`). New keys are added;
    old keys are never repurposed.
-4. **Every phase ships behind a KV flag** (`phase2.contributions`, …). The flag is removed one
-   release after 100% rollout.
+4. **No feature flags.** Phases shipped behind KV flags until October 2026, when every flag was at 100% and the
+   flag system was removed. What merges to `main` is live; unfinished work stays on its branch and Preview.
 5. **Public JSON endpoints are versioned** (`/api/v1/…`), with additive changes only.
 6. **Email templates and analytics event names are append-only.**
 7. The E2E suites of all shipped phases are required checks.

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { appEnv } from "@/lib/db/client";
 import { placeBySlug } from "@/lib/db/queries";
-import { phase2Enabled } from "@/lib/phase";
 import { describeValue, factLabel, FACT_KEYS } from "@/lib/trust/facts";
 import { placeHistory, type HistoryEntry } from "@/lib/trust/read";
 import { relativeAge } from "@/lib/trust/summary";
@@ -27,7 +26,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 /** Transparent per-fact history: every value, who proposed it, how many confirmed, and when it applied. */
 export default async function HistoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  if (!(await phase2Enabled())) notFound();
   const { slug } = await params;
   const place = await placeBySlug(slug);
   if (!place) notFound();

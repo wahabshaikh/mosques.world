@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { EnablePush, PrefToggle } from "@/components/mw/notification-client";
 import { appEnv } from "@/lib/db/client";
 import { NOTIFICATION_TOPICS, TOPIC_LABELS } from "@/lib/notifications";
 import { loadPrefs } from "@/lib/notify";
-import { phase6Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 import { SettingsShell } from "../settings-nav";
 
@@ -12,7 +10,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Notification settings", robots: { index: false } };
 
 export default async function NotificationSettingsPage() {
-  if (!(await phase6Enabled())) notFound();
   const user = await requireUser("/settings/notifications");
   const env = appEnv();
   const enabled = await loadPrefs(env.DB, [user.id]);

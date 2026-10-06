@@ -1,5 +1,9 @@
 # Phase 2 runbook — Trusted iqamah times
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 Accounts (email OTP, optional Google), onboarding with usernames, profile and account settings

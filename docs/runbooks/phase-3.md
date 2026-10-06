@@ -1,5 +1,9 @@
 # Phase 3 runbook — Amenities, places & photos
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **Amenities** (`amenity.*` facts, same trust engine): an Amenities tab in Update timings (Yes / No / Not sure),

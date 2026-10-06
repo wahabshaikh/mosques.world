@@ -7,7 +7,7 @@ own**: if we stopped after any phase, what is live is coherent, useful and suppo
 
 A phase is done only when all of these hold in **production**:
 
-- [ ] All scope items are live behind the phase flag, then the flag is at 100%.
+- [ ] All scope items are live on `main` (no feature flags since October 2026).
 - [ ] The phase's Playwright suite (`e2e/phase-N`) passes against production (`@smoke`) and preview (full); **all earlier phase suites still pass**.
 - [ ] Unit + integration coverage ≥ 80% on new `lib/` code; the trust engine and prayer logic ≥ 95%.
 - [ ] axe: 0 serious/critical violations on new screens; keyboard-only pass done.
@@ -17,7 +17,7 @@ A phase is done only when all of these hold in **production**:
 - [ ] DataFast goals for the phase fire (verified in the DataFast dashboard).
 - [ ] Rate limits and authZ tests exist for every new mutation.
 - [ ] `/privacy`, `/terms`, `/guidelines` are updated if data collection changed.
-- [ ] A runbook entry exists in `docs/runbooks/phase-N.md` (rollback = previous Worker version + flag off; migrations are forward-compatible, so no DB rollback is needed).
+- [ ] A runbook entry exists in `docs/runbooks/phase-N.md` (rollback = previous Worker version; migrations are forward-compatible, so no DB rollback is needed).
 
 ---
 

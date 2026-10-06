@@ -11,7 +11,6 @@ import { TrackView } from "@/components/mw/track-view";
 import { WaitlistForm } from "@/components/mw/waitlist-form";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
-import { enrichEnabled, phase2Enabled, phase3Enabled, phase4Enabled, phase5Enabled, phase6Enabled, phase7Enabled, phase8Enabled } from "@/lib/phase";
 import { languageAlternates, localePath } from "@/lib/i18n/config";
 import type { Translator } from "@/lib/i18n";
 import { getTranslator } from "@/lib/i18n/server";
@@ -75,7 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const base = process.env.PUBLIC_BASE_URL ?? "https://mosques.world";
   const hasIqamah = Boolean(loaded.place.iqamahSummaryJson);
   const path = `/m/${loaded.place.slug}`;
-  const languages = (await phase8Enabled().catch(() => false)) ? languageAlternates(path) : undefined;
+  const languages = languageAlternates(path);
   return {
     title: loaded.place.name,
     description: l.t(hasIqamah ? "mosque.metaWith" : "mosque.metaWithout", { name: loaded.place.name }),
@@ -107,23 +106,15 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
     viewerCanConfirm = viewer.id !== place.createdBy && viewer.trustLevel >= 1;
   }
   const nowMs = now.getTime();
-  const contributions = await phase2Enabled();
-  const places = contributions && (await phase3Enabled());
-  const profiles = places && (await phase4Enabled());
-  const mobile = profiles && (await phase5Enabled());
-  const stewarding = mobile && (await phase6Enabled());
-  const stewards = stewarding ? await stewardCount(appEnv().DB, place.id) : 0;
-  const seasons = stewarding && (await phase7Enabled());
-  const specials = seasons ? await upcomingSpecial(appEnv().DB, place.id, day.date) : [];
-  const eidTime = seasons && eidSeason(now, place.timezone);
+  const stewards = await stewardCount(appEnv().DB, place.id);
+  const specials = await upcomingSpecial(appEnv().DB, place.id, day.date);
+  const eidTime = eidSeason(now, place.timezone);
   const database = appEnv().DB;
-  const [facts, activity, stats] = contributions
-    ? await Promise.all([
-        placeFacts(database, place.id, day.date),
-        placeActivity(database, place.id),
-        placeTrustStats(database, place.id, nowMs),
-      ])
-    : [[], [], null];
+  const [facts, activity, stats] = await Promise.all([
+    placeFacts(database, place.id, day.date),
+    placeActivity(database, place.id),
+    placeTrustStats(database, place.id, nowMs),
+  ]);
   const cells = iqamahCells(facts, loaded.day, nowMs, l);
   const jumuah = jumuahCards(facts, l);
   const hasIqamah = Object.keys(cells).length > 0 || jumuah.length > 0;
@@ -171,11 +162,11 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
     geo: { "@type": "GeoCoordinates", latitude: place.lat, longitude: place.lng },
   };
   const updateHref = l.href(`/m/${place.slug}/update`);
-  const amenities = places ? amenityRows(facts) : [];
-  const google = places && place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
+  const amenities = amenityRows(facts);
+  const google = place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
   const closed = place.status === "closed";
-  const enrichment = (await enrichEnabled()) ? parseEnrichment(place.enrichmentJson) : null;
-  const photos = places ? await placePhotos(appEnv().DB, place.id, 5) : [];
+  const enrichment = parseEnrichment(place.enrichmentJson);
+  const photos = await placePhotos(appEnv().DB, place.id, 5);
   const photoCount = photos.length < 5 ? photos.length : ((await appEnv().DB.prepare(`SELECT COUNT(*) AS n FROM photo WHERE place_id = ? AND status = 'approved' AND purpose IN ('place', 'evidence')`).bind(place.id).first<{ n: number }>())?.n ?? photos.length);
   const summaryLine = [
     l.t(place.kind === "prayer_room" ? "mosque.prayerRoom" : "mosque.mosque"),
@@ -188,7 +179,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const content = (
     <article
       data-place-id={place.id}
-      className={`mx-auto grid max-w-[1120px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16 lg:px-6 ${mobile ? "pb-28 lg:pb-8" : ""}`}
+      className={`mx-auto grid max-w-[1120px] gap-8 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16 lg:px-6 ${"pb-28 lg:pb-8"}`}
     >
       <TrackView goal="mosque_view" props={{ country: place.countryCode }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -200,12 +191,10 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
         </p>
         <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <h1 className="min-w-0 text-3xl font-bold tracking-tight">{place.name}</h1>
-          {profiles ? (
-            <div className="-ms-3 flex shrink-0 gap-1 sm:-me-3 sm:ms-0">
-              <ShareButton title={place.name} path={`/m/${place.slug}`} />
-              <SaveButton placeId={place.id} />
-            </div>
-          ) : null}
+          <div className="-ms-3 flex shrink-0 gap-1 sm:-me-3 sm:ms-0">
+            <ShareButton title={place.name} path={`/m/${place.slug}`} />
+            <SaveButton placeId={place.id} />
+          </div>
         </div>
         {place.nameLocal ? (
           <p className={`text-lg text-muted-foreground ${/[\u0600-\u06FF]/.test(place.nameLocal) ? "font-arabic" : ""}`}>{place.nameLocal}</p>
@@ -240,27 +229,23 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
                 {l.date(day.date)} · {l.hijri(day)}
               </p>
             </div>
-            {contributions ? (
-              <UpdateLink href={updateHref} className="text-sm font-bold underline">
-                {l.t("mosque.update")}
-              </UpdateLink>
-            ) : null}
+            <UpdateLink href={updateHref} className="text-sm font-bold underline">
+              {l.t("mosque.update")}
+            </UpdateLink>
           </div>
-          {!(contributions && hasIqamah) ? (
+          {!(hasIqamah) ? (
             <section className="mb-4 flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:flex-row sm:items-center" aria-labelledby="no-iqamah">
               <div className="flex-1">
                 <h3 id="no-iqamah" className="font-bold">
                   {l.t("mosque.notAddedTitle")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {l.t(contributions ? "mosque.beFirst" : "mosque.beFirstLater")} {l.t("mosque.adhanCalculated")}
+                  {l.t("mosque.beFirst")} {l.t("mosque.adhanCalculated")}
                 </p>
               </div>
-              {contributions ? (
-                <UpdateLink href={updateHref} className="inline-flex h-11 shrink-0 items-center justify-center rounded-[12px] bg-secondary px-4 text-sm font-semibold text-secondary-foreground">
-                  {l.t("mosque.addIqamah")}
-                </UpdateLink>
-              ) : null}
+              <UpdateLink href={updateHref} className="inline-flex h-11 shrink-0 items-center justify-center rounded-[12px] bg-secondary px-4 text-sm font-semibold text-secondary-foreground">
+                {l.t("mosque.addIqamah")}
+              </UpdateLink>
             </section>
           ) : null}
           <div className="overflow-hidden rounded-2xl border border-input">
@@ -268,7 +253,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               day={day}
               initialNow={now.toISOString()}
               // With nothing set yet, one "Add iqamah times" button above the table beats an "Add" on every row.
-              extras={contributions ? { iqamah: cells, addHref: hasIqamah ? updateHref : undefined, jumuahNote: jumuah.length > 0 ? l.t("mosque.jumuahToday") : undefined } : undefined}
+              extras={{ iqamah: cells, addHref: hasIqamah ? updateHref : undefined, jumuahNote: jumuah.length > 0 ? l.t("mosque.jumuahToday") : undefined }}
               labels={labels}
             />
             {disputes.map((item) => (
@@ -278,35 +263,29 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           <p className="mt-3 text-xs text-muted-foreground">
             {l.t("mosque.calcNote", { method: methodLabel(place.calcMethod), madhab: madhabLabel(place.asrMadhab), zone: place.timezone })}
             {place.adhanAdjustJson ? l.t("mosque.adhanCommunity") : null}
-            {contributions ? l.t("mosque.communityNote") : null}
-            {contributions ? (
-              <Link href={l.href(`/m/${place.slug}/history`)} className="font-semibold text-foreground underline">
-                {l.t("mosque.history")}
+            {l.t("mosque.communityNote")}
+            <Link href={l.href(`/m/${place.slug}/history`)} className="font-semibold text-foreground underline">
+              {l.t("mosque.history")}
+            </Link>
+            <>
+              {" · "}
+              <UpdateLink href={`${updateHref}?tab=adhan`} className="font-semibold text-foreground underline">
+                {l.t("mosque.adhanDiffers")}
+              </UpdateLink>
+            </>
+            <>
+              {" · "}
+              <Link href={l.href(`/m/${place.slug}/timetable`)} className="font-semibold text-foreground underline">
+                {l.t("mosque.monthly")}
               </Link>
-            ) : null}
-            {contributions ? (
-              <>
-                {" · "}
-                <UpdateLink href={`${updateHref}?tab=adhan`} className="font-semibold text-foreground underline">
-                  {l.t("mosque.adhanDiffers")}
-                </UpdateLink>
-              </>
-            ) : null}
-            {seasons ? (
-              <>
-                {" · "}
-                <Link href={l.href(`/m/${place.slug}/timetable`)} className="font-semibold text-foreground underline">
-                  {l.t("mosque.monthly")}
-                </Link>
-                {" · "}
-                <CalendarLink path={`/m/${place.slug}/calendar.ics`} label={l.t("mosque.calendar")} scope="place" />
-              </>
-            ) : null}
+              {" · "}
+              <CalendarLink path={`/m/${place.slug}/calendar.ics`} label={l.t("mosque.calendar")} scope="place" />
+            </>
           </p>
-          {!(contributions && hasIqamah) ? <WaitlistForm placeId={place.id} /> : null}
+          {!(hasIqamah) ? <WaitlistForm placeId={place.id} /> : null}
         </section>
 
-        {contributions && hasIqamah ? (
+        {hasIqamah ? (
           <div className="mt-8 flex flex-col gap-6">
             <TrustSummary
               title={headline.title}
@@ -334,7 +313,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           </section>
         ) : null}
 
-        {seasons && (specials.length > 0 || eidTime) ? (
+        {(specials.length > 0 || eidTime) ? (
           <section id="special" className="mt-8 scroll-mt-24 border-t border-border pt-8" aria-labelledby="special-heading">
             <h2 id="special-heading" className="mb-4 text-xl font-bold">
               {l.t("mosque.special")}
@@ -365,7 +344,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             </Link>
           </section>
         ) : null}
-        {seasons && specials.length === 0 && !eidTime ? (
+        {specials.length === 0 && !eidTime ? (
           <p className="mt-6 text-sm">
             <Link href={l.href(`/m/${place.slug}/special`)} className="font-semibold underline">
               {l.t("mosque.addSpecial")}
@@ -373,43 +352,32 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           </p>
         ) : null}
 
-        {places ? (
-          <PhotoGrid
-            photos={photos}
-            total={photoCount}
-            tint={tint}
-            slug={place.slug}
-            placeId={place.id}
-            canAdd={!closed}
-            commons={enrichment?.image ?? null}
-            turnstileSiteKey={captchaRequired(appEnv(), loaded.host) ? appEnv().TURNSTILE_SITE_KEY : undefined}
-            text={english ? undefined : clientText(l.locale)}
-          />
-        ) : (
-          <div
-            className="mt-6 flex aspect-[16/7] items-end rounded-2xl p-6 text-sm font-semibold"
-            style={{ background: tint.bg, color: "#1f1d1a" }}
-          >
-            {l.t("mosque.photoLater")}
-          </div>
-        )}
+        <PhotoGrid
+          photos={photos}
+          total={photoCount}
+          tint={tint}
+          slug={place.slug}
+          placeId={place.id}
+          canAdd={!closed}
+          commons={enrichment?.image ?? null}
+          turnstileSiteKey={captchaRequired(appEnv(), loaded.host) ? appEnv().TURNSTILE_SITE_KEY : undefined}
+          text={english ? undefined : clientText(l.locale)}
+        />
 
 
-        {places ? (
-          <section className="mt-8 border-t border-border pt-8" aria-labelledby="offers">
-            <h2 id="offers" className="mb-5 text-xl font-bold">
-              {l.t("mosque.offers")}
-            </h2>
-            {amenities.length > 0 ? (
-              <AmenityList rows={amenities} />
-            ) : (
-              <p className="text-sm text-muted-foreground">{l.t("mosque.noFacilities")}</p>
-            )}
-            <UpdateLink href={`${updateHref}?tab=amenities`} className="mt-5 inline-flex h-12 items-center rounded-[10px] border border-foreground px-5 text-[15px] font-semibold">
-              {l.t(amenities.length > 0 ? "mosque.suggestEdit" : "mosque.addFacilities")}
-            </UpdateLink>
-          </section>
-        ) : null}
+        <section className="mt-8 border-t border-border pt-8" aria-labelledby="offers">
+          <h2 id="offers" className="mb-5 text-xl font-bold">
+            {l.t("mosque.offers")}
+          </h2>
+          {amenities.length > 0 ? (
+            <AmenityList rows={amenities} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{l.t("mosque.noFacilities")}</p>
+          )}
+          <UpdateLink href={`${updateHref}?tab=amenities`} className="mt-5 inline-flex h-12 items-center rounded-[10px] border border-foreground px-5 text-[15px] font-semibold">
+            {l.t(amenities.length > 0 ? "mosque.suggestEdit" : "mosque.addFacilities")}
+          </UpdateLink>
+        </section>
 
         <section className="mt-8 text-sm">
           <h2 className="text-xl font-bold">{l.t(enrichment ? "mosque.about" : "mosque.fromOsm")}</h2>
@@ -498,21 +466,17 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               <p className="mt-2 text-xs text-muted-foreground">{l.t("mosque.poweredByGoogle")}</p>
             </div>
           ) : null}
-          {stewarding ? (
-            <p className="mt-6">
-              <Link href={l.href(`/m/${place.slug}/steward`)} className="font-semibold underline">
-                {l.t("mosque.involved")}
-              </Link>
-            </p>
-          ) : null}
-          {contributions ? (
-            <p className="mt-6">
-              {l.t("mosque.missing")}{" "}
-              <UpdateLink href={updateHref} className="font-semibold underline">
-                {l.t("mosque.suggestEdit")}
-              </UpdateLink>
-            </p>
-          ) : null}
+          <p className="mt-6">
+            <Link href={l.href(`/m/${place.slug}/steward`)} className="font-semibold underline">
+              {l.t("mosque.involved")}
+            </Link>
+          </p>
+          <p className="mt-6">
+            {l.t("mosque.missing")}{" "}
+            <UpdateLink href={updateHref} className="font-semibold underline">
+              {l.t("mosque.suggestEdit")}
+            </UpdateLink>
+          </p>
         </section>
       </div>
       <aside className="flex flex-col gap-6">
@@ -525,35 +489,30 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               label={l.t("mosque.directions")}
               className="inline-flex h-12 items-center justify-center rounded-[12px] bg-primary font-bold text-primary-foreground"
             />
-            {profiles && !closed ? (
+            {!closed ? (
               <CheckinButton placeId={place.id} placeName={place.name} defaultPrayer={defaultPrayer(day, now)} jumuah={day.jumuah} today={day.date} />
             ) : null}
           </div>
         </div>
-        {contributions ? (
-          <div className="flex justify-center">
-            <ReportProblem
-              placeId={place.id}
-              reasons={places}
-              facts={["fajr", "dhuhr", "asr", "maghrib", "isha"].map((prayer) => ({ key: `iqamah.${prayer}`, label: `${factLabel(`iqamah.${prayer}`)} iqamah` }))}
-            />
-          </div>
-        ) : null}
+        <div className="flex justify-center">
+          <ReportProblem
+            placeId={place.id}
+            facts={["fajr", "dhuhr", "asr", "maghrib", "isha"].map((prayer) => ({ key: `iqamah.${prayer}`, label: `${factLabel(`iqamah.${prayer}`)} iqamah` }))}
+          />
+        </div>
         <div className="overflow-hidden rounded-2xl border border-input">
           <MiniMap lat={place.lat} lng={place.lng} label={l.t("mosque.map")} />
         </div>
-        {contributions ? (
-          <section>
-            <h2 className="mb-4 text-lg font-bold">{l.t("mosque.activity")}</h2>
-            <ActivityFeed items={activity} now={nowMs} />
-          </section>
-        ) : null}
+        <section>
+          <h2 className="mb-4 text-lg font-bold">{l.t("mosque.activity")}</h2>
+          <ActivityFeed items={activity} now={nowMs} />
+        </section>
       </aside>
-      {mobile && !closed ? <MobileActionBar rows={rows} initialNow={now.toISOString()} placeId={place.id} /> : null}
+      {!closed ? <MobileActionBar rows={rows} initialNow={now.toISOString()} placeId={place.id} /> : null}
     </article>
   );
 
-  return contributions ? <ViewerProvider placeId={place.id}>{content}</ViewerProvider> : content;
+  return <ViewerProvider placeId={place.id}>{content}</ViewerProvider>;
 }
 
 function tableLabels(l: Translator): TableLabels {

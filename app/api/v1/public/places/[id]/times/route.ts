@@ -1,7 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase8EnabledFor } from "@/lib/phase";
 import { apiError, findPlace, guardKey, middayOf, placeTimes, prayerDayFor } from "@/lib/public-api";
 import { placeFacts } from "@/lib/trust/read";
 
@@ -9,7 +8,6 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/v1/public/places/{id|slug}/times?date=YYYY-MM-DD — adhan and iqamah as the mosque page shows them. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase8EnabledFor(request))) return apiError("Not found", 404);
   const env = appEnv();
   const guarded = await guardKey(request, env);
   if ("response" in guarded) return guarded.response;

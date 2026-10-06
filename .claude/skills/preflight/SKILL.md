@@ -27,8 +27,8 @@ Map changed files (`git diff --name-only origin/main...`) to suites:
 | Changed | Run |
 | --- | --- |
 | Only `lib/` logic with unit tests, docs, config comments | none required; say so |
-| A page, component, route handler, middleware, auth, i18n | `pnpm e2e e2e/phase-N` for each phase whose screens/routes it touches |
-| `middleware.ts`, `lib/auth.ts`, `lib/session.ts`, layouts, `worker/index.ts` | `pnpm e2e` (every phase) |
+| A page, component, route handler, proxy, auth, i18n | `pnpm e2e e2e/phase-N` for each phase whose screens/routes it touches |
+| `proxy.ts`, `lib/auth.ts`, `lib/session.ts`, layouts, `worker/index.ts` | `pnpm e2e` (every phase) |
 | A migration | `pnpm db:migrate:local`, then the phase suite that reads the new tables |
 
 `pnpm e2e` starts the dev server (with local migrations) itself. In sandboxes add `--project=chromium`

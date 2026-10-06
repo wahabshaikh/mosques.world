@@ -1,5 +1,9 @@
 # Phase 6 runbook — Stewards & notifications
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **Stewards**: "Are you involved with this mosque?" on the mosque page → `/m/:slug/steward` (role, how they're

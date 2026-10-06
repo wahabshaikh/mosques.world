@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { TrackView } from "@/components/mw/track-view";
 import { appEnv } from "@/lib/db/client";
-import { phase4Enabled } from "@/lib/phase";
 import { findProfile, mapHeadline, pinTotals, profilePins } from "@/lib/profile/read";
 import { currentUser } from "@/lib/session";
 import { GlobeLoader } from "./globe-loader";
@@ -19,7 +18,6 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 /** `/@username/map`: full-screen globe; `?embed=1` drops the chrome for iframes (spec P4). */
 export default async function ProfileMapPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!(await phase4Enabled())) notFound();
   const { username } = await params;
   const embed = (await searchParams).embed === "1";
   const found = await findProfile(appEnv().DB, decodeURIComponent(username));

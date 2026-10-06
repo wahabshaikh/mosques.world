@@ -1,14 +1,12 @@
 import { appEnv } from "@/lib/db/client";
 import { placesContext } from "@/lib/places/context";
 import { placeDetails } from "@/lib/places/google";
-import { phase3EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 /** Place Details (Essentials field mask) that pre-fills the add form. Nothing here is stored as-is. */
 export async function GET(request: Request) {
-  if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request);
   if ("response" in guarded) return guarded.response;
   const url = new URL(request.url);

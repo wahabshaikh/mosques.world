@@ -3,13 +3,11 @@ import { appEnv } from "@/lib/db/client";
 import { deliver } from "@/lib/email/send";
 import { welcomeMail } from "@/lib/email/templates";
 import { linkBase } from "@/lib/environment";
-import { phase2EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  if (!(await phase2EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true, needsUsername: false });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

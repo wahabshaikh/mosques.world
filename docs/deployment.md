@@ -18,7 +18,7 @@ It serves pages, the JSON API, auth, the queue consumer and the cron jobs. Every
 
 `lib/environment.ts` decides whether a request is non-production: localhost, or a `*.workers.dev` host on a
 deployment whose `ENVIRONMENT` is not `production`. Non-production turns on the test hooks (`x-mw-now`,
-`x-mw-latitude`/`x-mw-longitude`, unreleased phase flags defaulting on, inline jobs). The production Worker has
+`x-mw-latitude`/`x-mw-longitude`, the email sink, `/api/v1/test/*`, inline jobs). The production Worker has
 `workers_dev: false`, and its Version URLs on `workers.dev` still count as production.
 
 ### What a Preview can and cannot touch
@@ -100,7 +100,6 @@ pnpm deploy                # build + production (prefer Workers Builds, which al
 
 - Code: `pnpm exec wrangler rollback` (or pick a version under **Deployments** in the dashboard). Rolling back to
   a version from before a secret change also drops that secret.
-- Features: every phase is behind a KV flag in `FLAGS`; set it to `off` (takes effect within 60 s).
 - Data: migrations are additive, so code rollbacks need no data rollback. For data damage, restore the bookmark the
   deploy printed in its build log: `pnpm exec wrangler d1 time-travel restore DB --bookmark=<bookmark>`.
 
@@ -110,7 +109,7 @@ pnpm deploy                # build + production (prefer Workers Builds, which al
 |---|---|---|
 | `DB` (D1) | `mosques-world` | `mosques-world-preview` |
 | `MEDIA` (R2) | `mosques-media` | `mosques-media-preview` |
-| `FLAGS`, `CACHE` (KV) | `mosques-world-FLAGS`, `mosques-world-CACHE` | `…-preview` |
+| `CACHE` (KV) | `mosques-world-CACHE` | `mosques-world-CACHE-preview` |
 | `Q_EMAIL`, `Q_RECOMPUTE`, `Q_MEDIA` | `q-email`, `q-recompute`, `q-media` (DLQ `q-dlq`) | none |
 | `EMAIL` (Email Service) | `mail.mosques.world` senders | none |
 | `RL_WRITE`, `RL_AUTH`, `RL_API` | namespaces 1001–1003 | 1101–1103 |

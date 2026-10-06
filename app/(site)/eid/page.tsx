@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { TrackView } from "@/components/mw/track-view";
 import { appEnv } from "@/lib/db/client";
 import { formatDistance } from "@/lib/geo/distance";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase7Enabled } from "@/lib/phase";
 import { eidNear, specialDates } from "@/lib/special";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +15,6 @@ const LONDON = { lat: 51.5074, lng: -0.1278 };
 
 /** Seasonal explore mode (spec P7): upcoming Eid jamā'ahs near the visitor, soonest and nearest first. */
 export default async function EidPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!(await phase7Enabled())) notFound();
   const params = await searchParams;
   const headerList = await headers();
   const host = headerList.get("host")?.split(":")[0] ?? "";

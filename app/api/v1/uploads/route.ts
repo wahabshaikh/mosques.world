@@ -3,7 +3,6 @@ import { appEnv } from "@/lib/db/client";
 import { ulid } from "@/lib/id";
 import { dailyUploadCap, isPhotoCategory, originalKey, PHOTO_PURPOSES, processPhoto, uploadProblem, type PhotoPurpose } from "@/lib/media";
 import { isNonProductionHost } from "@/lib/environment";
-import { phase3EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 import { verifyTurnstile } from "@/lib/turnstile";
@@ -15,7 +14,6 @@ export const dynamic = "force-dynamic";
  * WebP variants (metadata stripped), then deletes it. Level-0 uploads wait for review.
  */
 export async function POST(request: Request) {
-  if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

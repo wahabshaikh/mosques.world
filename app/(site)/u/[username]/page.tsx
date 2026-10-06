@@ -9,7 +9,6 @@ import { TrackView } from "@/components/mw/track-view";
 import { appEnv } from "@/lib/db/client";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase4Enabled } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import {
   asContributionFilter,
@@ -37,7 +36,6 @@ type Params = { username: string };
 type Search = Record<string, string | string[] | undefined>;
 
 async function load(username: string): Promise<ProfileUser> {
-  if (!(await phase4Enabled())) notFound();
   const found = await findProfile(appEnv().DB, decodeURIComponent(username));
   if (!found) notFound();
   if ("redirect" in found) permanentRedirect(`/@${found.redirect}`);
@@ -46,7 +44,7 @@ async function load(username: string): Promise<ProfileUser> {
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { username } = await params;
-  const found = (await phase4Enabled()) ? await findProfile(appEnv().DB, decodeURIComponent(username)) : null;
+  const found = await findProfile(appEnv().DB, decodeURIComponent(username));
   if (!found || "redirect" in found) return { title: "Profile" };
   const user = found.user;
   const base = process.env.PUBLIC_BASE_URL ?? "https://mosques.world";

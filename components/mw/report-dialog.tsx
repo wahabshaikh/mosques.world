@@ -12,15 +12,12 @@ export default function ReportDialog({
   facts,
   open,
   onOpenChange,
-  reasons = false,
   photoId,
 }: {
   placeId: string;
   facts: Array<{ key: string; label: string }>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Phase 3: closed, duplicate and wrong-location reports alongside timing ones. */
-  reasons?: boolean;
   /** Reporting one photo (inappropriate_photo). */
   photoId?: string;
 }) {
@@ -33,7 +30,7 @@ export default function ReportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6 pt-16">
         <DialogTitle className="text-lg font-bold">
-          {photoId ? "Report this photo" : reasons ? "Report a problem" : "Report a timing problem"}
+          {photoId ? "Report this photo" : "Report a problem"}
         </DialogTitle>
         <DialogDescription className="mt-1 text-sm text-muted-foreground">
           A moderator will look at it. If you know the new time, use Update timings instead so others can confirm it.
@@ -67,7 +64,7 @@ export default function ReportDialog({
             setNote("");
           }}
         >
-          {reasons && !photoId ? (
+          {!photoId ? (
             <label className="flex flex-col gap-1 text-sm font-semibold">
               What&apos;s the problem?
               <select

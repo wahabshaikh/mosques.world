@@ -1,5 +1,9 @@
 # Phase 8 runbook — Global & open
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **Languages** en, ar, ur, bn, id, ms, tr, fr. `/{locale}/…` renders the same page in that language; the middleware

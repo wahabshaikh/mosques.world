@@ -48,7 +48,6 @@
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media" }],
   "kv_namespaces": [
-    { "binding": "FLAGS", "id": "8ebd3aa5942c4201a1daff013b159a11" },
     { "binding": "CACHE", "id": "40548f22b18f41ddb801f0f8f19dc5a3" }
   ],
   "queues": {
@@ -105,7 +104,6 @@
     ],
     "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media-preview" }],
     "kv_namespaces": [
-      { "binding": "FLAGS", "id": "101da01539e9490f86e7b45adc25ebd6" },
       { "binding": "CACHE", "id": "1f406bb733d845fcab3d60c10d8c14fe" }
     ],
     // Separate namespaces so preview and E2E traffic never spends production's per-IP budgets.

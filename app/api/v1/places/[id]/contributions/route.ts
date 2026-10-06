@@ -6,7 +6,6 @@ import { serverGoal } from "@/lib/analytics-server";
 import { contributionInput, effectiveFromProblem, resultMessage } from "@/lib/contribute";
 import { appEnv, db } from "@/lib/db/client";
 import { place } from "@/lib/db/schema";
-import { phase2EnabledFor, phase6EnabledFor } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { dailyUsage, limitProblem, writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
@@ -17,7 +16,6 @@ export const dynamic = "force-dynamic";
 
 /** Update timings (flow F3): one candidate or vote per changed fact plus a confirm per unchanged fact. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase2EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;
@@ -98,7 +96,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
   if (results.some((result) => result.outcome?.supersededId)) await serverGoal(env, request, "dispute_resolved", { place_id: found.id });
-  await afterContribution(env, request, await phase6EnabledFor(request));
+  await afterContribution(env, request);
   return Response.json({
     results: results.map((result) => ({
       candidateId: result.candidateId,

@@ -255,8 +255,7 @@ export function weeklyDigestStatement(db: D1Database, now: number, limit = 300) 
 }
 
 /** Route helper: deliver anything a contribution just queued, when Phase 6 is on for this request. */
-export async function afterContribution(env: DeliverEnv, request: Request, enabled: boolean) {
-  if (!enabled) return;
+export async function afterContribution(env: DeliverEnv, request: Request) {
   try {
     const url = new URL(request.url);
     const sent = await kickDelivery(env, url.hostname, url.origin);

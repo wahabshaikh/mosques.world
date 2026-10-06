@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
 import { ulid } from "@/lib/id";
-import { phase5EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +12,6 @@ const subscription = z.object({
 
 /** Stores a Web Push subscription (asked only after a successful verify; notifications arrive in Phase 6). */
 export async function POST(request: Request) {
-  if (!(await phase5EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const parsed = subscription.safeParse(await request.json().catch(() => null));

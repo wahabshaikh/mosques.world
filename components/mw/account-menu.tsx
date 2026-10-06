@@ -13,7 +13,7 @@ type MenuUser = { id: string; name: string; username?: string | null; role?: str
  * Header account menu. Deliberately free of the better-auth client and Radix so every page stays
  * inside the JS budget: one fetch for the session and a small disclosure menu.
  */
-export function AccountMenu({ profiles = false, notifications = false }: { profiles?: boolean; notifications?: boolean }) {
+export function AccountMenu() {
   const pathname = usePathname();
   const text = useText();
   const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
@@ -23,7 +23,7 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!notifications || !user?.username) return;
+    if (!user?.username) return;
     void fetch("/api/v1/notifications?count=1")
       .then((response) => (response.ok ? (response.json() as Promise<{ unread: number; stewarding?: boolean }>) : null))
       .then((body) => {
@@ -31,7 +31,7 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
         setStewarding(Boolean(body?.stewarding));
       })
       .catch(() => undefined);
-  }, [notifications, user?.username]);
+  }, [user?.username]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,7 +110,7 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
                 </Link>
               </li>
             ) : null}
-            {profiles && user.username ? (
+            {user.username ? (
               <>
                 <li>
                   <Link className={item} href={`/@${user.username}`}>
@@ -122,22 +122,20 @@ export function AccountMenu({ profiles = false, notifications = false }: { profi
                     <Bookmark className="size-4" /> Saved
                   </Link>
                 </li>
-                {notifications ? (
-                  <>
+                <>
+                  <li>
+                    <Link className={item} href="/notifications">
+                      <Bell className="size-4" /> Notifications{unread > 0 ? ` (${unread})` : ""}
+                    </Link>
+                  </li>
+                  {stewarding || moderator ? (
                     <li>
-                      <Link className={item} href="/notifications">
-                        <Bell className="size-4" /> Notifications{unread > 0 ? ` (${unread})` : ""}
+                      <Link className={item} href="/steward">
+                        <ShieldCheck className="size-4" /> Steward
                       </Link>
                     </li>
-                    {stewarding || moderator ? (
-                      <li>
-                        <Link className={item} href="/steward">
-                          <ShieldCheck className="size-4" /> Steward
-                        </Link>
-                      </li>
-                    ) : null}
-                  </>
-                ) : null}
+                  ) : null}
+                </>
               </>
             ) : null}
             <li>

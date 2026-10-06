@@ -3,7 +3,6 @@ import { appEnv } from "@/lib/db/client";
 import { isNonProductionHost } from "@/lib/environment";
 import { fillArea } from "@/lib/osm-fill";
 import { fixtureFetcher } from "@/lib/osm-fixture";
-import { osmEnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/session";
 
@@ -21,7 +20,6 @@ const input = z.object({
  * filled or being filled by another request are skipped.
  */
 export async function POST(request: Request) {
-  if (!(await osmEnabledFor(request))) return jsonError("Not found", 404);
   const parsed = input.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError("That map area is not valid.", 400);
   const env = appEnv();

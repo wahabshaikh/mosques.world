@@ -1,5 +1,9 @@
 # Phase 5 runbook — At the mosque (PWA + quick verify)
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 - **PWA**: `/manifest.webmanifest` (standalone, 192/512 + maskable icons from `scripts/build-icons.mjs`, shortcuts

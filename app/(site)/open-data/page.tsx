@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { appEnv } from "@/lib/db/client";
 import { CSV_COLUMNS, publishedExports } from "@/lib/open-data";
-import { phase8Enabled } from "@/lib/phase";
 import { ContentPage } from "../content";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +22,6 @@ function month(period: string) {
 }
 
 export default async function OpenDataPage() {
-  if (!(await phase8Enabled())) notFound();
   const exports = await publishedExports(appEnv().DB);
   return (
     <ContentPage title="Open data">

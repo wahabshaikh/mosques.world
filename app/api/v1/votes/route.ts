@@ -4,7 +4,6 @@ import { isNonProductionHost } from "@/lib/environment";
 import { serverGoal } from "@/lib/analytics-server";
 import { resultMessage, voteInput } from "@/lib/contribute";
 import { appEnv } from "@/lib/db/client";
-import { phase2EnabledFor, phase6EnabledFor } from "@/lib/phase";
 import { dailyUsage, limitProblem, writeAllowed } from "@/lib/ratelimit";
 import { actorOf, apiUser, jsonError } from "@/lib/session";
 import { factLabel } from "@/lib/trust/facts";
@@ -13,7 +12,6 @@ import { castVote, TrustError } from "@/lib/trust/store";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  if (!(await phase2EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;
@@ -29,7 +27,7 @@ export async function POST(request: Request) {
     await scheduleUserStats(env, user.id, isNonProductionHost(new URL(request.url).hostname)).catch(() => undefined);
     if (result.outcome?.supersededId) await serverGoal(env, request, "dispute_resolved", { fact_key: result.key });
     const label = factLabel(result.key, result.qualifier);
-    await afterContribution(env, request, await phase6EnabledFor(request));
+    await afterContribution(env, request);
     return Response.json({
       status: result.status,
       state: result.state,

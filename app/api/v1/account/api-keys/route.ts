@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { ApiKeyError, createApiKey, listApiKeys } from "@/lib/api-keys";
 import { appEnv } from "@/lib/db/client";
-import { phase8EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 
@@ -10,7 +9,6 @@ export const dynamic = "force-dynamic";
 const input = z.object({ name: z.string().trim().min(1, "Give the key a name.").max(60) });
 
 export async function GET(request: Request) {
-  if (!(await phase8EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request);
   if ("response" in guarded) return guarded.response;
   return Response.json({ keys: await listApiKeys(appEnv().DB, guarded.user.id) });
@@ -18,7 +16,6 @@ export async function GET(request: Request) {
 
 /** Creates a key; the response is the only time the full key is shown. */
 export async function POST(request: Request) {
-  if (!(await phase8EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const parsed = input.safeParse(await request.json().catch(() => null));

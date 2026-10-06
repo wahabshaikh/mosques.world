@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { env } from "@/lib/testing/cloudflare-workers";
 import { createTestD1 } from "@/lib/testing/d1";
 import { captchaRequired, getAuth, googleEnabled, originFor } from "./auth";
-import { phase2EnabledFor, phase3EnabledFor } from "./phase";
 import { actorOf, apiModerator, apiUser, isModerator, jsonError, safeNext, sameOrigin, signInPath, userFromHeaders } from "./session";
 
 function resetEnv(values: Record<string, unknown>) {
@@ -65,13 +64,5 @@ describe("auth configuration", () => {
     expect(() => getAuth({ ...(local as object), EMAIL_SINK: "0" } as never, "https://mosques.world")).toThrow("BETTER_AUTH_SECRET");
     const production = { ...(local as object), EMAIL_SINK: "0", BETTER_AUTH_SECRET: "x".repeat(32), GOOGLE_CLIENT_ID: "g", GOOGLE_CLIENT_SECRET: "s" } as never;
     expect(getAuth(production, "https://mosques.world")).toBeTruthy();
-  });
-
-  it("reads the phase 2 flag from the request host", async () => {
-    resetEnv({ FLAGS: undefined });
-    expect(await phase2EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
-    expect(await phase2EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
-    expect(await phase3EnabledFor(new Request("http://127.0.0.1:5173/", { headers: { host: "127.0.0.1:5173" } }))).toBe(true);
-    expect(await phase3EnabledFor(new Request("https://mosques.world/", { headers: { host: "mosques.world" } }))).toBe(false);
   });
 });

@@ -32,12 +32,11 @@ export default function FiltersPanel({
   kind,
   needs,
   verified,
-  community,
   bboxQuery,
   onApply,
   open,
   setOpen,
-}: Selection & { community: boolean; bboxQuery: string; onApply: (selection: Selection) => void; open: boolean; setOpen: (open: boolean) => void }) {
+}: Selection & { bboxQuery: string; onApply: (selection: Selection) => void; open: boolean; setOpen: (open: boolean) => void }) {
   const [draft, setDraft] = useState<Selection>({ kind, needs, verified });
   const [count, setCount] = useState<number | null>(null);
   useEffect(() => {
@@ -109,12 +108,10 @@ export default function FiltersPanel({
                 ))}
               </div>
             </fieldset>
-            {community ? (
-              <label className="flex items-center gap-3 text-[15px]">
-                <input type="checkbox" className="size-5" checked={draft.verified} onChange={(event) => setDraft((current) => ({ ...current, verified: event.target.checked }))} />
-                Has community-verified times
-              </label>
-            ) : null}
+            <label className="flex items-center gap-3 text-[15px]">
+              <input type="checkbox" className="size-5" checked={draft.verified} onChange={(event) => setDraft((current) => ({ ...current, verified: event.target.checked }))} />
+              Has community-verified times
+            </label>
           </div>
           <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-4">
             <button type="button" className="text-[15px] font-bold underline" onClick={() => setDraft({ kind: "all", needs: [], verified: false })}>
