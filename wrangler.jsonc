@@ -65,7 +65,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"]
+      "allowed_sender_addresses": ["salam@mosques.world"]
     }
   ],
   "ratelimits": [

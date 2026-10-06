@@ -13,7 +13,7 @@ It serves pages, the JSON API, auth, the queue consumer and the cron jobs. Every
 | Config | top level of `wrangler.jsonc`, local simulators | the `previews` block | top level |
 | D1 / R2 / KV | Miniflare, in `.wrangler/state` | `mosques-world-preview`, `mosques-media-preview`, `*-preview` KV (shared by all Previews) | `mosques-world`, `mosques-media`, production KV |
 | Queues, crons | run inline | none: jobs run inline | `q-email`, `q-recompute`, `q-media` → `q-dlq`; two crons |
-| Email | KV sink (`/api/v1/test/emails`) | KV sink | Email Service from `mail.mosques.world` |
+| Email | KV sink (`/api/v1/test/emails`) | KV sink | Email Service from `salam@mosques.world` |
 | `ENVIRONMENT` | `production` (localhost is still non-production) | `preview` | `production` |
 
 `lib/environment.ts` decides whether a request is non-production: localhost, or a `*.workers.dev` host on a
@@ -111,6 +111,6 @@ pnpm deploy                # build + production (prefer Workers Builds, which al
 | `MEDIA` (R2) | `mosques-media` | `mosques-media-preview` |
 | `CACHE` (KV) | `mosques-world-CACHE` | `mosques-world-CACHE-preview` |
 | `Q_EMAIL`, `Q_RECOMPUTE`, `Q_MEDIA` | `q-email`, `q-recompute`, `q-media` (DLQ `q-dlq`) | none |
-| `EMAIL` (Email Service) | `mail.mosques.world` senders | none |
+| `EMAIL` (Email Service) | `salam@mosques.world` | none |
 | `RL_WRITE`, `RL_AUTH`, `RL_API` | namespaces 1001–1003 | 1101–1103 |
 | `IMAGES`, `AI`, `ASSETS` | account bindings | same |

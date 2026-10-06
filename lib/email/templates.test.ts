@@ -44,7 +44,7 @@ describe("email delivery", () => {
     expect(queued.Q_EMAIL.send).toHaveBeenCalledOnce();
     const direct = env({ Q_EMAIL: undefined });
     await deliver(direct, "mosques.world", otpMail("a@x", "1"));
-    expect(direct.EMAIL.send).toHaveBeenCalledWith(expect.objectContaining({ from: "no-reply@mail.mosques.world", to: "a@x" }));
+    expect(direct.EMAIL.send).toHaveBeenCalledWith(expect.objectContaining({ from: "salam@mosques.world", to: "a@x" }));
   });
 
   it("parses queued mail", () => {

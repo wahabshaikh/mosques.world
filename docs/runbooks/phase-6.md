@@ -45,7 +45,7 @@
    - `VAPID_PRIVATE_KEY`: the private key's `d` (base64url, 32 bytes). Must be the pair of `VAPID_PUBLIC_KEY`, so set
      both together. Rotating the pair breaks existing push subscriptions; people re-subscribe from
      `/settings/notifications`.
-   - Optional `VAPID_SUBJECT` (default `mailto:hello@mosques.world`). Without VAPID keys, push is skipped and the
+   - Optional `VAPID_SUBJECT` (default `mailto:salam@mosques.world`). Without VAPID keys, push is skipped and the
      "turn on notifications" prompts are hidden.
 
    Generate and set the values without them touching the terminal, shell history or disk by piping straight into

@@ -79,7 +79,7 @@ Actions), JSON endpoints (Route Handlers under `/api/*`), better-auth (`/api/aut
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "mosques-media" }],
   "kv_namespaces": [{ "binding": "CACHE" }],
   "images": { "binding": "IMAGES" },
-  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["hello@mail.mosques.world", "no-reply@mail.mosques.world"] }],
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["salam@mosques.world"] }],
   "queues": {
     "producers": [{ "binding": "Q_EMAIL", "queue": "q-email" }, { "binding": "Q_RECOMPUTE", "queue": "q-recompute" }, { "binding": "Q_MEDIA", "queue": "q-media" }],
     "consumers": [{ "queue": "q-email", "max_retries": 5, "dead_letter_queue": "q-dlq" }, { "queue": "q-recompute" }, { "queue": "q-media" }]
