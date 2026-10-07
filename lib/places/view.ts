@@ -9,6 +9,8 @@ export type ExploreView = {
   where: string;
   kind: PlaceKindFilter;
   bbox: Bbox;
+  /** The bbox came from the URL (a map search), not a radius around the point. */
+  fromBbox: boolean;
   source: "url" | "ip" | "default";
 };
 
@@ -63,12 +65,12 @@ export function resolveExploreView(input: {
     where = LONDON.where;
   }
 
-  const zoom = Math.min(16, Math.max(3, numberParam(input.z) ?? (source === "url" ? 12 : 11)));
+  const zoom = Math.min(20, Math.max(1, numberParam(input.z) ?? (source === "url" ? 12 : 11)));
   const kind: PlaceKindFilter =
     input.kind === "prayer_room" || input.kind === "mosque" ? input.kind : "all";
   const parsed = parseBbox(input.bbox);
   const radius = zoom >= 13 ? 8 : zoom >= 11 ? 20 : 60;
-  return { lat, lng, zoom, where, kind, bbox: parsed ?? bboxAround(lat, lng, radius), source };
+  return { lat, lng, zoom, where, kind, bbox: parsed ?? bboxAround(lat, lng, radius), fromBbox: parsed !== null, source };
 }
 
 export function ftsMatch(input: string): string {

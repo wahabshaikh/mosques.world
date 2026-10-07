@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
-import { placesInBbox } from "@/lib/db/queries";
+import { PLACES_LIMIT, placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
 import { geocodeWhere } from "@/lib/geocode";
 import { formatTime12 } from "@/lib/trust/facts";
@@ -88,6 +88,9 @@ export async function ExplorePage({
       verifiedOnly={verifiedOnly}
       needs={needs}
       fillBbox={needsFill ? view.bbox : null}
+      searchedBbox={view.bbox}
+      mapArea={view.fromBbox}
+      truncated={places.length > cards.length || places.length >= PLACES_LIMIT}
       areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, // The visitor's country only describes the area when the view is where they are, not a place they searched.
             await countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null)) : null}
     />

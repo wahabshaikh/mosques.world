@@ -47,7 +47,7 @@ no cold-start problem because it is seeded from OpenStreetMap.
    an opt-in browser geolocation card, "Where" autocomplete through our `/api/v1/geocode/*` proxy
    to Google Places Autocomplete (regions/cities; session tokens; Turnstile after 20 requests per
    session), map + list with `TimePin`s showing the **next adhan** (the label reads "Asr 4:12 · adhan";
-   switches to iqamah in P2), clustering, "Search as I move the map", sort by distance,
+   switches to iqamah in P2), clustering, "Search this area" on map move, sort by distance,
    filters available from OSM data (prayer rooms vs mosques). URL-synced state.
 5. **Mosque page** `/m/[slug]`: header, placeholder `PhotoGrid` (tinted illustration), today's
    table with **Adhan** column and an **Iqamah** column reading "Not yet added", the calculation

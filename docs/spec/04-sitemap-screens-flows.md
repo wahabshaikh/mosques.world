@@ -75,7 +75,7 @@ For each screen: purpose → key content → states. Visual reference in bracket
 - **Search**: "Where" with a **Near me** button; a location permission the visitor already granted is used straight away, a denied one hides the "Use your location" prompt.
 - **CategoryBar**: toggles only (no "Nearby" reset chip): Prayer rooms, Has verified times, Women's section, Wudhu area, Step-free, Parking, Open for Fajr, Classes, then Filters. Amenity filters light up in P3.
 - **List**: overline "Next prayer · Asr adhan 4:35 PM", heading "38 mosques & prayer spaces nearby", a subline with the area and Hijri date, sort (Soonest iqamah / Distance / Most verified), a single column of `MosqueCard` rows, infinite scroll (24 per page). An area with no places yet shows **"Prayer times here today"** (calculated with the visitor's country default when the view is their own location, else Muslim World League; labelled) above the "Finding mosques…" state, so a first visit is never empty.
-- **Map**: `PlaceMap` with `TimePin`s, "Search as I move the map", zoom, legend, "you are here" dot.
+- **Map**: `PlaceMap` with `TimePin`s, a "Search this area" button once the map moves past what was loaded, zoom, legend, "you are here" dot.
 - **States**: location permission prompt (inline card, not a browser popup on load), empty area CTA, offline banner, error toast.
 - **Mobile**: list-first with a floating "Map" button; the map view has a bottom-sheet list (vaul snap points 20%/60%/100%).
 
