@@ -13,12 +13,12 @@ It serves pages, the JSON API, auth, the queue consumer and the cron jobs. Every
 | Config | top level of `wrangler.jsonc`, local simulators | the `previews` block | top level |
 | D1 / R2 / KV | Miniflare, in `.wrangler/state` | `mosques-world-preview`, `mosques-media-preview`, `*-preview` KV (shared by all Previews) | `mosques-world`, `mosques-media`, production KV |
 | Queues, crons | run inline | none: jobs run inline | `q-email`, `q-recompute`, `q-media` → `q-dlq`; two crons |
-| Email | KV sink (`/api/v1/test/emails`) | KV sink | Email Service from `mail.mosques.world` |
+| Email | KV sink (`/api/v1/test/emails`) | KV sink | Email Service from `salam@mosques.world` |
 | `ENVIRONMENT` | `production` (localhost is still non-production) | `preview` | `production` |
 
 `lib/environment.ts` decides whether a request is non-production: localhost, or a `*.workers.dev` host on a
 deployment whose `ENVIRONMENT` is not `production`. Non-production turns on the test hooks (`x-mw-now`,
-`x-mw-latitude`/`x-mw-longitude`, unreleased phase flags defaulting on, inline jobs). The production Worker has
+`x-mw-latitude`/`x-mw-longitude`, the email sink, `/api/v1/test/*`, inline jobs). The production Worker has
 `workers_dev: false`, and its Version URLs on `workers.dev` still count as production.
 
 ### What a Preview can and cannot touch
@@ -27,6 +27,11 @@ Previews do not inherit anything from the top level, so the `previews` block lis
 pointed at preview resources. It deliberately has no queue producers (they would send onto the production queues,
 whose consumer reads production D1), no `send_email` (previews use the email sink), no routes and no crons.
 Rate limits use their own namespaces (`11xx`) so preview and E2E traffic never spends production's budgets.
+`lib/wrangler-config.test.ts` fails CI if the `previews` block ever shares a D1 database, R2 bucket, KV namespace
+or rate-limit namespace with production, or gains an email binding, queue, route or cron.
+
+Anyone with a Preview URL can use its test hooks (open a session as any account, read sink mail for an address), so
+the preview database must only ever hold test data: never copy production rows into it.
 
 All Previews share one D1 database. Migrations are additive (spec 2.10), so a PR that adds one can apply it to the
 shared database without breaking other Previews.
@@ -55,6 +60,15 @@ on every PR.
    and D1: Edit.
 4. Delete old Preview settings under **Settings → Previews** (base config) that `wrangler.jsonc` no longer declares,
    such as queue or email bindings. Secrets stay there.
+
+### Email (applied through the Cloudflare API on Oct 6, 2026)
+
+`mosques.world` is an Email Service sending domain (DKIM `cf-bounce._domainkey`, return path
+`cf-bounce.mosques.world`, DMARC `p=reject`); the Worker sends from `salam@mosques.world`. Email Routing forwards
+`salam@mosques.world` to the maintainer's verified inbox, so replies and security reports arrive.
+
+After the flag removal is deployed, delete what nothing binds any more: the `mosques-world-FLAGS` and
+`mosques-world-FLAGS-preview` KV namespaces, and the old `mail.mosques.world` sending subdomain.
 
 ## Secrets
 
@@ -98,7 +112,6 @@ pnpm deploy                # build + production (prefer Workers Builds, which al
 
 - Code: `pnpm exec wrangler rollback` (or pick a version under **Deployments** in the dashboard). Rolling back to
   a version from before a secret change also drops that secret.
-- Features: every phase is behind a KV flag in `FLAGS`; set it to `off` (takes effect within 60 s).
 - Data: migrations are additive, so code rollbacks need no data rollback. For data damage, restore the bookmark the
   deploy printed in its build log: `pnpm exec wrangler d1 time-travel restore DB --bookmark=<bookmark>`.
 
@@ -108,8 +121,8 @@ pnpm deploy                # build + production (prefer Workers Builds, which al
 |---|---|---|
 | `DB` (D1) | `mosques-world` | `mosques-world-preview` |
 | `MEDIA` (R2) | `mosques-media` | `mosques-media-preview` |
-| `FLAGS`, `CACHE` (KV) | `mosques-world-FLAGS`, `mosques-world-CACHE` | `…-preview` |
+| `CACHE` (KV) | `mosques-world-CACHE` | `mosques-world-CACHE-preview` |
 | `Q_EMAIL`, `Q_RECOMPUTE`, `Q_MEDIA` | `q-email`, `q-recompute`, `q-media` (DLQ `q-dlq`) | none |
-| `EMAIL` (Email Service) | `mail.mosques.world` senders | none |
+| `EMAIL` (Email Service) | `salam@mosques.world` | none |
 | `RL_WRITE`, `RL_AUTH`, `RL_API` | namespaces 1001–1003 | 1101–1103 |
 | `IMAGES`, `AI`, `ASSETS` | account bindings | same |

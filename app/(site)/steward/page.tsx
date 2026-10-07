@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { StewardDashboard } from "@/components/mw/steward-dashboard";
 import { appEnv } from "@/lib/db/client";
-import { phase6Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 import { stewardQueue } from "@/lib/stewards";
 
@@ -11,7 +9,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Steward", robots: { index: false } };
 
 export default async function StewardPage() {
-  if (!(await phase6Enabled())) notFound();
   const user = await requireUser("/steward");
   const places = await stewardQueue(appEnv().DB, user.id);
   return (

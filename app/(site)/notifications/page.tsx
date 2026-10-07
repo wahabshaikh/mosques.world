@@ -1,10 +1,8 @@
 import { Bell } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { MarkAllRead, TrackOpen } from "@/components/mw/notification-client";
 import { appEnv } from "@/lib/db/client";
-import { phase6Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 import { relativeAge } from "@/lib/trust/summary";
 import { cn } from "@/lib/utils";
@@ -13,7 +11,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Notifications", robots: { index: false } };
 
 export default async function NotificationsPage() {
-  if (!(await phase6Enabled())) notFound();
   const user = await requireUser("/notifications");
   const rows = await appEnv()
     .DB.prepare(`SELECT id, topic, title, body, url, read_at, created_at FROM notification WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`)

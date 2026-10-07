@@ -1,8 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { suggestMosques, suggestPlaces } from "@/lib/db/queries";
 import { searchAreas } from "@/lib/geocode";
-import { googleAutocomplete } from "@/lib/places/autocomplete";
-import { osmEnabledFor } from "@/lib/phase";
 import { geocodeDecision } from "@/lib/places/view";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +13,7 @@ export async function GET(request: Request) {
   const ip = request.headers.get("cf-connecting-ip") ?? "local";
   const key = `geocode:${ip}`;
   const current = Number((await env.CACHE.get(key)) ?? "0");
-  const osm = await osmEnabledFor(request);
-  const decision = geocodeDecision(current, Boolean(env.TURNSTILE_SECRET_KEY), osm ? 200 : 20);
+  const decision = geocodeDecision(current, Boolean(env.TURNSTILE_SECRET_KEY), 200);
   if (decision === "block") {
     return Response.json({ error: "Too many searches. Try again shortly." }, { status: 429 });
   }
@@ -28,19 +25,11 @@ export async function GET(request: Request) {
   }
   await env.CACHE.put(key, String(current + 1), { expirationTtl: 60 * 60 });
 
-  if (osm) {
-    // Free: Photon for cities and regions (with coordinates, so no details call), plus our own mosques.
-    const [areas, mosques] = await Promise.all([searchAreas(q, { cache: env.CACHE }), suggestMosques(q).catch(() => [])]);
-    // If Photon is down or knows nothing, our own city list still answers.
-    const cities = areas.length > 0 ? areas.slice(0, 5).map((area) => ({ ...area, kind: "city" as const })) : (await suggestPlaces(q)).filter((item) => item.kind === "city");
-    return Response.json({ suggestions: [...cities, ...mosques] });
-  }
-  if (env.GOOGLE_MAPS_API_KEY) {
-    const google = await googleAutocomplete(q, env.GOOGLE_MAPS_API_KEY);
-    if (google.length > 0) return Response.json({ suggestions: google });
-  }
-  const suggestions = await suggestPlaces(q);
-  return Response.json({ suggestions });
+  // Free: Photon for cities and regions (with coordinates, so no details call), plus our own mosques.
+  const [areas, mosques] = await Promise.all([searchAreas(q, { cache: env.CACHE }), suggestMosques(q).catch(() => [])]);
+  // If Photon is down or knows nothing, our own city list still answers.
+  const cities = areas.length > 0 ? areas.slice(0, 5).map((area) => ({ ...area, kind: "city" as const })) : (await suggestPlaces(q)).filter((item) => item.kind === "city");
+  return Response.json({ suggestions: [...cities, ...mosques] });
 }
 
 async function verifyTurnstile(token: string, secret: string) {

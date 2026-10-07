@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { StewardRequestForm } from "@/components/mw/steward-forms";
 import { appEnv } from "@/lib/db/client";
 import { placeBySlug } from "@/lib/db/queries";
-import { phase6Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 import { stewardStatus } from "@/lib/stewards";
 
@@ -12,7 +11,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Look after this mosque", robots: { index: false } };
 
 export default async function StewardRequestPage({ params }: { params: Promise<{ slug: string }> }) {
-  if (!(await phase6Enabled())) notFound();
   const { slug } = await params;
   const place = await placeBySlug(slug);
   if (!place) notFound();

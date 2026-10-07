@@ -1,13 +1,11 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
-import { phase6EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 /** The in-app inbox: unread count (for the header) and the latest 50. */
 export async function GET(request: Request) {
-  if (!(await phase6EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { needsUsername: false });
   if ("response" in guarded) return guarded.response;
   const database = appEnv().DB;

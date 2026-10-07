@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { FREE_RATE_LIMIT, MAX_ACTIVE_KEYS } from "@/lib/api-keys";
-import { phase8Enabled } from "@/lib/phase";
 import { ContentPage } from "../content";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +27,6 @@ function Code({ children }: { children: string }) {
 }
 
 export default async function DevelopersPage() {
-  if (!(await phase8Enabled())) notFound();
   return (
     <ContentPage title="Developers">
       <p>

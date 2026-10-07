@@ -3,14 +3,13 @@ import { headers } from "next/headers";
 import { translator } from "@/lib/i18n";
 import { LOCALE_NAMES, languageAlternates, localePath, negotiate } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
-import { phase8Enabled } from "@/lib/phase";
 import { ExplorePage } from "./explore-page";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const languages = (await phase8Enabled().catch(() => false)) ? languageAlternates("/") : undefined;
+  const languages = languageAlternates("/");
   return {
     title: "Find a mosque",
     description: "Mosques and prayer spaces near you, with today's calculated adhan times.",
@@ -44,7 +43,7 @@ export default async function HomePage({
  */
 async function suggestedLocale() {
   try {
-    if ((await getLocale()) !== "en" || !(await phase8Enabled())) return null;
+    if ((await getLocale()) !== "en") return null;
     const locale = negotiate((await headers()).get("accept-language"));
     if (locale === "en") return null;
     return { locale, href: localePath(locale, "/"), text: translator(locale).t("suggest.available", { language: LOCALE_NAMES[locale] }) };

@@ -7,7 +7,6 @@ import { processPhoto } from "@/lib/media";
 import { weeklyOsmSync } from "@/lib/osm";
 import { resyncStaleCells } from "@/lib/osm-fill";
 import { isUserStatsMessage, recomputeUserStats } from "@/lib/profile/stats";
-import { ENRICH_FLAG, flagsOnForSite, OSM_FLAG, PHASE6_FLAGS, PHASE8_FLAGS } from "@/lib/flags";
 import { enrichStaleCells } from "@/lib/enrich/wikidata";
 import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data";
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
@@ -46,28 +45,25 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     return serve(request, env, ctx);
   },
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    const notifications = await flagsOnForSite(env, PHASE6_FLAGS);
     const deliveryEnv = { ...env, PUBLIC_BASE_URL: env.PUBLIC_BASE_URL ?? "https://mosques.world" };
     if (controller.cron === WEEKLY_CRON) {
       ctx.waitUntil(weeklyOsmSync(env.DB, fetch, Date.now()));
-      if (await flagsOnForSite(env, [OSM_FLAG])) ctx.waitUntil(resyncStaleCells(env, fetch, Date.now()));
-      if (notifications) {
-        ctx.waitUntil(
-          weeklyDigestStatement(env.DB, Date.now())
-            .run()
-            .then(() => deliverPending(deliveryEnv, { host: "", limit: 300 })),
-        );
-      }
+      ctx.waitUntil(resyncStaleCells(env, fetch, Date.now()));
+      ctx.waitUntil(
+        weeklyDigestStatement(env.DB, Date.now())
+          .run()
+          .then(() => deliverPending(deliveryEnv, { host: "", limit: 300 })),
+      );
       return;
     }
     ctx.waitUntil(env.DB.prepare(CITY_RECOUNT).run());
     ctx.waitUntil(nightly(env));
     // Free open data (Wikidata, Commons, Wikipedia) for a few areas a night, busiest first.
-    if (await flagsOnForSite(env, [ENRICH_FLAG])) ctx.waitUntil(enrichStaleCells(env.DB, fetch, Date.now()));
+    ctx.waitUntil(enrichStaleCells(env.DB, fetch, Date.now()));
     // Monthly open-data export (spec P8), run from the queue so it has a consumer's time budget.
-    if (await flagsOnForSite(env, PHASE8_FLAGS)) ctx.waitUntil(queueMonthlyExport(env, Date.now()));
+    ctx.waitUntil(queueMonthlyExport(env, Date.now()));
     // Safety net for the outbox: anything the queue missed goes out with the nightly run.
-    if (notifications) ctx.waitUntil(deliverPending(deliveryEnv, { host: "", limit: 200 }));
+    ctx.waitUntil(deliverPending(deliveryEnv, { host: "", limit: 200 }));
   },
   async queue(batch: MessageBatch, env: Env) {
     for (const message of batch.messages) {

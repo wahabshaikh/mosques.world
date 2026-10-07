@@ -7,7 +7,6 @@ import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
-import { phase7Enabled } from "@/lib/phase";
 import { civilDate, formatHijri, getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { daysIn, monthValues } from "@/lib/timetable";
 import { formatTime12, IQAMAH_PRAYERS, madhabLabel, methodLabel } from "@/lib/trust/facts";
@@ -41,7 +40,6 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 /** The whole month: calculated adhan and the iqamah for each date (spec P7). */
 export default async function TimetablePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Search> }) {
-  if (!(await phase7Enabled())) notFound();
   const { slug } = await params;
   const resolved = await resolvePlaceSlug(slug);
   if (!resolved) notFound();

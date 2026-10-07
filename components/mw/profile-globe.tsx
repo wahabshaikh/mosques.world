@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./maplibre-worker";
 import { useMemo } from "react";
 import Map, { AttributionControl, Layer, NavigationControl, Source, type MapLayerMouseEvent } from "react-map-gl/maplibre";
 import type { ProfilePin } from "@/lib/profile/read";

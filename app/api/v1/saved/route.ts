@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
-import { phase4EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 
@@ -11,7 +10,6 @@ const input = z.object({ placeId: z.string().min(1).max(64) });
 
 /** Save a place to `/saved` (spec P4). */
 export async function POST(request: Request) {
-  if (!(await phase4EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const parsed = input.safeParse(await request.json().catch(() => null));

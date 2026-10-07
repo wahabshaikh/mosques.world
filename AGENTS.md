@@ -8,13 +8,36 @@ Keep this file short and true. When a rule here turns out wrong, fix the rule in
 mosques.world is a community directory of mosques with iqamah times kept accurate by the community,
 plus public profiles that map every mosque someone has prayed in. It is one Cloudflare Worker:
 [vinext](https://github.com/cloudflare/vinext) (the Next.js App Router API on Vite) with D1, R2, KV,
-Queues, Images, Email, Rate Limiting, Turnstile and Workers AI bindings.
+Queues, Images, Email, Rate Limiting, Turnstile and Workers AI bindings. Its sibling project
+[halalfood.world](https://github.com/wahabshaikh/halalfood.world) uses the same stack, layout and workflow.
 
 The spec in [`docs/spec`](docs/spec/README.md) is the source of truth for product, architecture, design
 system, data model and delivery phases. Read the relevant spec section before changing behaviour, and
 update the spec in the same PR when behaviour changes. Environments, bindings, secrets, deploys and
 rollback are in [`docs/deployment.md`](docs/deployment.md); human contributor setup is in
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Stack (identical in mosques.world and halalfood.world)
+
+Both repos share one stack, layout and workflow; keep them in step (same versions of every shared package, same
+config conventions). When you change one of these here, make the same change in the sibling repo.
+
+| Layer | Choice |
+| --- | --- |
+| Runtime | One Cloudflare Worker, `compatibility_date` 2026-09-13, `nodejs_compat`, Workers Logs, source maps |
+| Framework | vinext (Next.js App Router API on Vite 8), React 19, `proxy.ts` for request handling |
+| Data | D1 + Drizzle ORM (hand-written SQL migrations), R2 for media |
+| Auth | Better Auth email one-time codes, Turnstile, Workers Rate Limiting |
+| Email | Cloudflare Email Service `send_email` binding from `salam@<domain>`; Email Routing forwards `salam@` to the maintainer; non-production hosts write to an email sink instead |
+| UI | Tailwind CSS 4 (`@tailwindcss/vite`), shadcn/ui on `radix-ui`, self-hosted Fontsource fonts, MapLibre GL 6 |
+| Observability | Sentry (`@sentry/cloudflare`), DataFast analytics |
+| Environments | Local (Miniflare), Worker Previews per branch (`previews` block, own D1/R2/rate limits, no email binding), production; `lib/environment.ts` decides |
+| Delivery | Workers Builds: `pnpm build`, `pnpm cf:preview` on branches, `pnpm cf:deploy` (Time Travel bookmark → migrations → deploy) on `main` |
+| Tooling | pnpm 10, Node 22, TypeScript 5.9, ESLint 9, Vitest 3 with a coverage gate, Playwright with axe, GitHub Actions CI |
+| Release | No feature flags: what merges to `main` is live |
+
+Product-specific on purpose: mosques.world adds KV, Queues, Images, Workers AI, prayer-time and i18n libraries and
+lucide icons; halalfood.world adds Crisp chat, Hugeicons and Google Places search.
 
 ## Commands
 
@@ -80,7 +103,7 @@ lib/                 domain logic, one module per concern, tests beside the code
   i18n/messages/     server string catalogs, typed against en.ts
   testing/           Vitest stand-ins for cloudflare:workers
 worker/index.ts      Worker entry: fetch (vinext) + queue + scheduled handlers, wrapped in Sentry
-middleware.ts        locale rewrites, headers, CSP
+proxy.ts             locale rewrites, headers, CSP (Next 16 "proxy", formerly middleware)
 migrations/          hand-written D1 SQL, numbered, append-only
 e2e/phase-N/         Playwright suite per delivery phase;  e2e/support/  shared helpers;  e2e/auth/  test-session
 scripts/             ops and dev scripts (tsx): OSM import, preview migrations, shot, dev-session
@@ -88,17 +111,16 @@ docs/spec/           the spec;  docs/runbooks/  per-phase rollout;  docs/deploym
 design/              design canvas snapshot (reference only, not app code)
 ```
 
-## Rules that keep phases from breaking each other
+## Rules that keep production safe
 
 From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 
 1. **Migrations are additive.** No `DROP`/`RENAME` of anything deployed code still reads. Expand,
-   migrate, contract across at least two releases.
+   migrate, contract across at least two releases. CI fails a PR that edits or deletes a merged migration.
 2. **URLs are permanent.** Never remove a route; a renamed route gets a 308.
 3. **Fact keys** (`iqamah.asr`, `amenity.women_section`) are stable strings: add, never repurpose.
-4. **New user-facing work ships behind a KV flag** in [`lib/flags.ts`](lib/flags.ts), gated via
-   [`lib/phase.ts`](lib/phase.ts). Flags default **on** outside production (localhost and Previews, per
-   `lib/environment.ts`) and **off** in production.
+4. **No feature flags.** Everything on `main` is live. Ship complete, releasable slices; work that isn't
+   ready stays on its branch, where its Worker Preview shows it. `isNonProductionHost` gates test hooks only.
 5. **`/api/v1` is versioned**: additive changes only. Update [`lib/openapi.ts`](lib/openapi.ts) for public endpoints.
 6. **Email templates and analytics goal names are append-only.** Goals are `snake_case`, never carry PII.
 
@@ -107,13 +129,14 @@ From [spec §2.10](docs/spec/02-architecture.md). These are hard rules.
 - TypeScript strict, ESM, `@/` imports from the repo root. Unused vars must start with `_`.
 - Read bindings with `appEnv()` from `@/lib/db/client`, never `process.env`. A new binding goes in
   `wrangler.jsonc` at the top level **and** in `previews` (pointed at a preview resource), and in the
-  `AppEnv` type. Never add queue producers, `send_email`, routes or crons to `previews`.
+  `AppEnv` type. Never add queue producers, `send_email`, routes or crons to `previews`;
+  `lib/wrangler-config.test.ts` fails CI if a Preview shares a production resource.
 - Test-only behaviour (fixtures, the email sink, `x-mw-*` headers) is gated with `isNonProductionHost`
   from `lib/environment.ts`, never a raw hostname check.
 - Validate every input at the boundary with zod. Use D1 prepared statements with `.bind()`; never
   interpolate user input into SQL.
 - Mutating route handlers follow the pattern in [`app/api/v1/saved/route.ts`](app/api/v1/saved/route.ts):
-  flag check → `apiUser(request, { mutate: true })` → zod → rate limit (`writeAllowed`) → D1 →
+  `apiUser(request, { mutate: true })` → zod → rate limit (`writeAllowed`) → D1 →
   `Response.json` / `jsonError`. Error strings are user-facing sentences.
 - Dates and times are computed in the **place's** IANA timezone (`@date-fns/tz`), never the server's.
 - User-visible strings on localized pages go through the i18n catalogs; layouts use logical
@@ -131,16 +154,16 @@ Never do these unless a human explicitly asked for that specific action in this 
 
 - `pnpm deploy`, `pnpm deploy:preview`, `pnpm cf:deploy`, `pnpm cf:preview`, `wrangler deploy`,
   `wrangler preview`, `wrangler rollback`, or anything with `--remote` (D1, KV, R2).
-- `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler secret put`, Cloudflare dashboard settings,
-  DNS, or production KV flags.
+- `pnpm db:migrate:preview` / `db:migrate:remote`, `wrangler versions upload` (it would publish a version
+  with production bindings), `wrangler secret put`, Cloudflare dashboard settings, DNS, or production KV.
 - Never commit secrets. Local secrets live in `.dev.vars` (gitignored).
 
 ## Git and PRs
 
 - Branch from `main`; never push to `main`. Open PRs as **drafts**.
 - Commit subjects are short imperative sentences ("Serve /favicon.ico and …"); one logical change per commit.
-- Fill in [the PR template](.github/pull_request_template.md): before/after, how, rollout (flags,
-  migrations, secrets) and checks, including the "Not verified:" line. Try UI changes on the PR's Preview URL.
+- Fill in [the PR template](.github/pull_request_template.md): before/after, how, rollout
+  (migrations, secrets) and checks, including the "Not verified:" line. Try UI changes on the PR's Preview URL.
 - A delivery phase also updates `docs/runbooks/phase-N.md` and its acceptance E2E in `e2e/phase-N/`.
 
 ## Agent tooling
@@ -152,6 +175,6 @@ plain Markdown, so other agents can read them too:
 | Playbook | Use it to |
 | --- | --- |
 | [`preflight`](.claude/skills/preflight/SKILL.md) | run the pre-push checks and report results |
-| [`ship-feature`](.claude/skills/ship-feature/SKILL.md) | build a feature end to end (flag, data, logic, UI, tests, runbook, PR) |
+| [`ship-feature`](.claude/skills/ship-feature/SKILL.md) | build a feature end to end (data, logic, UI, tests, runbook, PR) |
 | [`d1-migration`](.claude/skills/d1-migration/SKILL.md) | write and apply a D1 migration safely |
 | [`steward`](.claude/skills/steward/SKILL.md) | drive an open PR to green |

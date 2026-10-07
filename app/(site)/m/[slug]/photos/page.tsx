@@ -6,7 +6,6 @@ import { ReportPhoto } from "@/components/mw/report-photo";
 import { appEnv } from "@/lib/db/client";
 import { resolvePlaceSlug } from "@/lib/db/queries";
 import { placePhotos } from "@/lib/media";
-import { phase3Enabled } from "@/lib/phase";
 import { PHOTO_CATEGORIES, photoUrl } from "@/lib/photos";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +18,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function PhotosPage({ params }: { params: Promise<{ slug: string }> }) {
-  if (!(await phase3Enabled())) notFound();
   const { slug } = await params;
   const resolved = await resolvePlaceSlug(slug);
   if (!resolved) notFound();

@@ -1,5 +1,4 @@
 import { appEnv } from "@/lib/db/client";
-import { phase8EnabledFor } from "@/lib/phase";
 import { apiError, findPlace, guardKey, placeDetail } from "@/lib/public-api";
 import { placeFacts } from "@/lib/trust/read";
 
@@ -7,7 +6,6 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/v1/public/places/{id|slug} — details with standing iqamah, Jumu'ah and amenities. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase8EnabledFor(request))) return apiError("Not found", 404);
   const env = appEnv();
   const guarded = await guardKey(request, env);
   if ("response" in guarded) return guarded.response;

@@ -2,7 +2,6 @@ import { checkinInput, CheckinError, createCheckin } from "@/lib/checkins";
 import { appEnv } from "@/lib/db/client";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase4EnabledFor } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { recomputeUserStats } from "@/lib/profile/stats";
 import { writeAllowed } from "@/lib/ratelimit";
@@ -19,7 +18,6 @@ function isoDate(parts: { year: number; month: number; day: number }) {
  * place; it is never stored. Stats are rebuilt inline so the reply can celebrate a new country or badge.
  */
 export async function POST(request: Request) {
-  if (!(await phase4EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

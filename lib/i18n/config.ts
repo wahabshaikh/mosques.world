@@ -1,6 +1,6 @@
 /**
  * Locales (spec P8). Prefixed routes `/{locale}/…` sit alongside the unprefixed ones, which stay
- * English so no existing URL changes; the middleware rewrites a prefixed path onto the same page
+ * English so no existing URL changes; the proxy rewrites a prefixed path onto the same page
  * and passes the locale in `x-mw-locale`.
  */
 

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { appEnv } from "@/lib/db/client";
 import { usesEmailSink } from "@/lib/email/send";
-import { phase7EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 import { extractTimetable } from "@/lib/timetable";
@@ -12,7 +11,6 @@ const input = z.object({ photoId: z.string().min(1).max(64), month: z.string().r
 
 /** Reads a timetable photo into rows for the review grid (spec P7). Nothing is saved here. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase7EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const parsed = input.safeParse(await request.json().catch(() => null));

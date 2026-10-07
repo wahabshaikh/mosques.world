@@ -49,6 +49,8 @@ test.describe("phase 3 amenities, places and photos", () => {
     const page = member.page;
     await visit(page, "/search?where=Hounslow&lat=51.45&lng=-0.38&z=11");
     await expect(page.locator("[data-place-card]").filter({ hasText: "Hounslow Muslim Centre" })).toBeVisible();
+    // An area fill refreshes the page when it finishes; a click before then is undone.
+    await expect(page.locator("[data-filling]")).toHaveAttribute("data-filling", "idle", { timeout: 30_000 });
     await page.getByRole("button", { name: "Women's section" }).click();
     await expect(page).toHaveURL(/needs=women_section/);
     await expect(page.locator("[data-place-card]").filter({ hasText: "Baitul Wahid" })).toBeVisible();

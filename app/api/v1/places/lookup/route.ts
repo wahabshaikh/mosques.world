@@ -1,7 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { placesContext, placesDailyCap } from "@/lib/places/context";
 import { autocompletePlaces, takeLookup } from "@/lib/places/google";
-import { osmEnabledFor, phase3EnabledFor } from "@/lib/phase";
 import { suggestMosques } from "@/lib/db/queries";
 import { searchPlaces } from "@/lib/geocode";
 import { apiUser, jsonError } from "@/lib/session";
@@ -10,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 /** Places Autocomplete for the add form (session token per search, capped per user and per day). */
 export async function GET(request: Request) {
-  if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request);
   if ("response" in guarded) return guarded.response;
   const url = new URL(request.url);
@@ -21,7 +19,7 @@ export async function GET(request: Request) {
   const context = placesContext(env, url.hostname);
   // A Places fixture written by E2E (non-production only) takes precedence over the free search.
   const fixture = context.mocks && (await env.CACHE.get("test:places:autocomplete")) !== null;
-  if (!fixture && (await osmEnabledFor(request))) {
+  if (!fixture) {
     // Free: mosques already listed (so people open them instead of adding a duplicate), then Photon.
     const lat = Number(url.searchParams.get("lat"));
     const lng = Number(url.searchParams.get("lng"));

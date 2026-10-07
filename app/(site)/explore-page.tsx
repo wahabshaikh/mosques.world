@@ -3,7 +3,6 @@ import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
-import { enrichEnabled, osmEnabled, phase2Enabled, phase3Enabled } from "@/lib/phase";
 import { geocodeWhere } from "@/lib/geocode";
 import { formatTime12 } from "@/lib/trust/facts";
 import { areaNeedsFill } from "@/lib/osm-fill";
@@ -25,12 +24,11 @@ export async function ExplorePage({
     const value = params[key];
     return Array.isArray(value) ? value[0] : value;
   };
-  const osm = await osmEnabled();
   // A shared link like /search?where=Karachi has no coordinates: look the place up instead of
   // silently showing the visitor's own area under someone else's label.
   const where = one("where")?.trim();
   const hasPoint = Number.isFinite(Number(one("lat") ?? "x")) && Number.isFinite(Number(one("lng") ?? "x"));
-  const found = osm && where && !hasPoint ? await geocodeWhere(where, { cache: appEnv().CACHE }).catch(() => null) : null;
+  const found = where && !hasPoint ? await geocodeWhere(where, { cache: appEnv().CACHE }).catch(() => null) : null;
   const view = resolveExploreView({
     where: found?.label ?? one("where"),
     lat: found?.lat != null ? String(found.lat) : one("lat"),
@@ -42,21 +40,16 @@ export async function ExplorePage({
     headerLng: headerList.get("x-mw-longitude"),
   });
   const now = readNow(headerList.get("x-mw-now"), isNonProductionHost(host));
-  const community = await phase2Enabled();
-  const sort = community ? asSort(one("sort")) : "distance";
-  const verifiedOnly = community && one("verified") === "1";
-  const amenitiesOn = community && (await phase3Enabled());
-  const needs = amenitiesOn ? parseNeeds(params.needs) : [];
-  const photos = await enrichEnabled();
+  const sort = asSort(one("sort"));
+  const verifiedOnly = one("verified") === "1";
+  const needs = parseNeeds(params.needs);
   const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
-  const needsFill = osm
-    ? await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
-        console.error("Area fill check failed", error);
-        return false;
-      })
-    : false;
+  const needsFill = await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
+    console.error("Area fill check failed", error);
+    return false;
+  });
   const cards = sortCards(
-    places.map((place) => toCard(place, now, { photos })),
+    places.map((place) => toCard(place, now, { photos: true })),
     sort,
   ).slice(0, 60);
   const anchor = places[0];
@@ -93,11 +86,8 @@ export async function ExplorePage({
       turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
       sort={sort}
       verifiedOnly={verifiedOnly}
-      community={community}
       needs={needs}
-      amenities={amenitiesOn}
       fillBbox={needsFill ? view.bbox : null}
-      osm={osm}
       areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, // The visitor's country only describes the area when the view is where they are, not a place they searched.
             await countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null)) : null}
     />

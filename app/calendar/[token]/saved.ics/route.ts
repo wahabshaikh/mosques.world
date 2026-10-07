@@ -4,7 +4,6 @@ import { calendar, placeEvents, readFeedToken } from "@/lib/ics";
 import { secretOf } from "@/lib/notify";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase7EnabledFor } from "@/lib/phase";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +11,6 @@ const DAYS = 14;
 
 /** A person's saved mosques as one calendar feed (spec P7); the signed token stands in for sign-in. */
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
-  if (!(await phase7EnabledFor(request))) return new Response("Not found", { status: 404 });
   const { token } = await params;
   const url = new URL(request.url);
   const env = appEnv();

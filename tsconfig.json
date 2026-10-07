@@ -17,6 +17,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["app", "components", "lib", "worker", "scripts", "e2e", "*.ts", "middleware.ts"],
+  "include": ["app", "components", "lib", "worker", "scripts", "e2e", "*.ts"],
   "exclude": ["node_modules", "dist", ".wrangler"]
 }

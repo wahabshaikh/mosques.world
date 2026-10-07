@@ -167,7 +167,7 @@ export async function deliverPending(env: DeliverEnv, input: { host: string; ori
   const pushResults: Array<[string, string]> = [];
   const vapid =
     env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
-      ? { subject: env.VAPID_SUBJECT ?? "mailto:hello@mosques.world", publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY }
+      ? { subject: env.VAPID_SUBJECT ?? "mailto:salam@mosques.world", publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY }
       : null;
   const pushEnabled = await loadPrefs(env.DB, [...new Set(pushes.map((row) => row.user_id))]);
   for (const row of pushes) {
@@ -255,8 +255,7 @@ export function weeklyDigestStatement(db: D1Database, now: number, limit = 300) 
 }
 
 /** Route helper: deliver anything a contribution just queued, when Phase 6 is on for this request. */
-export async function afterContribution(env: DeliverEnv, request: Request, enabled: boolean) {
-  if (!enabled) return;
+export async function afterContribution(env: DeliverEnv, request: Request) {
   try {
     const url = new URL(request.url);
     const sent = await kickDelivery(env, url.hostname, url.origin);

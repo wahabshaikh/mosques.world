@@ -1,5 +1,9 @@
 # Phase 1 runbook
 
+> **Feature flags were removed in October 2026** (every phase was at 100%). This phase is always live; the flag
+> steps below are history. Roll back with the previous Worker version.
+
+
 ## What is live
 
 Public directory: explore, search, mosque pages with calculated adhan times, city and country pages, sitemap, and waitlist double opt-in.
@@ -44,7 +48,7 @@ minutes, finished cells re-sync after 30 days via the weekly cron. Cells with 10
 original seed (London, Istanbul) are left to the weekly city sync. The same flag switches "Where" search,
 `/search?where=` links and add-a-place search from Google Places to Photon (free, KV-cached).
 
-- Turn on: `wrangler kv key put --binding FLAGS places.osm on --remote` (human step).
+- Always on (feature flags were removed in October 2026).
 - Watch: Workers Logs for `Area fill failed for …` (Overpass 429/504 on every mirror).
 - Inspect: `SELECT status, COUNT(*), SUM(inserted) FROM osm_cell GROUP BY status`.
 - Turn off: set the flag to `off`; filled places stay (they are ordinary directory rows).
@@ -59,7 +63,7 @@ Production is the `mosques-world` Worker on `mosques.world`. Workers Builds depl
 
 ## Email
 
-Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production enqueues the message on `q-email`. The consumer sends it with the Email Service binding from `no-reply@mail.mosques.world` (SPF, DKIM, and DMARC on `mail.mosques.world`).
+Waitlist confirmation is stored in D1. Preview and localhost copy the message into KV (`email:latest`) for the test sink at `/api/v1/test/emails`. Production enqueues the message on `q-email`. The consumer sends it with the Email Service binding from `salam@mosques.world` (SPF, DKIM, and DMARC on `mosques.world`).
 
 ## Known gaps before the definition of done is fully closed
 

@@ -1,13 +1,11 @@
 import { appEnv } from "@/lib/db/client";
 import { ulid } from "@/lib/id";
-import { phase3EnabledFor } from "@/lib/phase";
 import { apiUser, jsonError } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 /** A contributor (L1+) other than the creator confirms a pending place exists; it goes public. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase3EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

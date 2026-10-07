@@ -1,7 +1,8 @@
 import type { AppEnv } from "@/lib/db/client";
 import type { Mail } from "./templates";
 
-export const MAIL_FROM = "no-reply@mail.mosques.world";
+/** Sends and receives: Email Routing forwards salam@mosques.world to the maintainer. */
+export const MAIL_FROM = "salam@mosques.world";
 
 export function usesEmailSink(env: Pick<AppEnv, "EMAIL_SINK">, host: string): boolean {
   return env.EMAIL_SINK === "1" || host === "localhost" || host === "127.0.0.1";

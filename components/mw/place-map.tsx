@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./maplibre-worker";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";

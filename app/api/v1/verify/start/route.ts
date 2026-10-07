@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { CHECKIN_PRAYER_LABELS, CheckinError, createCheckin, defaultPrayer } from "@/lib/checkins";
 import { appEnv } from "@/lib/db/client";
-import { phase5EnabledFor } from "@/lib/phase";
 import { recomputeUserStats } from "@/lib/profile/stats";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
@@ -18,7 +17,6 @@ const input = z.object({ placeId: z.string().min(1).max(64), location: locationI
  * up to three questions for this person.
  */
 export async function POST(request: Request) {
-  if (!(await phase5EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

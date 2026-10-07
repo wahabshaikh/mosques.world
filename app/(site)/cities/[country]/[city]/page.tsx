@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlaceRowContent } from "@/components/mw/place-row";
 import { cityBySlug, placesInCity } from "@/lib/db/queries";
-import { enrichEnabled } from "@/lib/phase";
 import { toCard } from "@/lib/places/present";
 import { countryName } from "@/lib/utils";
 
@@ -28,8 +27,7 @@ export default async function CityPage({ params }: { params: Promise<Params> }) 
   if (!city) notFound();
   const places = await placesInCity(country, citySlug);
   const now = new Date();
-  const photos = await enrichEnabled();
-  const cards = places.map((place) => toCard(place, now, { photos }));
+  const cards = places.map((place) => toCard(place, now, { photos: true }));
   const iqamahCount = cards.filter((card) => card.verifiers > 0).length;
   const jsonLd = {
     "@context": "https://schema.org",

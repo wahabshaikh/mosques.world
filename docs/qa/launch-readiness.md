@@ -87,10 +87,7 @@ proxy; they load in production.
 
 1. Merge: migration `0011_launch.sql` (new `osm_cell` table, nullable `place.adhan_adjust_json`) is
    additive and applies automatically.
-2. Turn on, in this order, checking the site between steps:
-   `places.osm` → `phase2.contributions` → `phase3.places` → `phase4.profiles` → `phase5.mobile` →
-   `phase6.stewards` → `phase7.timetables` → `phase8.global`
-   (`wrangler kv key put --binding FLAGS <flag> on --remote`). Phase 2 needs `BETTER_AUTH_SECRET` (required in
+2. Every phase is live (feature flags were removed in October 2026 after all were on). Phase 2 needs `BETTER_AUTH_SECRET` (required in
    production) and the Email Service sender; Turnstile, VAPID (push) and Google sign-in are optional
    (`docs/deployment.md`).
 3. Watch Workers Logs for `Area fill failed` and the `osm_cell` status counts in the first days.

@@ -9,7 +9,6 @@ import type { ReactNode } from "react";
 import { ConsentBanner } from "@/components/mw/consent";
 import { HoistMetadata } from "@/components/mw/hoist-metadata";
 import { Pwa } from "@/components/mw/pwa";
-import { phase5Enabled } from "@/lib/phase";
 import { Toaster } from "@/components/ui/sonner";
 import { appEnv } from "@/lib/db/client";
 import { direction } from "@/lib/i18n/config";
@@ -37,7 +36,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "#0B6E4F" };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const pwa = await phase5Enabled().catch(() => false);
   const locale = await getLocale();
   let websiteId: string | undefined;
   try {
@@ -52,7 +50,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TextProvider messages={clientMessages(locale)}>{children}</TextProvider>
           <Toaster />
-          {pwa ? <Pwa /> : null}
+          <Pwa />
           <ConsentBanner websiteId={websiteId} />
         </ThemeProvider>
       </body>

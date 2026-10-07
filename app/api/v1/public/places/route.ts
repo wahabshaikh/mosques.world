@@ -1,7 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { placesInBbox } from "@/lib/db/queries";
 import { bboxAround } from "@/lib/geo/distance";
-import { phase8EnabledFor } from "@/lib/phase";
 import { apiError, guardKey, placeFeature } from "@/lib/public-api";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +9,6 @@ const MAX_SPAN = 2;
 
 /** GET /api/v1/public/places?bbox=w,s,e,n | ?lat=&lng=&radius_km= — a GeoJSON FeatureCollection. */
 export async function GET(request: Request) {
-  if (!(await phase8EnabledFor(request))) return apiError("Not found", 404);
   const env = appEnv();
   const guarded = await guardKey(request, env);
   if ("response" in guarded) return guarded.response;

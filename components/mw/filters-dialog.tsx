@@ -25,7 +25,7 @@ export function NeedIcon({ slug }: { slug: NeedSlug }) {
 }
 
 /** Filters button with an active count; the dialog itself loads on first open. */
-export function FiltersDialog(props: Selection & { community: boolean; bboxQuery: string; onApply: (selection: Selection) => void }) {
+export function FiltersDialog(props: Selection & { bboxQuery: string; onApply: (selection: Selection) => void }) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const active = props.needs.length + (props.verified ? 1 : 0) + (props.kind !== "all" ? 1 : 0);

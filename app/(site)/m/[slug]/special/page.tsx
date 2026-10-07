@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { SpecialForm } from "@/components/mw/special-form";
 import { appEnv } from "@/lib/db/client";
 import { placeBySlug } from "@/lib/db/queries";
-import { phase7Enabled } from "@/lib/phase";
 import { civilDate } from "@/lib/prayer/times";
 import { requireUser } from "@/lib/session";
 import { stewardStatus } from "@/lib/stewards";
@@ -13,7 +12,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Add Eid or Taraweeh times", robots: { index: false } };
 
 export default async function SpecialPage({ params }: { params: Promise<{ slug: string }> }) {
-  if (!(await phase7Enabled())) notFound();
   const { slug } = await params;
   const place = await placeBySlug(slug);
   if (!place || place.status !== "active") notFound();

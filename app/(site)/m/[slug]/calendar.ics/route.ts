@@ -3,7 +3,6 @@ import { placeBySlug } from "@/lib/db/queries";
 import { calendar, placeEvents } from "@/lib/ics";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow } from "@/lib/places/present";
-import { phase7EnabledFor } from "@/lib/phase";
 import { monthValues } from "@/lib/timetable";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +11,6 @@ const DAYS = 30;
 
 /** 30 rolling days of iqamah events for one mosque (spec P7), in the mosque's time zone. */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
-  if (!(await phase7EnabledFor(request))) return new Response("Not found", { status: 404 });
   const { slug } = await params;
   const place = await placeBySlug(slug);
   if (!place || place.status !== "active") return new Response("Not found", { status: 404 });

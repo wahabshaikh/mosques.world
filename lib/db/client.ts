@@ -5,7 +5,6 @@ import * as schema from "./schema";
 export type AppEnv = {
   DB: D1Database;
   MEDIA: R2Bucket;
-  FLAGS: KVNamespace;
   CACHE: KVNamespace;
   ASSETS: Fetcher;
   PUBLIC_BASE_URL: string;

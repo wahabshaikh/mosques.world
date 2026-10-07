@@ -1,13 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { contentSecurityPolicy } from "@/lib/csp";
-import { appEnv } from "@/lib/db/client";
 import { isNonProductionHost } from "@/lib/environment";
-import { flagEnabled, PHASE8_FLAG } from "@/lib/flags";
 import { DEFAULT_LOCALE, splitLocale, type Locale } from "@/lib/i18n/config";
 
 type CfFields = { latitude?: string | number; longitude?: string | number; country?: string };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.nextUrl.hostname;
   if (host === "www.mosques.world") {
     const url = request.nextUrl.clone();
@@ -23,7 +21,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
   let locale: Locale | null = null;
-  if (split && (await localesOn(request, host))) locale = split.locale;
+  if (split) locale = split.locale;
 
   // Profiles live at app/(site)/u/[username] because `@folders` are parallel-route slots; `/@name`
   // is the canonical URL and `/u/name` 308-redirects to it (spec 4.2).
@@ -91,15 +89,6 @@ export async function middleware(request: NextRequest) {
     response.headers.set("Cache-Control", "private, no-store");
   }
   return response;
-}
-
-/** Localized routes are dark-launched with Phase 8; while off, `/ar/…` is simply not found. */
-async function localesOn(request: NextRequest, host: string): Promise<boolean> {
-  try {
-    return await flagEnabled(appEnv().FLAGS, PHASE8_FLAG, { host, bucketKey: request.headers.get("cf-connecting-ip") ?? host });
-  } catch {
-    return false;
-  }
 }
 
 export const config = {

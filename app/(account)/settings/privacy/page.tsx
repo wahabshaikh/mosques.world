@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { CheckinList, PrivacyForm } from "@/components/mw/privacy-settings";
 import { appEnv } from "@/lib/db/client";
 import { asCheckinVisibility } from "@/lib/checkin-options";
-import { phase4Enabled } from "@/lib/phase";
 import { requireUser } from "@/lib/session";
 import { SettingsShell } from "../settings-nav";
 
@@ -11,7 +9,6 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Privacy settings", robots: { index: false } };
 
 export default async function PrivacySettingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  if (!(await phase4Enabled())) notFound();
   const user = await requireUser("/settings/privacy");
   const shown = Math.min(Math.max(Number((await searchParams).n) || 50, 50), 500);
   const rows = await appEnv()

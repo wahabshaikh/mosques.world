@@ -49,7 +49,8 @@
       "Bash(wrangler preview *)",
       "Bash(pnpm exec wrangler preview *)",
       "Bash(* wrangler rollback *)",
-      "Bash(wrangler rollback *)"
+      "Bash(wrangler rollback *)",
+      "Bash(* versions upload *)"
     ]
   },
   "hooks": {

@@ -59,7 +59,7 @@ flowchart TD
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | 1/5 | generated | public | SEO/PWA |
 
 **`/@username` note:** folders starting with `@` are parallel-route slots in the App Router, so
-profile pages live at `app/(site)/u/[username]` and `middleware.ts` rewrites `/@:username(/.*)?`
+profile pages live at `app/(site)/u/[username]` and `proxy.ts` rewrites `/@:username(/.*)?`
 to `/u/:username$1`. `/u/:username` itself 308-redirects to the `@` form (one canonical URL).
 Usernames: `^[a-z0-9._]{3,30}$`, reserved list (`admin`, `api`, `m`, `u`, `settings`, …).
 

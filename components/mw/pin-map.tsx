@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./maplibre-worker";
 import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";
 
 /** Map with one pin: draggable on the add form, fixed on the mosque page (loaded on demand). */
@@ -28,7 +29,7 @@ export default function PinMap({
           draggable={Boolean(onChange)}
           onDragEnd={(event) => onChange?.(Number(event.lngLat.lat.toFixed(7)), Number(event.lngLat.lng.toFixed(7)))}
         >
-          <span aria-label={onChange ? "Place location, draggable" : "Place location"} className="block size-9 rounded-full border-4 border-white bg-primary shadow-lg" />
+          <span role="img" aria-label={onChange ? "Place location, draggable" : "Place location"} className="block size-9 rounded-full border-4 border-white bg-primary shadow-lg" />
         </Marker>
       </Map>
     </div>

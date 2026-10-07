@@ -1,5 +1,4 @@
 import { appEnv } from "@/lib/db/client";
-import { phase7EnabledFor } from "@/lib/phase";
 import { writeAllowed } from "@/lib/ratelimit";
 import { apiUser, jsonError } from "@/lib/session";
 import { addSpecialPrayer, specialInput } from "@/lib/special";
@@ -8,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 /** Adds Eid / Taraweeh / Tahajjud times (spec P7): contributors (level 1+) and the place's stewards. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await phase7EnabledFor(request))) return jsonError("Not found", 404);
   const guarded = await apiUser(request, { mutate: true });
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;

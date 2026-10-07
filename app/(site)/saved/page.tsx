@@ -2,12 +2,10 @@ import { CircleAlert } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { UnsaveButton } from "@/components/mw/unsave-button";
 import { savedPlaces } from "@/lib/db/queries";
 import { isNonProductionHost } from "@/lib/environment";
 import { readNow, toCard } from "@/lib/places/present";
-import { enrichEnabled, phase4Enabled, phase5Enabled, phase7Enabled } from "@/lib/phase";
 import { PlaceThumb } from "@/components/mw/place-row";
 import { CalendarLink } from "@/components/mw/calendar-link";
 import { appEnv } from "@/lib/db/client";
@@ -21,15 +19,12 @@ export const metadata: Metadata = { title: "Saved places", robots: { index: fals
 
 /** Saved places with today's next iqamah and any "change reported" warning (spec 4.3 Saved). */
 export default async function SavedPage() {
-  if (!(await phase4Enabled())) notFound();
   const user = await requireUser("/saved");
   const headerList = await headers();
   const host = headerList.get("host")?.split(":")[0] ?? "";
   const now = readNow(headerList.get("x-mw-now"), isNonProductionHost(host));
-  const photos = await enrichEnabled();
-  const cards = (await savedPlaces(user.id)).map((place) => toCard(place, now, { photos }));
-  const offline = await phase5Enabled();
-  const feed = (await phase7Enabled()) ? `/calendar/${await feedToken(secretOf(appEnv(), host), user.id)}/saved.ics` : null;
+  const cards = (await savedPlaces(user.id)).map((place) => toCard(place, now, { photos: true }));
+  const feed = `/calendar/${await feedToken(secretOf(appEnv(), host), user.id)}/saved.ics`;
   return (
     <div className="mx-auto max-w-[800px] px-4 py-10 lg:px-6">
       <h1 className="text-3xl font-bold tracking-tight">Saved</h1>
@@ -72,7 +67,7 @@ export default async function SavedPage() {
           ))}
         </ul>
       )}
-      {offline && cards.length > 0 ? <SavedWeek /> : null}
+      {cards.length > 0 ? <SavedWeek /> : null}
       {feed && cards.length > 0 ? (
         <p className="mt-8 text-sm">
           <CalendarLink path={feed} label="Add your saved mosques' iqamah times to your calendar" scope="saved" />
