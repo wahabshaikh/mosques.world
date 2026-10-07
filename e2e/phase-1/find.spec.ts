@@ -25,6 +25,32 @@ test.describe("phase 1 find a mosque", () => {
     expect(results.violations.filter((item) => item.impact === "serious" || item.impact === "critical")).toEqual([]);
   });
 
+  test("moving the map offers Search this area instead of reloading on every move", async ({ page }) => {
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto("/search?where=London&lat=51.5074&lng=-0.1278&z=12");
+    await waitForApp(page);
+    const map = page.getByTestId("place-map");
+    await expect(map.locator("canvas")).toBeVisible();
+    await expect(page.getByTestId("search-area")).toHaveCount(0);
+    const url = page.url();
+    // Zooming out shows more than the list was loaded for.
+    await map.getByRole("button", { name: "Zoom out" }).click();
+    await map.getByRole("button", { name: "Zoom out" }).click();
+    const button = page.getByRole("button", { name: "Search this area" });
+    await expect(button).toBeVisible();
+    // Nothing loads until asked.
+    expect(page.url()).toBe(url);
+    const canvas = await map.locator("canvas").elementHandle();
+    await button.click();
+    await expect(page).toHaveURL(/bbox=/);
+    await expect(page).toHaveURL(/where=Map\+area/);
+    // The zoom the visitor chose is kept, not reset to the one the page loaded with.
+    await expect(page).toHaveURL(/z=1[01](\.\d+)?(&|$)/);
+    await expect(page.getByTestId("search-area")).toHaveCount(0);
+    // The same map instance stays on screen: no remount, no jump back.
+    expect(await canvas!.evaluate((node) => node.isConnected)).toBe(true);
+  });
+
   test("Istanbul search updates the URL and survives reload", async ({ page }) => {
     // Geocode searches are counted per IP per hour, so a fixed IP gets blocked after a few local re-runs.
     await page.setExtraHTTPHeaders({ "cf-connecting-ip": `203.0.113.${Math.floor(Math.random() * 250) + 1}` });

@@ -33,6 +33,9 @@ function lngScale(lat: number): number {
   return Math.max(0.01, Math.cos((lat * Math.PI) / 180));
 }
 
+/** Most places one map search loads (nearest first). */
+export const PLACES_LIMIT = 500;
+
 export async function placesInBbox(
   bbox: Bbox,
   kind: "all" | "mosque" | "prayer_room",
@@ -60,7 +63,7 @@ export async function placesInBbox(
     .where(and(...filters))
     // Nearest first in SQL, so a dense city (thousands of mosques in view) still returns the closest ones.
     .orderBy(sql`((${place.lat} - ${origin.lat}) * (${place.lat} - ${origin.lat}) + ((${place.lng} - ${origin.lng}) * ${lngScale(origin.lat)}) * ((${place.lng} - ${origin.lng}) * ${lngScale(origin.lat)}))`)
-    .limit(500);
+    .limit(PLACES_LIMIT);
   return rows
     .map((row) => withMeta(row.place, row.highLat, origin))
     .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));

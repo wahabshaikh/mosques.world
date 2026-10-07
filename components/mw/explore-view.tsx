@@ -3,8 +3,10 @@
 import { LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { track } from "@/lib/analytics";
+import type { Bbox } from "@/lib/geo/distance";
+import { bboxParam } from "@/lib/places/map-view";
 import type { PlaceKindFilter } from "@/lib/places/view";
 import type { ExploreSort } from "@/lib/places/present";
 import { NEED_FILTERS, type NeedSlug } from "@/lib/places/needs";
@@ -12,7 +14,7 @@ import { FiltersDialog, NeedIcon } from "./filters-dialog";
 
 const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
 import { cn } from "@/lib/utils";
-import { PlaceMap } from "./place-map";
+import { PlaceMap, type MapArea } from "./place-map";
 import { PlaceRowContent } from "./place-row";
 import type { AreaTimes } from "@/lib/places/area-times";
 
@@ -57,6 +59,9 @@ export function ExploreView({
   fillBbox = null,
   areaTimes = null,
   nextPrayer = null,
+  searchedBbox,
+  mapArea = false,
+  truncated = false,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -76,6 +81,12 @@ export function ExploreView({
   areaTimes?: AreaTimes | null;
   /** The next calculated adhan in this area, for the overline above the list. */
   nextPrayer?: { label: string; time: string } | null;
+  /** The area the places were loaded for. */
+  searchedBbox: Bbox;
+  /** The searched area came from "Search this area", so filter changes keep it. */
+  mapArea?: boolean;
+  /** More places matched than were listed. */
+  truncated?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -85,7 +96,8 @@ export function ExploreView({
   const [geoProblem, setGeoProblem] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState(false);
-  const [searchAsMove, setSearchAsMove] = useState(true);
+  const [searchingArea, startAreaSearch] = useTransition();
+  const [fillAttempt, setFillAttempt] = useState(0);
   const [challenge, setChallenge] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
 
@@ -101,46 +113,51 @@ export function ExploreView({
       setFilling("idle");
       return;
     }
-    let cancelled = false;
+    const controller = new AbortController();
     const [west = 0, south = 0, east = 0, north = 0] = fillKey.split(",").map(Number);
     setFilling("loading");
     (async () => {
       // Nearest cells first; each call fills up to two and says how many are left. Cells another visitor
-      // is filling count as busy: wait for them, then look again.
-      for (let round = 0; round < 12 && !cancelled; round += 1) {
+      // is filling count as busy: wait for them, then look again. The page re-renders only when a call
+      // brought new places (or another visitor's fill may have), never for a call that changed nothing.
+      let changed = false;
+      let failed = false;
+      for (let round = 0; round < 12; round += 1) {
         const response = await fetch("/api/v1/places/fill", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ bbox: { west, south, east, north } }),
+          signal: controller.signal,
         }).catch(() => null);
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const body = response?.ok ? ((await response.json().catch(() => null)) as { ok: boolean; inserted: number; remaining: number; busy?: boolean } | null) : null;
+        if (controller.signal.aborted) return;
         if (!body) {
+          if (changed) router.refresh();
           setFilling("error");
           return;
         }
-        if (body.inserted > 0) router.refresh();
-        if (body.remaining === 0 && body.busy) {
-          await new Promise((resolve) => setTimeout(resolve, 2500));
-          continue;
+        failed ||= !body.ok;
+        if (body.inserted > 0) {
+          // Show the nearest mosques as soon as they land; later rounds add the rest.
+          router.refresh();
+          changed = false;
         }
-        if (body.remaining === 0) {
-          if (!cancelled) {
-            router.refresh();
-            setFilling(body.ok ? "idle" : "error");
-          }
+        if (body.remaining > 0) continue;
+        if (!body.busy) {
+          if (changed) router.refresh();
+          setFilling(failed ? "error" : "idle");
           return;
         }
+        changed = true;
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        if (controller.signal.aborted) return;
       }
-      if (!cancelled) {
-        router.refresh();
-        setFilling("idle");
-      }
+      if (changed) router.refresh();
+      setFilling("idle");
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [fillKey, router]);
+    return () => controller.abort();
+  }, [fillKey, fillAttempt, router]);
 
   function locate() {
     if (!("geolocation" in navigator)) {
@@ -264,9 +281,16 @@ export function ExploreView({
     return params;
   }
 
-  function applyFilters(next: { kind: PlaceKindFilter; needs: NeedSlug[]; verified: boolean }) {
+  /** The current view's params; a map-searched area keeps its bbox so filters apply to what's on the map. */
+  function viewParams(nextKind: PlaceKindFilter = kind) {
     const params = new URLSearchParams({ where, lat: String(lat), lng: String(lng), z: String(zoom) });
-    if (next.kind !== "all") params.set("kind", next.kind);
+    if (mapArea) params.set("bbox", bboxParam(searchedBbox));
+    if (nextKind !== "all") params.set("kind", nextKind);
+    return params;
+  }
+
+  function applyFilters(next: { kind: PlaceKindFilter; needs: NeedSlug[]; verified: boolean }) {
+    const params = viewParams(next.kind);
     withFilters(params, { verified: next.verified, needs: next.needs });
     if (!next.verified) params.delete("verified");
     if (!next.needs.length) params.delete("needs");
@@ -277,12 +301,6 @@ export function ExploreView({
 
   function toggleNeed(slug: NeedSlug) {
     applyFilters({ kind, verified: verifiedOnly, needs: needs.includes(slug) ? needs.filter((item) => item !== slug) : [...needs, slug] });
-  }
-
-  function currentParams() {
-    const params = new URLSearchParams({ where, lat: String(lat), lng: String(lng), z: String(zoom) });
-    if (kind !== "all") params.set("kind", kind);
-    return params;
   }
 
   async function choose(item: Suggestion) {
@@ -318,29 +336,37 @@ export function ExploreView({
   }
 
   function setKind(next: PlaceKindFilter) {
-    const params = new URLSearchParams({
-      where,
-      lat: String(lat),
-      lng: String(lng),
-      z: String(zoom),
-    });
-    if (next !== "all") params.set("kind", next);
-    withFilters(params);
+    const params = withFilters(viewParams(next));
     track("search", { has_where: Boolean(where), filters: next });
     router.push(`/search?${params.toString()}`);
   }
 
   function setVerified(next: boolean) {
-    const params = withFilters(currentParams(), { verified: next });
+    const params = withFilters(viewParams(), { verified: next });
     if (!next) params.delete("verified");
     track("search", { has_where: Boolean(where), filters: next ? "verified" : kind });
     router.push(`/search?${params.toString()}`);
   }
 
   function setSort(next: ExploreSort) {
-    const params = withFilters(currentParams(), { sort: next });
+    const params = withFilters(viewParams(), { sort: next });
     if (next === "distance") params.delete("sort");
     router.push(`/search?${params.toString()}`);
+  }
+
+  function searchArea(area: MapArea) {
+    track("map_moved", {});
+    const params = new URLSearchParams({
+      // The old label ("London") would be wrong once the map has moved elsewhere.
+      where: "Map area",
+      lat: area.lat.toFixed(5),
+      lng: area.lng.toFixed(5),
+      z: String(Math.round(area.zoom * 100) / 100),
+      bbox: bboxParam(area.bbox),
+    });
+    if (kind !== "all") params.set("kind", kind);
+    withFilters(params);
+    startAreaSearch(() => router.replace(`/search?${params.toString()}`, { scroll: false }));
   }
 
   return (
@@ -513,7 +539,7 @@ export function ExploreView({
                 </>
               </p>
               {filling === "error" ? (
-                <button type="button" className="mt-3 font-semibold text-primary" onClick={() => router.refresh()}>
+                <button type="button" className="mt-3 font-semibold text-primary" onClick={() => setFillAttempt((value) => value + 1)}>
                   Try again
                 </button>
               ) : null}
@@ -543,26 +569,11 @@ export function ExploreView({
             lat={lat}
             lng={lng}
             zoom={zoom}
+            searchedBbox={searchedBbox}
+            truncated={truncated}
+            searching={searchingArea}
             activeId={activeId}
-            searchAsMove={searchAsMove}
-            onToggleSearchAsMove={() => setSearchAsMove((value) => !value)}
-            onMove={(bbox) => {
-              if (!searchAsMove) return;
-              const nextLat = (bbox.south + bbox.north) / 2;
-              const nextLng = (bbox.west + bbox.east) / 2;
-              if (Math.abs(nextLat - lat) < 0.01 && Math.abs(nextLng - lng) < 0.01) return;
-              track("map_moved", {});
-              const params = new URLSearchParams({
-                where: where || "Map area",
-                lat: String(nextLat),
-                lng: String(nextLng),
-                z: String(zoom),
-                bbox: `${bbox.west.toFixed(4)},${bbox.south.toFixed(4)},${bbox.east.toFixed(4)},${bbox.north.toFixed(4)}`,
-              });
-              if (kind !== "all") params.set("kind", kind);
-              withFilters(params);
-              router.replace(`/search?${params.toString()}`);
-            }}
+            onSearchArea={searchArea}
           />
         </aside>
       </div>
