@@ -1,6 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./maplibre-worker";
 import Map, { Marker, NavigationControl } from "react-map-gl/maplibre";
 
 /** Map with one pin: draggable on the add form, fixed on the mosque page (loaded on demand). */

@@ -344,7 +344,8 @@ export function ExploreView({
   }
 
   return (
-    <div>
+    // data-filling lets E2E wait for an area fill to finish: its router.refresh() would otherwise undo a filter click.
+    <div data-filling={filling}>
       <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-[1440px] px-4 py-4 lg:px-6">
           <form

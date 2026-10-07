@@ -24,8 +24,7 @@ Everything is behind the KV flag `phase2.contributions` in `FLAGS`:
 Flags are cached for 60 s per isolate.
 
 ```bash
-pnpm exec wrangler kv key put --binding FLAGS phase2.contributions 10 --remote   # 10%
-pnpm exec wrangler kv key put --binding FLAGS phase2.contributions on --remote   # 100%
+# Historical: the FLAGS namespace no longer exists.
 ```
 
 When the flag is off, the site is exactly Phase 1: auth and contribution routes return 404 and the
