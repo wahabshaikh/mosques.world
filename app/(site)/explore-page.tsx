@@ -11,6 +11,7 @@ import { isNonProductionHost } from "@/lib/environment";
 import { asSort, madhabOf, readNow, sortCards, toCard } from "@/lib/places/present";
 import { resolveExploreView } from "@/lib/places/view";
 import { areaTimes } from "@/lib/places/area-times";
+import { dateRange } from "@/lib/sources/timetable";
 
 export async function ExplorePage({
   searchParams,
@@ -43,15 +44,22 @@ export async function ExplorePage({
   const sort = asSort(one("sort"));
   const verifiedOnly = one("verified") === "1";
   const needs = parseNeeds(params.needs);
-  const places = await placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs });
-  const needsFill = await areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
-    console.error("Area fill check failed", error);
-    return false;
-  });
+  // Independent reads in parallel: the places, whether this area still needs an OpenStreetMap fill, and
+  // the country's calculation preset (only used when the area has nothing listed yet).
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [places, needsFill, preset] = await Promise.all([
+    placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs, dates: dateRange(yesterday, 4) }),
+    areaNeedsFill(appEnv().DB, view.bbox, Date.now()).catch((error: unknown) => {
+      console.error("Area fill check failed", error);
+      return false;
+    }),
+    // The visitor's country only describes the area when the view is where they are, not a place they searched.
+    countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null),
+  ]);
   const cards = sortCards(
     places.map((place) => toCard(place, now, { photos: true })),
     sort,
-  ).slice(0, 60);
+  );
   const anchor = places[0];
   let nextPrayer: { label: string; time: string } | null = null;
   const subline = anchor
@@ -88,13 +96,20 @@ export async function ExplorePage({
       verifiedOnly={verifiedOnly}
       needs={needs}
       fillBbox={needsFill ? view.bbox : null}
+      approxLocation={approxLocation(headerList.get("x-mw-latitude"), headerList.get("x-mw-longitude"))}
       searchedBbox={view.bbox}
       mapArea={view.fromBbox}
-      truncated={places.length > cards.length || places.length >= PLACES_LIMIT}
-      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, // The visitor's country only describes the area when the view is where they are, not a place they searched.
-            await countryPreset(view.source !== "url" ? headerList.get("x-mw-country") : null)) : null}
+      truncated={places.length >= PLACES_LIMIT}
+      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, preset) : null}
     />
   );
+}
+
+/** The visitor's approximate position from their IP address (Cloudflare's request geo), for the map's dot. */
+function approxLocation(latitude: string | null, longitude: string | null): { lat: number; lng: number } | null {
+  const lat = Number(latitude ?? "x");
+  const lng = Number(longitude ?? "x");
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
 }
 
 /** Map zoom that roughly fits a geocoded area (a country needs ~5, a city ~11). */

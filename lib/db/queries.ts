@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
 import type { HighLatRule, AsrMadhab } from "@/lib/prayer/times";
 import { haversineKm, type Bbox } from "@/lib/geo/distance";
 import { needMasks, type NeedSlug } from "@/lib/places/amenities";
@@ -33,14 +33,36 @@ function lngScale(lat: number): number {
   return Math.max(0.01, Math.cos((lat * Math.PI) / 180));
 }
 
-/** Most places one map search loads (nearest first). */
-export const PLACES_LIMIT = 500;
+/** Most places one map search loads (nearest first): the list shows the nearest, the map pins them all. */
+export const PLACES_LIMIT = 200;
+
+/**
+ * The place columns a list card or map pin needs, trimmed in SQL so a dense area doesn't pull every
+ * Wikipedia extract and two weeks of timetable per mosque out of D1: just the photo thumbnail, and the
+ * timetable days around `dates` (UTC yesterday to the day after tomorrow covers every timezone).
+ */
+function cardColumns(dates: string[]) {
+  const days = dates.length
+    ? sql.join(
+        dates.map((date) => sql`${date}, json(json_extract(${place.timetableJson}, ${`$.days."${date}"`}))`),
+        sql`, `,
+      )
+    : sql``;
+  return {
+    ...getTableColumns(place),
+    enrichmentJson: sql<string | null>`CASE WHEN json_extract(${place.enrichmentJson}, '$.image.thumb') IS NULL THEN NULL
+      ELSE json_object('wikidata', json_extract(${place.enrichmentJson}, '$.wikidata'), 'image', json_object('thumb', json_extract(${place.enrichmentJson}, '$.image.thumb'))) END`.as("enrichment_json"),
+    timetableJson: sql<string | null>`CASE WHEN ${place.timetableJson} IS NULL THEN NULL
+      ELSE json_object('p', json_extract(${place.timetableJson}, '$.p'), 'url', json_extract(${place.timetableJson}, '$.url'),
+        'at', json_extract(${place.timetableJson}, '$.at'), 'days', json_object(${days})) END`.as("timetable_json"),
+  };
+}
 
 export async function placesInBbox(
   bbox: Bbox,
   kind: "all" | "mosque" | "prayer_room",
   origin: { lat: number; lng: number },
-  options: { verifiedOnly?: boolean; needs?: NeedSlug[] } = {},
+  options: { verifiedOnly?: boolean; needs?: NeedSlug[]; dates?: string[] } = {},
 ): Promise<DirectoryPlace[]> {
   const filters = [
     eq(place.status, "active"),
@@ -50,14 +72,15 @@ export async function placesInBbox(
     lte(place.lng, bbox.east),
   ];
   if (kind !== "all") filters.push(eq(place.kind, kind));
-  if (options.verifiedOnly) filters.push(inArray(place.verificationState, ["verified", "partial"]));
+  // "Has times": community-verified iqamah or the mosque's own published timetable.
+  if (options.verifiedOnly) filters.push(or(inArray(place.verificationState, ["verified", "partial"]), isNotNull(place.timetableJson))!);
   if (options.needs?.length) {
     const masks = needMasks(options.needs);
     if (masks.all) filters.push(sql`(${place.amenityBits} & ${masks.all}) = ${masks.all}`);
     for (const mask of masks.any) filters.push(sql`(${place.amenityBits} & ${mask}) != 0`);
   }
   const rows = await db()
-    .select({ place, highLat: calcDefault.highLatRule })
+    .select({ place: cardColumns(options.dates ?? []), highLat: calcDefault.highLatRule })
     .from(place)
     .leftJoin(calcDefault, eq(place.countryCode, calcDefault.countryCode))
     .where(and(...filters))

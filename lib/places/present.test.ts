@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DirectoryPlace } from "@/lib/db/queries";
-import { asSort, madhabOf, readNow, sortCards, toCard } from "./present";
+import { asSort, madhabOf, nextFromTimetable, readNow, sortCards, toCard } from "./present";
 
 const place: DirectoryPlace = {
   id: "elm",
@@ -37,6 +37,7 @@ const place: DirectoryPlace = {
   adhanAdjustJson: null,
   wikidataId: null,
   enrichmentJson: null,
+  timetableJson: null,
   createdAt: 0,
   updatedAt: 0,
   highLatRule: "twilightangle",
@@ -108,5 +109,38 @@ describe("explore upgrades", () => {
     expect(asSort("iqamah")).toBe("iqamah");
     expect(asSort("verified")).toBe("verified");
     expect(asSort(undefined)).toBe("distance");
+  });
+});
+
+describe("the mosque's own timetable", () => {
+  const timetable = {
+    p: "mawaqit" as const,
+    url: "https://mawaqit.net/en/elm",
+    at: 1,
+    days: {
+      "2026-09-24": { a: { fajr: "05:30", dhuhr: "12:58", asr: "16:00", maghrib: "18:55", isha: "20:20" }, i: { fajr: "05:45", dhuhr: "13:30", asr: "16:30", maghrib: "19:00", isha: "20:45" } },
+      "2026-09-25": { a: { fajr: "05:31", dhuhr: "12:57" }, i: { fajr: "05:50" }, j: ["13:15", "14:00"] },
+    },
+  };
+
+  it("leads the card with the mosque's next iqamah, ahead of community and calculated times", () => {
+    const card = toCard({ ...place, timetableJson: JSON.stringify(timetable) }, new Date("2026-09-24T14:00:00Z"));
+    expect(card).toMatchObject({ nextLabel: "Asr", nextTime: "4:30 PM", nextKind: "iqamah", timeSource: "mosque", sourceLabel: "Mawaqit", minutesUntil: 90 });
+    const plain = toCard(place, new Date("2026-09-24T14:00:00Z"));
+    expect(plain).toMatchObject({ timeSource: "calculated", sourceLabel: null, nextKind: "adhan" });
+  });
+
+  it("uses Friday jumu'ah, the mosque's adhan where it has no iqamah, and tomorrow's Fajr late at night", () => {
+    expect(nextFromTimetable(timetable, "2026-09-25", "11:00", true)).toMatchObject({ label: "Jumu'ah", time: "1:15 PM", kind: "iqamah" });
+    expect(nextFromTimetable(timetable, "2026-09-25", "05:55", false)).toMatchObject({ label: "Dhuhr", time: "12:57 PM", kind: "adhan" });
+    expect(nextFromTimetable(timetable, "2026-09-24", "22:00", false)).toMatchObject({ label: "Fajr", time: "5:50 AM", minutes: 350 + 1440 });
+    expect(nextFromTimetable(timetable, "2026-09-25", "22:00", false)).toBeNull();
+    expect(nextFromTimetable(null, "2026-09-25", "22:00", false)).toBeNull();
+  });
+
+  it("ranks the mosque's own times with verified ones", () => {
+    const own = toCard({ ...place, id: "a", timetableJson: JSON.stringify(timetable), distanceKm: 5 }, new Date("2026-09-24T14:00:00Z"));
+    const none = toCard({ ...place, id: "b", distanceKm: 1 }, new Date("2026-09-24T14:00:00Z"));
+    expect(sortCards([none, own], "verified").map((card) => card.id)).toEqual(["a", "b"]);
   });
 });

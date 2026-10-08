@@ -25,7 +25,7 @@ test.describe("phase 1 find a mosque", () => {
     expect(results.violations.filter((item) => item.impact === "serious" || item.impact === "critical")).toEqual([]);
   });
 
-  test("moving the map offers Search this area instead of reloading on every move", async ({ page }) => {
+  test("moving the map offers Search this locality instead of reloading on every move", async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 900 });
     await page.goto("/search?where=London&lat=51.5074&lng=-0.1278&z=12");
     await waitForApp(page);
@@ -36,7 +36,7 @@ test.describe("phase 1 find a mosque", () => {
     // Zooming out shows more than the list was loaded for.
     await map.getByRole("button", { name: "Zoom out" }).click();
     await map.getByRole("button", { name: "Zoom out" }).click();
-    const button = page.getByRole("button", { name: "Search this area" });
+    const button = page.getByRole("button", { name: "Search this locality" });
     await expect(button).toBeVisible();
     // Nothing loads until asked.
     expect(page.url()).toBe(url);
@@ -49,6 +49,13 @@ test.describe("phase 1 find a mosque", () => {
     await expect(page.getByTestId("search-area")).toHaveCount(0);
     // The same map instance stays on screen: no remount, no jump back.
     expect(await canvas!.evaluate((node) => node.isConnected)).toBe(true);
+    // Dragging, even inside the area already loaded, offers to search where the visitor is now looking.
+    const box = (await map.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 - 120, box.y + box.height / 2 + 40, { steps: 8 });
+    await page.mouse.up();
+    await expect(button).toBeVisible();
   });
 
   test("Istanbul search updates the URL and survives reload", async ({ page }) => {

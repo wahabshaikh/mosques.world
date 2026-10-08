@@ -51,7 +51,10 @@ test.describe("phase 3 amenities, places and photos", () => {
     await expect(page.locator("[data-place-card]").filter({ hasText: "Hounslow Muslim Centre" })).toBeVisible();
     // An area fill refreshes the page when it finishes; a click before then is undone.
     await expect(page.locator("[data-filling]")).toHaveAttribute("data-filling", "idle", { timeout: 30_000 });
-    await page.getByRole("button", { name: "Women's section" }).click();
+    // Amenity filters live in the Filters dialog, so the explore bar stays about finding a mosque and its times.
+    await page.getByRole("button", { name: /^Filters/ }).click();
+    await page.getByLabel("Women's section").check();
+    await page.getByRole("button", { name: /^Show / }).click();
     await expect(page).toHaveURL(/needs=women_section/);
     await expect(page.locator("[data-place-card]").filter({ hasText: "Baitul Wahid" })).toBeVisible();
     await expect(page.locator("[data-place-card]").filter({ hasText: "Hounslow Muslim Centre" })).toHaveCount(0);

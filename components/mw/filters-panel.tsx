@@ -110,7 +110,7 @@ export default function FiltersPanel({
             </fieldset>
             <label className="flex items-center gap-3 text-[15px]">
               <input type="checkbox" className="size-5" checked={draft.verified} onChange={(event) => setDraft((current) => ({ ...current, verified: event.target.checked }))} />
-              Has community-verified times
+              Has prayer times (mosque timetable or community-verified)
             </label>
           </div>
           <div className="flex shrink-0 items-center justify-between border-t border-border px-6 py-4">

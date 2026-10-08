@@ -1,24 +1,30 @@
 "use client";
 
-import { LoaderCircle, LocateFixed, Navigation, Search, ShieldCheck } from "lucide-react";
+import { List, LoaderCircle, LocateFixed, Map as MapIcon, Navigation, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { track } from "@/lib/analytics";
 import type { Bbox } from "@/lib/geo/distance";
 import { bboxParam } from "@/lib/places/map-view";
 import type { PlaceKindFilter } from "@/lib/places/view";
 import type { ExploreSort } from "@/lib/places/present";
-import { NEED_FILTERS, type NeedSlug } from "@/lib/places/needs";
-import { FiltersDialog, NeedIcon } from "./filters-dialog";
-
-const CATEGORY_NEEDS: NeedSlug[] = ["women_section", "wudhu", "step_free", "parking", "open_for_fajr", "classes"];
+import type { NeedSlug } from "@/lib/places/needs";
+import { FiltersDialog } from "./filters-dialog";
 import { cn } from "@/lib/utils";
-import { PlaceMap, type MapArea } from "./place-map";
-import { PlaceRowContent } from "./place-row";
+import type { MapArea, UserPosition } from "./place-map";
+import { PlaceRowContent, TimeSourceLegend } from "./place-row";
 import type { AreaTimes } from "@/lib/places/area-times";
 
-type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string };
+// MapLibre is heavy: it loads after the list, and on phones only once someone opens the map.
+const PlaceMap = lazy(() => import("./place-map"));
+
+type Suggestion = { label: string; lat: number | null; lng: number | null; placeId?: string; slug?: string; kind?: "city" | "mosque" | "place" };
+
+/** Rows shown before "Show more"; the map pins every place loaded. */
+const LIST_PAGE = 40;
+/** The browser's own fix, kept for the tab so the blue dot survives navigation between searches. */
+const POSITION_KEY = "mw:position";
 
 export type ExplorePlace = {
   id: string;
@@ -33,6 +39,10 @@ export type ExplorePlace = {
   nextTime: string;
   nextKind: "iqamah" | "adhan";
   minutesUntil: number | null;
+  /** Whose time `next*` is: the mosque's own published timetable, the community's iqamah, or the calculated adhan. */
+  timeSource: "mosque" | "community" | "calculated";
+  /** The timetable provider ("Mawaqit") when timeSource is "mosque". */
+  sourceLabel?: string | null;
   verification: "none" | "partial" | "verified" | "needs_check";
   changeReported: boolean;
   verifiers: number;
@@ -42,6 +52,7 @@ export type ExplorePlace = {
   /** A free-licence photo (Wikimedia Commons) when the place has no community photo yet. */
   photo?: string | null;
 };
+
 
 export function ExploreView({
   places,
@@ -62,6 +73,7 @@ export function ExploreView({
   searchedBbox,
   mapArea = false,
   truncated = false,
+  approxLocation = null,
 }: {
   places: ExplorePlace[];
   where: string;
@@ -83,10 +95,12 @@ export function ExploreView({
   nextPrayer?: { label: string; time: string } | null;
   /** The area the places were loaded for. */
   searchedBbox: Bbox;
-  /** The searched area came from "Search this area", so filter changes keep it. */
+  /** The searched area came from "Search this locality", so filter changes keep it. */
   mapArea?: boolean;
-  /** More places matched than were listed. */
+  /** More places matched than were loaded. */
   truncated?: boolean;
+  /** Where the server thinks the visitor is (from their IP address), for the map's blue dot until the browser knows better. */
+  approxLocation?: { lat: number; lng: number } | null;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(where);
@@ -94,18 +108,33 @@ export function ExploreView({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [filling, setFilling] = useState<"idle" | "loading" | "error">(fillBbox ? "loading" : "idle");
   const [geoProblem, setGeoProblem] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState(false);
+  const [shown, setShown] = useState(LIST_PAGE);
   const [searchingArea, startAreaSearch] = useTransition();
   const [fillAttempt, setFillAttempt] = useState(0);
   const [challenge, setChallenge] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [precise, setPrecise] = useState<UserPosition | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
+  const desktop = useMediaQuery("(min-width: 1024px)");
 
   useEffect(() => {
     setQuery(where);
-  }, [where]);
+    setShown(LIST_PAGE);
+    setSelectedId(null);
+  }, [where, lat, lng]);
 
-  const cards = useMemo(() => places, [places]);
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(POSITION_KEY) ?? "null") as (UserPosition & { at: number }) | null;
+      if (stored && Date.now() - stored.at < 30 * 60_000) setPrecise({ lat: stored.lat, lng: stored.lng, precise: true });
+    } catch {
+      // Storage blocked: the dot falls back to the approximate location.
+    }
+  }, []);
+  const user: UserPosition | null = precise ?? (approxLocation ? { ...approxLocation, precise: false } : null);
 
   const fillKey = fillBbox ? `${fillBbox.west},${fillBbox.south},${fillBbox.east},${fillBbox.north}` : "";
   useEffect(() => {
@@ -159,29 +188,42 @@ export function ExploreView({
     return () => controller.abort();
   }, [fillKey, fillAttempt, router]);
 
-  function locate() {
+  /** Asks the browser where the visitor is; `search` also lists the mosques around them. */
+  function locate(search = true) {
     if (!("geolocation" in navigator)) {
-      setGeoProblem("Your browser can't share its location. Search for your city instead.");
+      setGeoProblem("Your browser can't share its location. Search for your area instead.");
       return;
     }
     setGeoProblem(null);
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        setLocating(false);
         track("geolocation_granted", {});
-        goTo({ label: "Near you", lat: position.coords.latitude, lng: position.coords.longitude });
+        const here = { lat: position.coords.latitude, lng: position.coords.longitude, precise: true };
+        setPrecise(here);
+        try {
+          sessionStorage.setItem(POSITION_KEY, JSON.stringify({ ...here, at: Date.now() }));
+        } catch {
+          // Storage blocked: the dot just won't survive the next navigation.
+        }
+        if (search) goTo({ label: "Near you", lat: here.lat, lng: here.lng, zoom: 14 });
       },
-      (error) =>
+      (error) => {
+        setLocating(false);
         setGeoProblem(
           error.code === error.PERMISSION_DENIED
-            ? "Location is turned off for this site. Allow it in your browser settings, or search for your city."
-            : "We couldn't find your location just now. Try again, or search for your city.",
-        ),
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
+            ? "Location is turned off for this site. Allow it in your browser settings, or search for your area."
+            : "We couldn't find your location just now. Try again, or search for your area.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 5 * 60_000 },
     );
   }
 
-  // Someone who already allowed location shouldn't be asked again on every visit: use it straight away.
-  // Denied hides the prompt; "prompt" keeps it, because asking unprompted on page load is rude.
+  // The server already centred the page on the visitor's approximate location (from their IP address).
+  // Someone who already allowed location gets their precise position straight away; "prompt" keeps the
+  // banner, because asking unprompted on page load is rude; "denied" hides it.
   const [geoPermission, setGeoPermission] = useState<"unknown" | "prompt" | "denied">("unknown");
   useEffect(() => {
     if (!showGeoPrompt || !navigator.permissions?.query) return;
@@ -218,7 +260,10 @@ export function ExploreView({
       return;
     }
     const turnstile = token ? `&turnstile=${encodeURIComponent(token)}` : "";
-    const response = await fetch(`/api/v1/geocode/autocomplete?q=${encodeURIComponent(value)}${turnstile}`);
+    // The map's centre biases mosque results towards what the visitor is looking at.
+    const near = `&lat=${lat.toFixed(2)}&lng=${lng.toFixed(2)}`;
+    const response = await fetch(`/api/v1/geocode/autocomplete?q=${encodeURIComponent(value)}${near}${turnstile}`).catch(() => null);
+    if (!response) return;
     if (response.status === 403 && turnstileSiteKey) {
       const denied = (await response.json().catch(() => null)) as { challenge?: boolean } | null;
       if (denied?.challenge) {
@@ -296,11 +341,7 @@ export function ExploreView({
     if (!next.needs.length) params.delete("needs");
     for (const need of next.needs.filter((item) => !needs.includes(item))) track("filter_applied", { amenity: need });
     track("search", { has_where: Boolean(where), filters: [next.kind, ...next.needs].join(",") });
-    router.push(`/search?${params.toString()}`);
-  }
-
-  function toggleNeed(slug: NeedSlug) {
-    applyFilters({ kind, verified: verifiedOnly, needs: needs.includes(slug) ? needs.filter((item) => item !== slug) : [...needs, slug] });
+    router.push(`/search?${params.toString()}`, { scroll: false });
   }
 
   async function choose(item: Suggestion) {
@@ -309,49 +350,50 @@ export function ExploreView({
       router.push(`/m/${item.slug}`);
       return;
     }
+    // A mosque on OpenStreetMap we don't list yet: open the map right on it, which loads its area.
+    const close = item.kind === "mosque" ? 16 : 12;
     if (item.lat != null && item.lng != null) {
-      goTo({ label: item.label, lat: item.lat, lng: item.lng });
+      goTo({ label: item.label, lat: item.lat, lng: item.lng, zoom: close });
       return;
     }
-    // Google suggestions carry only a place id; resolve it before moving the map.
-    const query = item.placeId ? `placeId=${encodeURIComponent(item.placeId)}` : `q=${encodeURIComponent(item.label)}`;
-    const details = (await fetch(`/api/v1/geocode/details?${query}`)
+    const lookup = item.placeId ? `placeId=${encodeURIComponent(item.placeId)}` : `q=${encodeURIComponent(item.label)}`;
+    const details = (await fetch(`/api/v1/geocode/details?${lookup}`)
       .then((response) => (response.ok ? response.json() : null))
       .catch(() => null)) as { lat: number | null; lng: number | null } | null;
-    if (details?.lat != null && details.lng != null) goTo({ label: item.label, lat: details.lat, lng: details.lng });
+    if (details?.lat != null && details.lng != null) goTo({ label: item.label, lat: details.lat, lng: details.lng, zoom: close });
   }
 
-  function goTo(next: { label: string; lat: number; lng: number }) {
+  function goTo(next: { label: string; lat: number; lng: number; zoom?: number }) {
     const params = new URLSearchParams({
       where: next.label,
-      lat: String(next.lat),
-      lng: String(next.lng),
-      z: "12",
+      lat: next.lat.toFixed(5),
+      lng: next.lng.toFixed(5),
+      z: String(next.zoom ?? 12),
     });
     if (kind !== "all") params.set("kind", kind);
     withFilters(params);
     track("search", { has_where: true, filters: kind });
-    router.push(`/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`, { scroll: false });
     setSuggestions([]);
   }
 
   function setKind(next: PlaceKindFilter) {
     const params = withFilters(viewParams(next));
     track("search", { has_where: Boolean(where), filters: next });
-    router.push(`/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`, { scroll: false });
   }
 
   function setVerified(next: boolean) {
     const params = withFilters(viewParams(), { verified: next });
     if (!next) params.delete("verified");
     track("search", { has_where: Boolean(where), filters: next ? "verified" : kind });
-    router.push(`/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`, { scroll: false });
   }
 
   function setSort(next: ExploreSort) {
     const params = withFilters(viewParams(), { sort: next });
     if (next === "distance") params.delete("sort");
-    router.push(`/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`, { scroll: false });
   }
 
   function searchArea(area: MapArea) {
@@ -369,13 +411,21 @@ export function ExploreView({
     startAreaSearch(() => router.replace(`/search?${params.toString()}`, { scroll: false }));
   }
 
+  const withTimes = places.filter((place) => place.timeSource !== "calculated").length;
+  const listed = places.slice(0, shown);
+  const showMap = desktop || mapMode;
+
   return (
     // data-filling lets E2E wait for an area fill to finish: its router.refresh() would otherwise undo a filter click.
-    <div data-filling={filling}>
-      <div className="border-b border-border bg-background">
-        <div className="mx-auto max-w-[1440px] px-4 py-4 lg:px-6">
+    // On wide screens the explore view is one screen tall: the list scrolls beside a map that fills the rest.
+    <div
+      data-filling={filling}
+      className={cn("flex flex-col lg:h-[calc(100dvh-81px)]", mapMode && "h-[calc(100dvh-65px)] overflow-hidden lg:overflow-visible")}
+    >
+      <div className="shrink-0 border-b border-border bg-background">
+        <div className="mx-auto max-w-[1440px] px-4 py-3 lg:px-6">
           <form
-            className="mx-auto flex max-w-3xl items-center gap-2 rounded-full border border-border bg-card p-2 shadow-[0_3px_12px_rgba(31,29,26,.08)]"
+            className="mx-auto flex max-w-3xl items-center gap-2 rounded-full border border-border bg-card p-1.5 shadow-[0_3px_12px_rgba(31,29,26,.08)]"
             onSubmit={(event) => {
               event.preventDefault();
               const first = suggestions[0];
@@ -384,7 +434,7 @@ export function ExploreView({
             }}
           >
             <label className="relative min-w-0 flex-1">
-              <span className="px-3 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">Where</span>
+              <span className="sr-only">Search for a masjid or an area</span>
               <input
                 aria-label="Where"
                 value={query}
@@ -394,15 +444,13 @@ export function ExploreView({
                   const input = event.currentTarget;
                   requestAnimationFrame(() => input.select());
                 }}
-                className="w-full bg-transparent px-3 pb-2 text-sm outline-none"
-                placeholder="City or mosque"
+                className="h-11 w-full bg-transparent px-4 text-[15px] outline-none"
+                placeholder="Search a masjid, area or city"
                 autoComplete="off"
               />
-              {challenge ? (
-                <div ref={widgetRef} className="px-3 pb-2" />
-              ) : null}
+              {challenge ? <div ref={widgetRef} className="px-3 pb-2" /> : null}
               {suggestions.length > 0 ? (
-                <ul className="absolute top-full right-0 left-0 z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">
+                <ul className="absolute top-full right-0 left-0 z-40 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg" data-testid="suggestions">
                   {suggestions.map((item) => (
                     <li key={`${item.label}-${item.lat}-${item.slug ?? ""}`}>
                       <button
@@ -410,8 +458,8 @@ export function ExploreView({
                         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-start text-sm hover:bg-muted"
                         onClick={() => void choose(item)}
                       >
-                        <span>{item.label}</span>
-                        {item.slug ? <span className="shrink-0 text-xs text-muted-foreground">Mosque</span> : null}
+                        <span className="min-w-0 truncate">{item.label}</span>
+                        {item.slug || item.kind === "mosque" ? <span className="shrink-0 text-xs font-semibold text-primary">Masjid</span> : null}
                       </button>
                     </li>
                   ))}
@@ -420,76 +468,67 @@ export function ExploreView({
             </label>
             <button
               type="button"
-              onClick={locate}
-              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full bg-primary-soft px-3.5 text-sm font-bold text-primary sm:inline-flex"
+              onClick={() => locate()}
+              className="hidden h-11 shrink-0 items-center gap-1.5 rounded-full bg-primary-soft px-3.5 text-sm font-bold text-primary sm:inline-flex"
             >
-              <Navigation className="size-4" aria-hidden="true" /> Near me
+              {locating ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Navigation className="size-4" aria-hidden="true" />} Near me
             </button>
-            <button
-              type="submit"
-              className="inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground"
-              aria-label="Search"
-            >
+            <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Search">
               <Search className="size-5" />
             </button>
           </form>
-          <div className="mt-4 flex gap-2 overflow-x-auto">
+          <div className="mx-auto mt-3 flex max-w-3xl gap-2 overflow-x-auto pb-0.5">
+            <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
+              Has prayer times
+            </FilterChip>
             <FilterChip active={kind === "prayer_room"} onClick={() => setKind(kind === "prayer_room" ? "all" : "prayer_room")}>
               Prayer rooms
             </FilterChip>
-            <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
-              Has verified times
-            </FilterChip>
-            {CATEGORY_NEEDS.map((slug) => {
-              const filter = NEED_FILTERS.find((item) => item.slug === slug);
-              return filter ? (
-                <FilterChip key={slug} active={needs.includes(slug)} onClick={() => toggleNeed(slug)} icon={<NeedIcon slug={slug} />}>
-                  {filter.label}
-                </FilterChip>
-              ) : null;
-            })}
-            <FiltersDialog
-              kind={kind}
-              needs={needs}
-              verified={verifiedOnly}
-              bboxQuery={`lat=${lat}&lng=${lng}&z=${zoom}`}
-              onApply={applyFilters}
-            />
+            <FiltersDialog kind={kind} needs={needs} verified={verifiedOnly} bboxQuery={`lat=${lat}&lng=${lng}&z=${zoom}`} onApply={applyFilters} />
           </div>
         </div>
       </div>
-      <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[minmax(0,680px)_1fr]">
-        <section className={cn("px-4 pt-6 pb-24 lg:px-6 lg:pb-6", mapMode && "hidden lg:block")}>
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
+      <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
+        <section className={cn("min-w-0 px-4 pt-5 pb-24 lg:overflow-y-auto lg:px-6 lg:pb-6", mapMode && "hidden lg:block")} data-testid="place-list">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+            <div className="min-w-0">
               {nextPrayer ? (
                 <p className="text-xs font-extrabold tracking-wide text-primary uppercase" data-testid="next-prayer">
                   Next prayer · {nextPrayer.label} adhan {nextPrayer.time}
                 </p>
               ) : null}
-              <h1 className="text-2xl font-bold tracking-tight">
-                {cards.length} {cards.length === 1 ? "place" : "mosques & prayer spaces"} nearby
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                {places.length}
+                {truncated ? "+" : ""} {places.length === 1 ? "place" : "mosques & prayer spaces"} nearby
               </h1>
-              <p className="text-sm text-muted-foreground">{subline}</p>
+              <p className="truncate text-sm text-muted-foreground">{subline}</p>
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold">
-              <span className="sr-only sm:not-sr-only">Sort</span>
+              <span className="sr-only">Sort</span>
               <select
                 aria-label="Sort"
                 value={sort}
                 onChange={(event) => setSort(event.target.value as ExploreSort)}
                 className="h-10 rounded-full border border-border bg-card px-3"
               >
+                <option value="distance">Nearest</option>
                 <option value="iqamah">Soonest iqamah</option>
-                <option value="distance">Distance</option>
-                <option value="verified">Most verified</option>
+                <option value="verified">Has prayer times</option>
               </select>
             </label>
           </div>
-          {showGeoPrompt && geoPermission !== "denied" ? (
-            <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={locate}>
-              <LocateFixed className="size-4 text-primary" />
-              Use your location for a closer list. We only use it to centre the map.
+          {places.length > 0 ? (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <TimeSourceLegend />
+              <span className="text-[11px] font-semibold text-muted-foreground" data-testid="with-times">
+                {withTimes} with jamā&apos;ah times
+              </span>
+            </div>
+          ) : null}
+          {showGeoPrompt && geoPermission !== "denied" && !precise ? (
+            <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={() => locate()}>
+              <LocateFixed className="size-4 shrink-0 text-primary" />
+              Showing mosques around your approximate location. Use your exact location for a closer list.
             </button>
           ) : null}
           {geoProblem ? (
@@ -497,13 +536,13 @@ export function ExploreView({
               {geoProblem}
             </p>
           ) : null}
-          {filling === "loading" && cards.length > 0 ? (
+          {filling === "loading" && places.length > 0 ? (
             <p role="status" className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
               Loading more mosques in this area…
             </p>
           ) : null}
-          {cards.length === 0 && areaTimes ? (
+          {places.length === 0 && areaTimes ? (
             <section className="mb-4 rounded-2xl bg-muted p-4" aria-labelledby="area-times" data-testid="area-times">
               <h2 id="area-times" className="text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
                 Prayer times here today
@@ -519,24 +558,19 @@ export function ExploreView({
               <p className="mt-2 text-xs text-muted-foreground">Adhan, calculated ({areaTimes.method}). Each mosque&apos;s iqamah is on its page.</p>
             </section>
           ) : null}
-          {cards.length === 0 && filling === "loading" ? (
+          {places.length === 0 && filling === "loading" ? (
             <div role="status" className="flex items-center gap-3 rounded-2xl bg-muted p-6 text-sm" data-testid="area-filling">
               <LoaderCircle className="size-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
               <span>Finding mosques and prayer spaces in this area. This takes a few seconds the first time anyone looks here.</span>
             </div>
-          ) : cards.length === 0 ? (
+          ) : places.length === 0 ? (
             <div className="rounded-2xl bg-muted p-6 text-sm">
               <p>
-                {filling === "error"
-                  ? "We couldn't load this area just now."
-                  : "No mosques or prayer spaces are mapped here yet."}{" "}
-                <>
-                  Know one?{" "}
-                  <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
-                    Add it to the map
-                  </Link>{" "}
-                  and the community can fill in its times.
-                </>
+                {filling === "error" ? "We couldn't load this area just now." : "No mosques or prayer spaces are mapped here yet."} Know one?{" "}
+                <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
+                  Add it to the map
+                </Link>{" "}
+                and the community can fill in its times.
               </p>
               {filling === "error" ? (
                 <button type="button" className="mt-3 font-semibold text-primary" onClick={() => setFillAttempt((value) => value + 1)}>
@@ -545,72 +579,63 @@ export function ExploreView({
               ) : null}
             </div>
           ) : (
-            <ul className="-mx-2 flex flex-col">
-              {cards.map((place) => (
-                <li key={place.id}>
-                  <Link
-                    href={`/m/${place.slug}`}
-                    data-place-card={place.id}
-                    onMouseEnter={() => setActiveId(place.id)}
-                    onMouseLeave={() => setActiveId(null)}
-                    onFocus={() => setActiveId(place.id)}
-                    className={cn("flex items-center gap-4 rounded-2xl p-2.5 hover:bg-muted", activeId === place.id && "bg-muted ring-2 ring-primary")}
-                  >
-                    <PlaceRowContent place={place} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="-mx-2 flex flex-col">
+                {listed.map((place) => (
+                  <li key={place.id}>
+                    <Link
+                      href={`/m/${place.slug}`}
+                      data-place-card={place.id}
+                      onMouseEnter={() => setHighlightId(place.id)}
+                      onMouseLeave={() => setHighlightId(null)}
+                      onFocus={() => setHighlightId(place.id)}
+                      className={cn("flex min-w-0 items-center gap-3 rounded-2xl p-2 hover:bg-muted sm:gap-4 sm:p-2.5", highlightId === place.id && "bg-muted")}
+                    >
+                      <PlaceRowContent place={place} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {places.length > shown ? (
+                <button type="button" onClick={() => setShown((value) => value + LIST_PAGE)} className="mt-3 h-11 w-full rounded-full border border-border text-sm font-semibold">
+                  Show more ({places.length - shown})
+                </button>
+              ) : null}
+            </>
           )}
         </section>
-        <aside className={cn("relative min-h-[70vh]", !mapMode && "hidden lg:block")}>
-          <PlaceMap
-            places={cards}
-            lat={lat}
-            lng={lng}
-            zoom={zoom}
-            searchedBbox={searchedBbox}
-            truncated={truncated}
-            searching={searchingArea}
-            activeId={activeId}
-            onSearchArea={searchArea}
-          />
+        <aside className={cn("relative min-h-0 min-w-0", mapMode ? "flex-1" : "hidden lg:block")} aria-label="Map">
+          {showMap ? (
+            <Suspense fallback={<div className="flex h-full min-h-[320px] items-center justify-center bg-muted text-sm text-muted-foreground">Loading map…</div>}>
+              <PlaceMap
+                places={places}
+                lat={lat}
+                lng={lng}
+                zoom={zoom}
+                searchedBbox={searchedBbox}
+                searching={searchingArea}
+                highlightId={highlightId}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onSearchArea={searchArea}
+                user={user}
+                onLocate={() => locate()}
+                locating={locating}
+              />
+            </Suspense>
+          ) : null}
         </aside>
       </div>
-      {mapMode ? (
-        <div
-          className="fixed inset-x-0 bottom-0 z-20 rounded-t-3xl bg-background pt-2 pb-20 shadow-[0_-6px_24px_rgba(0,0,0,0.12)] lg:hidden"
-          data-testid="map-sheet"
-        >
-          <span className="mx-auto block h-[5px] w-10 rounded-full bg-border" aria-hidden="true" />
-          <p className="px-4 pt-2 text-sm font-bold">
-            {cards.length} {cards.length === 1 ? "place" : "places"} on the map
-          </p>
-          <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-3 pb-1">
-            {cards.slice(0, 30).map((place) => (
-              <li key={place.id} className="w-64 shrink-0 snap-start">
-                <Link href={`/m/${place.slug}`} className="flex items-center gap-3 rounded-2xl border border-input p-2.5">
-                  <span className="size-12 shrink-0 rounded-xl" style={{ background: place.tint }} aria-hidden="true" />
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm font-bold">{place.name}</span>
-                    <span className="tabular text-xs">
-                      <strong>
-                        {place.nextLabel} {place.nextTime}
-                      </strong>{" "}
-                      <span className="text-muted-foreground">{place.nextKind}</span>
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       <button
         type="button"
-        className="fixed bottom-5 left-1/2 z-30 -translate-x-1/2 rounded-full bg-secondary px-5 py-3 text-sm font-semibold text-secondary-foreground shadow-lg lg:hidden"
-        onClick={() => setMapMode((value) => !value)}
+        className="fixed bottom-5 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-bold text-background shadow-lg lg:hidden"
+        onClick={() => {
+          setSelectedId(null);
+          setMapMode((value) => !value);
+        }}
+        data-testid="view-toggle"
       >
+        {mapMode ? <List className="size-4" aria-hidden="true" /> : <MapIcon className="size-4" aria-hidden="true" />}
         {mapMode ? "List" : "Map"}
       </button>
     </div>
@@ -632,13 +657,27 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-semibold",
+        "inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap",
         active ? "border-foreground bg-foreground text-background" : "border-border bg-card",
       )}
     >
       {icon}
       {children}
     </button>
+  );
+}
+
+/** Whether a media query matches; false during server render and the first paint. */
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
   );
 }

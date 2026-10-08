@@ -1,5 +1,6 @@
 import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab, parseAdhanAdjust } from "@/lib/prayer/times";
-import { formatTime12, toMinutes } from "@/lib/trust/facts";
+import { formatTime12, IQAMAH_PRAYERS, toMinutes } from "@/lib/trust/facts";
+import { dateRange, parseTimetable, PROVIDER_LABELS, timetableOn, type Timetable } from "@/lib/sources/timetable";
 import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
 import { cardTag } from "./needs";
 import { placeMonogram } from "./monogram";
@@ -25,11 +26,15 @@ export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boo
   });
   const summary = parseSummary(place.iqamahSummaryJson);
   const nowLocal = formatHm(now, place.timezone);
+  const timetable = parseTimetable(place.timetableJson);
+  // The mosque's own published timetable comes first, then the community's iqamah, then the calculated adhan.
+  const own = nextFromTimetable(timetable, day.date, nowLocal, day.jumuah);
   const jamaah = summary ? nextJamaah(summary, day, nowLocal) : null;
   const nextAdhan = nextAdhanLabel(day);
   const adhan = { label: nextAdhan.label, time: formatTime12(nextAdhan.time) };
   const iqamah = jamaah?.kind === "iqamah" ? jamaah : null;
-  const next = iqamah ? { label: iqamah.label, time: formatTime12(iqamah.time) } : adhan;
+  const next = own ?? (iqamah ? { label: iqamah.label, time: formatTime12(iqamah.time), kind: "iqamah" as const, minutes: iqamah.minutes } : { ...adhan, kind: "adhan" as const, minutes: null });
+  const timeSource: ExplorePlace["timeSource"] = own ? "mosque" : iqamah ? "community" : "calculated";
   const verifiers = summary ? Math.max(0, ...Object.values(summary.iqamah).map((entry) => entry?.n ?? 0)) : 0;
   return {
     id: place.id,
@@ -42,8 +47,10 @@ export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boo
     distanceKm: place.distanceKm,
     nextLabel: next.label,
     nextTime: next.time,
-    nextKind: iqamah ? "iqamah" : "adhan",
-    minutesUntil: iqamah ? iqamah.minutes - toMinutes(nowLocal) : null,
+    nextKind: next.kind,
+    minutesUntil: next.kind === "iqamah" && next.minutes !== null ? next.minutes - toMinutes(nowLocal) : null,
+    timeSource,
+    sourceLabel: own && timetable ? PROVIDER_LABELS[timetable.p] : null,
     verification: asVerification(place.verificationState),
     changeReported: hasOpenChange(summary),
     tag: cardTag(place.amenityBits),
@@ -52,6 +59,37 @@ export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boo
     monogram: placeMonogram(place.name),
     photo: options.photos ? photoOf(place) : null,
   };
+}
+
+const PRAYER_LABELS = { fajr: "Fajr", dhuhr: "Dhuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha" } as const;
+
+/**
+ * The next time from a mosque's own timetable: its next iqamah today (or its adhan where it publishes
+ * no iqamah), else tomorrow's Fajr. Null when the timetable has nothing for today.
+ */
+export function nextFromTimetable(
+  timetable: Timetable | null,
+  date: string,
+  nowLocal: string,
+  jumuahToday: boolean,
+): { label: string; time: string; kind: "iqamah" | "adhan"; minutes: number } | null {
+  const today = timetableOn(timetable, date);
+  if (!today) return null;
+  const now = toMinutes(nowLocal);
+  const options = IQAMAH_PRAYERS.flatMap((prayer) => {
+    const friday = prayer === "dhuhr" && jumuahToday && today.j?.[0];
+    const time = friday || today.i?.[prayer] || today.a?.[prayer];
+    if (!time) return [];
+    const kind = friday || today.i?.[prayer] ? ("iqamah" as const) : ("adhan" as const);
+    return [{ label: friday ? "Jumu'ah" : PRAYER_LABELS[prayer], time, kind, minutes: toMinutes(time) }];
+  });
+  const upcoming = options.find((option) => option.minutes > now);
+  if (upcoming) return { ...upcoming, time: formatTime12(upcoming.time) };
+  const [, tomorrow = date] = dateRange(date, 2);
+  const next = timetableOn(timetable, tomorrow);
+  const fajr = next?.i?.fajr ?? next?.a?.fajr;
+  if (!fajr) return null;
+  return { label: "Fajr", time: formatTime12(fajr), kind: next?.i?.fajr ? "iqamah" : "adhan", minutes: toMinutes(fajr) + 1440 };
 }
 
 export function readNow(headerValue: string | null, nonProduction: boolean): Date {
@@ -73,6 +111,10 @@ function asVerification(value: string): ExplorePlace["verification"] {
 }
 
 const VERIFICATION_RANK: Record<ExplorePlace["verification"], number> = { verified: 0, partial: 1, needs_check: 2, none: 3 };
+/** "Most verified": a mosque's own timetable ranks with community-verified times. */
+function rankOf(card: ExplorePlace): number {
+  return card.timeSource === "mosque" ? 0 : VERIFICATION_RANK[card.verification];
+}
 
 /** Card order for the explore sort menu; ties fall back to distance. */
 export function sortCards(cards: ExplorePlace[], sort: ExploreSort): ExplorePlace[] {
@@ -83,7 +125,7 @@ export function sortCards(cards: ExplorePlace[], sort: ExploreSort): ExplorePlac
   } else if (sort === "verified") {
     sorted.sort(
       (a, b) =>
-        VERIFICATION_RANK[a.verification] - VERIFICATION_RANK[b.verification] || b.verifiers - a.verifiers || distance(a) - distance(b),
+        rankOf(a) - rankOf(b) || b.verifiers - a.verifiers || distance(a) - distance(b),
     );
   } else {
     sorted.sort((a, b) => distance(a) - distance(b));

@@ -1,4 +1,4 @@
-import { CircleAlert, ShieldCheck } from "lucide-react";
+import { CalendarCheck, CircleAlert, ShieldCheck, Users } from "lucide-react";
 import { formatDistance } from "@/lib/geo/distance";
 import { cn } from "@/lib/utils";
 import type { ExplorePlace } from "./explore-view";
@@ -24,8 +24,14 @@ export function PlaceRowContent({ place, showDistance = true }: { place: Explore
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1 text-end">
-        {/* Calculated adhan is the same for every place nearby, so it stays quiet and community iqamah times stand out. */}
-        <span className={cn("tabular text-base", place.nextKind === "iqamah" ? "font-extrabold" : "font-semibold text-muted-foreground")}>
+        {/* Calculated adhan is the same for every place nearby, so it stays quiet and real jamā'ah times stand out. */}
+        <span
+          className={cn(
+            "tabular text-base",
+            place.timeSource === "calculated" ? "font-semibold text-muted-foreground" : "font-extrabold",
+            place.timeSource === "mosque" && "text-primary",
+          )}
+        >
           {place.nextLabel} {place.nextTime}
         </span>
         <CardStatus place={place} />
@@ -34,23 +40,57 @@ export function PlaceRowContent({ place, showDistance = true }: { place: Explore
   );
 }
 
-/** One trust word under the time, so the list reads at a glance: whose time it is and how sure we are. */
-function CardStatus({ place }: { place: ExplorePlace }) {
+/**
+ * One chip under the time saying whose time it is, so the list reads at a glance: the mosque's own
+ * timetable (solid), the community's iqamah (outlined), or the calculated adhan (quiet grey).
+ */
+export function CardStatus({ place }: { place: ExplorePlace }) {
+  if (place.timeSource === "mosque") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-primary-foreground" data-time-source="mosque">
+        <CalendarCheck className="size-3" aria-hidden="true" /> {place.nextKind === "iqamah" ? "iqamah" : "adhan"} · mosque timetable
+      </span>
+    );
+  }
   if (place.changeReported) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-bold text-warning">
+      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-bold text-warning" data-time-source="community">
         <CircleAlert className="size-3" aria-hidden="true" /> iqamah · change reported
       </span>
     );
   }
-  if (place.nextKind === "adhan") {
-    return <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">adhan · no iqamah yet</span>;
+  if (place.timeSource === "calculated") {
+    return (
+      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground" data-time-source="calculated">
+        adhan · calculated
+      </span>
+    );
   }
   const verified = place.verification === "verified";
   return (
-    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", verified ? "bg-primary-soft text-primary" : "bg-muted text-muted-foreground")}>
-      iqamah · {verified ? "verified" : "unverified"}
+    <span
+      className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold", verified ? "border-primary text-primary" : "border-border text-muted-foreground")}
+      data-time-source="community"
+    >
+      <Users className="size-3" aria-hidden="true" /> iqamah · community{verified ? ", verified" : ""}
     </span>
+  );
+}
+
+/** What the three kinds of time look like, for the list and the map. */
+export function TimeSourceLegend({ className }: { className?: string }) {
+  return (
+    <ul className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-muted-foreground", className)} aria-label="What the times mean" data-testid="time-legend">
+      <li className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full bg-primary" aria-hidden="true" /> Mosque timetable
+      </li>
+      <li className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full border-2 border-primary bg-background" aria-hidden="true" /> Community iqamah
+      </li>
+      <li className="inline-flex items-center gap-1.5">
+        <span className="size-2.5 rounded-full bg-muted-foreground/40" aria-hidden="true" /> Calculated adhan only
+      </li>
+    </ul>
   );
 }
 
