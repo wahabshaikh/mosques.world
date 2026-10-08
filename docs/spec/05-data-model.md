@@ -188,6 +188,13 @@ one row per geohash-4 cell filled on demand from Overpass; the `filling` status 
 what the free open-data match found (`lib/enrich/wikidata.ts`). **`enrich_cell`** (`geohash` PK, `status` done/failed,
 `synced_at`, `matched`, `error`): one row per geohash-4 cell matched against Wikidata, refreshed quarterly.
 
+### Timetable sources
+**`place_source`** (`place_id` + `provider` PK, `provider` mawaqit/masjidal, `external_id` (Mawaqit slug or Masjidal masjid id),
+`url`, `status` pending/ok/failed, `error`, `fetched_at`, `created_by` (null when linked from OpenStreetMap, cleared on account
+deletion), `created_at`, `updated_at`): the mosque's own published timetable. **`place.timetable_json`**
+(`{p, url, at, days: {"YYYY-MM-DD": {a: {fajr…isha}, i: {fajr…isha}, j: ["HH:MM"]}}}`): its next 14 days, refreshed nightly
+(`lib/sources/`). Cards read only the days around today (trimmed in SQL).
+
 ### Phase 8
 **`api_key`** (`id`, `owner_id`, `hash`, `scopes`, `rate_limit`, `created_at`, `revoked_at`) and
 **`export_run`** (`id`, `kind`, `r2_key`, `rows`, `created_at`).
