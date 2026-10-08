@@ -125,6 +125,15 @@ export const en = {
   "mosque.appleMaps": "Apple Maps",
   "mosque.map": "Map",
   "mosque.activity": "Recent community activity",
+  "source.title": "The mosque's own timetable",
+  "source.via": "Published by the mosque on {provider} · updated {age}",
+  "source.jumuah": "Jumu'ah {times}",
+  "source.linkTitle": "Does this mosque publish its times on Mawaqit or Masjidal?",
+  "source.linkHint": "Paste the link and its own adhan and iqamah show here, refreshed every night.",
+  "source.linkButton": "Link timetable",
+  "source.linked": "Linked. The mosque's timetable now shows on this page.",
+  "source.community": "Community-reported times",
+  "source.meta": "Mosque timetable · {provider}",
 } as const;
 
 type Widen<T> = T extends string ? string : Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };

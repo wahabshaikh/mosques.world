@@ -12,6 +12,7 @@ import { isExportMessage, queueMonthlyExport, runExport } from "@/lib/open-data"
 import { deliverPending, isDeliverMessage, weeklyDigestStatement } from "@/lib/notify";
 import { placeSlugRedirect } from "@/lib/places/slug-redirect";
 import { sentryOptions } from "@/lib/sentry";
+import { refreshDueSources } from "@/lib/sources/sync";
 
 /** Weekly OSM diff sync (new places only); must match wrangler.jsonc triggers. */
 const WEEKLY_CRON = "30 3 * * 1";
@@ -60,6 +61,8 @@ export default Sentry.withSentry((env) => sentryOptions(env), {
     ctx.waitUntil(nightly(env));
     // Free open data (Wikidata, Commons, Wikipedia) for a few areas a night, busiest first.
     ctx.waitUntil(enrichStaleCells(env.DB, fetch, Date.now()));
+    // Mosques' own timetables (Mawaqit, Masjidal): link new ones from OSM websites, roll the two-week window on.
+    ctx.waitUntil(refreshDueSources(env.DB, fetch, Date.now(), 150));
     // Monthly open-data export (spec P8), run from the queue so it has a consumer's time budget.
     ctx.waitUntil(queueMonthlyExport(env, Date.now()));
     // Safety net for the outbox: anything the queue missed goes out with the nightly run.

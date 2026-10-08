@@ -122,4 +122,13 @@ export const bn: Messages = {
   "mosque.appleMaps": "Apple Maps",
   "mosque.map": "মানচিত্র",
   "mosque.activity": "সাম্প্রতিক কমিউনিটি কার্যক্রম",
+  "source.title": "মসজিদের নিজস্ব সময়সূচি",
+  "source.via": "মসজিদ {provider}-এ প্রকাশ করে · হালনাগাদ {age}",
+  "source.jumuah": "জুমা {times}",
+  "source.linkTitle": "এই মসজিদ কি Mawaqit বা Masjidal-এ সময় প্রকাশ করে?",
+  "source.linkHint": "লিংকটি দিন, মসজিদের নিজস্ব আজান ও ইকামত এখানে দেখাবে, প্রতি রাতে হালনাগাদ হবে।",
+  "source.linkButton": "সময়সূচি যুক্ত করুন",
+  "source.linked": "যুক্ত হয়েছে। মসজিদের সময়সূচি এখন এই পাতায় দেখাচ্ছে।",
+  "source.community": "কমিউনিটির জানানো সময়",
+  "source.meta": "মসজিদের সময়সূচি · {provider}",
 };

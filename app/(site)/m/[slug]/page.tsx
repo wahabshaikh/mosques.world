@@ -26,7 +26,7 @@ import { parseEnrichment } from "@/lib/enrich/wikidata";
 import { DirectionsLink } from "@/components/mw/directions-link";
 import { currentUser, isModerator } from "@/lib/session";
 import { placesContext } from "@/lib/places/context";
-import { liveFields } from "@/lib/places/google";
+import { GOOGLE_PLACES_IN_USE, liveFields } from "@/lib/places/google";
 import { ConfirmPlace } from "@/components/mw/confirm-place";
 import { PhotoGrid } from "@/components/mw/photo-grid";
 import { placePhotos } from "@/lib/media";
@@ -34,12 +34,16 @@ import { captchaRequired } from "@/lib/auth";
 import { amenityRows, amenitySummary } from "@/lib/places/amenities";
 import { AmenityList } from "@/components/mw/amenity-list";
 import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
-import { iqamahCells, jumuahCards, nextRows, trustHeadline } from "@/lib/places/mosque";
+import { iqamahCells, jumuahCards, nextRows, timetableRows, trustHeadline } from "@/lib/places/mosque";
 import { isNonProductionHost } from "@/lib/environment";
 import { madhabOf, readNow } from "@/lib/places/present";
 import { describeValue, factLabel, formatTime12, iqamahValue, madhabLabel, methodLabel, resolveIqamah } from "@/lib/trust/facts";
 import { placeActivity, placeFacts, placeTrustStats } from "@/lib/trust/read";
 import { coverTint } from "@/lib/utils";
+import { LinkTimetable } from "@/components/mw/link-timetable";
+import { MosqueTimetable } from "@/components/mw/mosque-timetable";
+import { parseTimetable, PROVIDER_LABELS, timetableOn } from "@/lib/sources/timetable";
+import { formatHm } from "@/lib/prayer/times";
 
 export const dynamic = "force-dynamic";
 
@@ -116,10 +120,15 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
     placeTrustStats(database, place.id, nowMs),
   ]);
   const cells = iqamahCells(facts, loaded.day, nowMs, l);
+  // The mosque's own published timetable (Mawaqit, Masjidal), shown apart from community-reported times.
+  const timetable = parseTimetable(place.timetableJson);
+  const ownDay = timetableOn(timetable, loaded.day.date);
   const jumuah = jumuahCards(facts, l);
   const hasIqamah = Object.keys(cells).length > 0 || jumuah.length > 0;
   const tint = coverTint(place.id);
-  const rows: NextRow[] = hasIqamah
+  const rows: NextRow[] = ownDay && timetable
+    ? timetableRows(loaded.day, ownDay, PROVIDER_LABELS[timetable.p], l)
+    : hasIqamah
     ? nextRows(loaded.day, cells, facts, nowMs, l)
     : (() => {
         const next = nextAdhanLabel(day);
@@ -163,7 +172,7 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   };
   const updateHref = l.href(`/m/${place.slug}/update`);
   const amenities = amenityRows(facts);
-  const google = place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
+  const google = GOOGLE_PLACES_IN_USE && place.googlePlaceId ? await liveFields(placesContext(appEnv(), loaded.host), place.googlePlaceId).catch(() => null) : null;
   const closed = place.status === "closed";
   const enrichment = parseEnrichment(place.enrichmentJson);
   const photos = await placePhotos(appEnv().DB, place.id, 5);
@@ -233,7 +242,30 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               {l.t("mosque.update")}
             </UpdateLink>
           </div>
-          {!(hasIqamah) ? (
+          {ownDay && timetable ? (
+            <MosqueTimetable
+              day={ownDay}
+              nowLocal={formatHm(now, place.timezone)}
+              jumuahToday={loaded.day.jumuah}
+              sourceUrl={timetable.url}
+              labels={{
+                title: l.t("source.title"),
+                via: l.t("source.via", { provider: PROVIDER_LABELS[timetable.p], age: l.relative(timetable.at, nowMs) }),
+                prayer: l.t("table.prayer"),
+                adhan: l.t("table.adhan"),
+                iqamah: l.t("table.iqamah"),
+                jumuah: ownDay.j?.length ? l.t("source.jumuah", { times: ownDay.j.map((time) => l.time(time)).join(" · ") }) : null,
+                prayers: { fajr: l.prayer("fajr"), dhuhr: l.prayer("dhuhr", loaded.day.jumuah), asr: l.prayer("asr"), maghrib: l.prayer("maghrib"), isha: l.prayer("isha") },
+                time: (hm) => l.time(hm),
+              }}
+            />
+          ) : null}
+          {ownDay ? (
+            <h3 className="mt-6 mb-2 text-sm font-bold tracking-wide text-muted-foreground uppercase" data-testid="community-heading">
+              {l.t("source.community")}
+            </h3>
+          ) : null}
+          {!(hasIqamah) && !ownDay ? (
             <section className="mb-4 flex flex-col gap-3 rounded-2xl bg-muted p-4 sm:flex-row sm:items-center" aria-labelledby="no-iqamah">
               <div className="flex-1">
                 <h3 id="no-iqamah" className="font-bold">
@@ -282,7 +314,13 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
               <CalendarLink path={`/m/${place.slug}/calendar.ics`} label={l.t("mosque.calendar")} scope="place" />
             </>
           </p>
-          {!(hasIqamah) ? <WaitlistForm placeId={place.id} /> : null}
+          {!ownDay ? (
+            <LinkTimetable
+              placeId={place.id}
+              labels={{ title: l.t("source.linkTitle"), hint: l.t("source.linkHint"), button: l.t("source.linkButton"), linked: l.t("source.linked") }}
+            />
+          ) : null}
+          {!(hasIqamah) && !ownDay ? <WaitlistForm placeId={place.id} /> : null}
         </section>
 
         {hasIqamah ? (

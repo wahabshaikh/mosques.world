@@ -37,6 +37,8 @@ export async function POST(request: Request) {
     database.prepare(`DELETE FROM notification_pref WHERE user_id = ?`).bind(user.id),
     database.prepare(`DELETE FROM push_subscription WHERE user_id = ?`).bind(user.id),
     database.prepare(`DELETE FROM steward WHERE user_id = ?`).bind(user.id),
+    // A timetable link outlives the person who added it (it is the mosque's data), but not their name on it.
+    database.prepare(`UPDATE place_source SET created_by = NULL WHERE created_by = ?`).bind(user.id),
     database
       .prepare(
         `UPDATE user SET name = 'Former member', email = ?, email_verified = 0, image = NULL, username = NULL,

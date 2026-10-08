@@ -124,4 +124,13 @@ export const ar: Messages = {
   "mosque.appleMaps": "خرائط Apple",
   "mosque.map": "الخريطة",
   "mosque.activity": "نشاط المجتمع مؤخرًا",
+  "source.title": "جدول المسجد نفسه",
+  "source.via": "ينشره المسجد على {provider} · حُدّث {age}",
+  "source.jumuah": "الجمعة {times}",
+  "source.linkTitle": "هل ينشر هذا المسجد أوقاته على مواقيت أو مسجدال؟",
+  "source.linkHint": "الصق الرابط ليظهر أذان المسجد وإقامته هنا، ويُحدَّث كل ليلة.",
+  "source.linkButton": "ربط الجدول",
+  "source.linked": "تم الربط. يظهر جدول المسجد الآن في هذه الصفحة.",
+  "source.community": "أوقات أبلغ عنها المجتمع",
+  "source.meta": "جدول المسجد · {provider}",
 };

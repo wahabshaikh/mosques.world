@@ -1,7 +1,8 @@
 import { TZDate } from "@date-fns/tz";
 import { civilDate, type PrayerDay, type PrayerKey } from "@/lib/prayer/times";
 import type { IqamahCell, NextRow } from "@/components/mw/prayer-table";
-import { ADHAN_METHOD_KEY, AMENITIES, ASR_MADHAB_KEY, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type JumuahValue } from "@/lib/trust/facts";
+import { ADHAN_METHOD_KEY, AMENITIES, ASR_MADHAB_KEY, IQAMAH_PRAYERS, iqamahValue, jumuahValue, languageName, ordinal, resolveIqamah, type IqamahPrayer, type JumuahValue } from "@/lib/trust/facts";
+import type { TimetableDay } from "@/lib/sources/timetable";
 import type { FactView } from "@/lib/trust/read";
 import { translator, type Translator } from "@/lib/i18n";
 
@@ -67,6 +68,31 @@ export function nextRows(day: PrayerDay, cells: Partial<Record<PrayerKey, Iqamah
         iqamah: cell?.label,
         iqamahAt: cell?.at,
         meta: cell ? (fact?.state === "verified" ? l.t("meta.verified", { age: l.relative(confirmed, now) }) : l.t("meta.unverified")) : undefined,
+      };
+    });
+}
+
+/**
+ * The "next prayer" rows from the mosque's own timetable: its adhan where it publishes one (else the
+ * calculated adhan) and its iqamah, credited to the provider.
+ */
+export function timetableRows(day: PrayerDay, own: TimetableDay, provider: string, l: Translator = ENGLISH): NextRow[] {
+  const [year = 1970, month = 1, date = 1] = day.date.split("-").map(Number);
+  const at = (hm: string) => localInstant({ year, month, day: date }, hm, day.timezone);
+  return day.rows
+    .filter((row) => row.key !== "sunrise")
+    .map((row) => {
+      const key = row.key as IqamahPrayer;
+      const adhan = own.a?.[key];
+      const iqamah = row.key === "dhuhr" && day.jumuah && own.j?.[0] ? own.j[0] : own.i?.[key];
+      return {
+        key: row.key,
+        label: l.locale === "en" ? row.label : l.prayer(row.key, row.key === "dhuhr" && day.jumuah),
+        adhan: l.adhan(adhan ?? row.adhan),
+        adhanAt: adhan ? at(adhan) : row.at,
+        iqamah: iqamah ? l.time(iqamah) : undefined,
+        iqamahAt: iqamah ? at(iqamah) : undefined,
+        meta: l.t("source.meta", { provider }),
       };
     });
 }

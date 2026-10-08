@@ -122,4 +122,13 @@ export const fr: Messages = {
   "mosque.appleMaps": "Plans d'Apple",
   "mosque.map": "Carte",
   "mosque.activity": "Activité récente de la communauté",
+  "source.title": "Les horaires de la mosquée",
+  "source.via": "Publiés par la mosquée sur {provider} · mis à jour {age}",
+  "source.jumuah": "Joumou'a {times}",
+  "source.linkTitle": "Cette mosquée publie-t-elle ses horaires sur Mawaqit ou Masjidal ?",
+  "source.linkHint": "Collez le lien : son adhan et son iqama s'afficheront ici, mis à jour chaque nuit.",
+  "source.linkButton": "Lier les horaires",
+  "source.linked": "C'est lié. Les horaires de la mosquée s'affichent maintenant ici.",
+  "source.community": "Horaires signalés par la communauté",
+  "source.meta": "Horaires de la mosquée · {provider}",
 };

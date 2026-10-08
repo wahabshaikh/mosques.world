@@ -119,4 +119,13 @@ export const ms: Messages = {
   "mosque.appleMaps": "Apple Maps",
   "mosque.map": "Peta",
   "mosque.activity": "Aktiviti komuniti terkini",
+  "source.title": "Jadual rasmi masjid",
+  "source.via": "Diterbitkan oleh masjid di {provider} · dikemas kini {age}",
+  "source.jumuah": "Jumaat {times}",
+  "source.linkTitle": "Adakah masjid ini menerbitkan waktunya di Mawaqit atau Masjidal?",
+  "source.linkHint": "Tampal pautan, azan dan iqamah masjid akan dipaparkan di sini dan dikemas kini setiap malam.",
+  "source.linkButton": "Pautkan jadual",
+  "source.linked": "Dipautkan. Jadual masjid kini dipaparkan di halaman ini.",
+  "source.community": "Waktu daripada komuniti",
+  "source.meta": "Jadual masjid · {provider}",
 };
