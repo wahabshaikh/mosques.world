@@ -122,4 +122,13 @@ export const ur: Messages = {
   "mosque.appleMaps": "Apple Maps",
   "mosque.map": "نقشہ",
   "mosque.activity": "کمیونٹی کی حالیہ سرگرمی",
+  "source.title": "مسجد کا اپنا نظام الاوقات",
+  "source.via": "مسجد {provider} پر شائع کرتی ہے · تازہ کاری {age}",
+  "source.jumuah": "جمعہ {times}",
+  "source.linkTitle": "کیا یہ مسجد اپنے اوقات مواقیت یا مسجدال پر شائع کرتی ہے؟",
+  "source.linkHint": "لنک چسپاں کریں، مسجد کی اپنی اذان اور اقامت یہاں دکھائی دے گی اور ہر رات تازہ ہوگی۔",
+  "source.linkButton": "نظام الاوقات جوڑیں",
+  "source.linked": "جڑ گیا۔ مسجد کا نظام الاوقات اب اس صفحے پر دکھائی دے رہا ہے۔",
+  "source.community": "کمیونٹی کے بتائے ہوئے اوقات",
+  "source.meta": "مسجد کا نظام الاوقات · {provider}",
 };

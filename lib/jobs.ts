@@ -1,4 +1,4 @@
-import { refreshGoogleLocations } from "@/lib/places/google";
+import { GOOGLE_PLACES_IN_USE, refreshGoogleLocations } from "@/lib/places/google";
 import { factsDueForRecompute, nightlyTrustStatement, recomputeFact, refreshPlaceSummary, releaseDueHolds } from "@/lib/trust/store";
 
 /** Facts per queue message; a consumer batch (≤ 10 messages) then touches at most 250 facts. */
@@ -46,7 +46,7 @@ export async function nightly(
 ) {
   await nightlyTrustStatement(env.DB, now).run();
   await activatePendingStatement(env.DB, now).run();
-  if (env.CACHE && env.GOOGLE_MAPS_API_KEY) {
+  if (GOOGLE_PLACES_IN_USE && env.CACHE && env.GOOGLE_MAPS_API_KEY) {
     await refreshGoogleLocations(env.DB, { apiKey: env.GOOGLE_MAPS_API_KEY, cache: env.CACHE, mocks: false }, now);
   }
   // Places with monthly timetables: slide their two-week window in the summary forward (spec P7).

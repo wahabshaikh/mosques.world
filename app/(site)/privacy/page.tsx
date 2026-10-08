@@ -23,8 +23,9 @@ export default function PrivacyPage() {
         Photos are re-encoded when you upload them: location (GPS), camera details and all other metadata are removed, and the
         original file is deleted once the resized copies exist. Photos may be checked by an automated image classifier and by
         moderators before they appear. Places you add, and the times and facilities you mark, are shown with your username.
-        When you search for a place to add, your search text is sent to Google Places; we keep only Google&apos;s place
-        identifier.
+        When you search for a mosque or an area, your search text and the map&apos;s centre are sent to Photon (komoot&apos;s
+        OpenStreetMap search); nothing identifying you goes with it. If you link a mosque&apos;s Mawaqit or Masjidal timetable,
+        we keep the link and that you added it.
       </p>
       <h2 className="text-lg font-bold">Check-ins, your map and saved places</h2>
       <p>

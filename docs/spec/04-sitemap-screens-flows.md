@@ -53,7 +53,8 @@ flowchart TD
 | `/api/auth/*` | 2 | better-auth | — | Auth endpoints |
 | `/api/v1/places` | 1 | route handler | public | bbox GeoJSON for the map |
 | `/api/v1/places/[id]/times` | 1 | route handler | public | Today's times JSON (used by PWA/widgets) |
-| `/api/v1/geocode/autocomplete`, `/api/v1/geocode/details` | 1 | route handler | public (rate-limited, Turnstile after N) | "Where" search proxy for Google Places |
+| `/api/v1/geocode/autocomplete`, `/api/v1/geocode/details` | 1 | route handler | public (rate-limited, Turnstile after N) | "Where" search: areas (Photon), listed mosques and OpenStreetMap mosques (Photon), free |
+| `/api/v1/places/[id]/source` | — | route handler | signed in (≤ 10 links a day) | link a mosque's Mawaqit page or Masjidal timetable |
 | `/api/v1/uploads` | 3 | route handler | user | Signed upload + processing |
 | `/og/m/[slug]`, `/og/u/[username]` | 1/4 | route handler (Satori → PNG via `workers-og`) | public | Share images |
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` | 1/5 | generated | public | SEO/PWA |
@@ -73,15 +74,17 @@ For each screen: purpose → key content → states. Visual reference in bracket
 ### Explore / Search `/`, `/search` [Main.dc.html, P1]
 - **Header**: logo, `SearchPill` (Where · Prayer · Needs), "Add a mosque" (P3; before that "About"), account menu.
 - **Search**: "Where" with a **Near me** button; a location permission the visitor already granted is used straight away, a denied one hides the "Use your location" prompt.
-- **CategoryBar**: toggles only (no "Nearby" reset chip): Prayer rooms, Has verified times, Women's section, Wudhu area, Step-free, Parking, Open for Fajr, Classes, then Filters. Amenity filters light up in P3.
+- **CategoryBar**: Has prayer times (mosque timetable or community-verified), Prayer rooms, then Filters (amenities live in the Filters dialog). The search box finds a masjid by name or an area.
+- **List**: a legend for the three kinds of time, then rows whose chip says whose time leads the row: the mosque's timetable, community iqamah, or the calculated adhan. 40 rows, then "Show more". On wide screens the view is one screen tall: the list scrolls beside the map.
 - **List**: overline "Next prayer · Asr adhan 4:35 PM", heading "38 mosques & prayer spaces nearby", a subline with the area and Hijri date, sort (Soonest iqamah / Distance / Most verified), a single column of `MosqueCard` rows, infinite scroll (24 per page). An area with no places yet shows **"Prayer times here today"** (calculated with the visitor's country default when the view is their own location, else Muslim World League; labelled) above the "Finding mosques…" state, so a first visit is never empty.
-- **Map**: `PlaceMap` with `TimePin`s, a "Search this area" button once the map moves past what was loaded, zoom, legend, "you are here" dot.
+- **Map**: `PlaceMap` with pins for every loaded place (up to 200), a "Search this locality" button after the visitor moves the map, zoom, locate, legend, and a blue "you are here" dot (approximate from the server until the browser shares a precise position). On phones a List/Map switch shows one at a time.
 - **States**: location permission prompt (inline card, not a browser popup on load), empty area CTA, offline banner, error toast.
 - **Mobile**: list-first with a floating "Map" button; the map view has a bottom-sheet list (vaul snap points 20%/60%/100%).
 
 ### Mosque page `/m/[slug]` [Mosque.dc.html, MobileMosque.dc.html]
 - Title, address, Share/Save (Save P4), summary line (type · Jumu'ah count · top amenities).
-- **Today's prayer times** first (`PrayerTimesTable`), date + Hijri date, "Update timings" (P2), `DisputeBanner` (P2), calculation note + "Monthly timetable" (P7). With no iqamah yet, a compact "Iqamah times not yet added · Add iqamah times" row sits above the table and the waitlist email field below it.
+- **The mosque's own timetable** first when one is linked (Mawaqit/Masjidal): a solid-green table of its adhan and iqamah (jumu'ah on Fridays), credited "Published by the mosque on Mawaqit · updated …" with a link, and it drives the "Next prayer" card. The community table follows under "Community-reported times". Without one, a "Does this mosque publish its times on Mawaqit or Masjidal?" link opens a paste-the-link form.
+- **Today's prayer times** (`PrayerTimesTable`), date + Hijri date, "Update timings" (P2), `DisputeBanner` (P2), calculation note + "Monthly timetable" (P7). With no iqamah yet, a compact "Iqamah times not yet added · Add iqamah times" row sits above the table and the waitlist email field below it.
 - `TrustSummary` (P2), shown once iqamah times exist; "agreement" is a dash until at least two people have voted.
 - Stewards row (P6; in P2–5 "Kept up to date by N contributors").
 - **Jumu'ah** cards (P2).

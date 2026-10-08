@@ -119,4 +119,13 @@ export const tr: Messages = {
   "mosque.appleMaps": "Apple Haritalar",
   "mosque.map": "Harita",
   "mosque.activity": "Son topluluk etkinliği",
+  "source.title": "Caminin kendi vakit çizelgesi",
+  "source.via": "Cami tarafından {provider} üzerinde yayımlanıyor · güncelleme {age}",
+  "source.jumuah": "Cuma {times}",
+  "source.linkTitle": "Bu cami vakitlerini Mawaqit veya Masjidal'da yayımlıyor mu?",
+  "source.linkHint": "Bağlantıyı yapıştırın; caminin kendi ezan ve kamet vakitleri burada görünür ve her gece güncellenir.",
+  "source.linkButton": "Çizelgeyi bağla",
+  "source.linked": "Bağlandı. Caminin çizelgesi artık bu sayfada görünüyor.",
+  "source.community": "Topluluğun bildirdiği vakitler",
+  "source.meta": "Cami çizelgesi · {provider}",
 };

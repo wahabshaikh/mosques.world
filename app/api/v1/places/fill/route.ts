@@ -5,6 +5,7 @@ import { fillArea } from "@/lib/osm-fill";
 import { fixtureFetcher } from "@/lib/osm-fixture";
 import { writeAllowed } from "@/lib/ratelimit";
 import { jsonError } from "@/lib/session";
+import { refreshDueSources } from "@/lib/sources/sync";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +33,20 @@ export async function POST(request: Request) {
   const { results, remaining, busy } = await fillArea(env, parsed.data.bbox, fixture ? fixtureFetcher() : fetch, Date.now());
   const failed = results.filter((result) => result.error);
   if (failed.length > 0) console.error(`Area fill failed for ${failed.map((result) => `${result.cell}: ${result.error}`).join("; ")}`);
+  const inserted = results.reduce((sum, result) => sum + result.inserted, 0);
+  if (inserted > 0 && !fixture) {
+    // New mosques whose OpenStreetMap entry links their Mawaqit/Masjidal page get their own times now, not tomorrow.
+    await refreshDueSources(env.DB, timed(fetch, 4000), Date.now(), 8, parsed.data.bbox).catch((error: unknown) => console.error("Timetable link after fill failed", error));
+  }
   return Response.json({
     ok: failed.length === 0,
-    inserted: results.reduce((sum, result) => sum + result.inserted, 0),
+    inserted,
     busy: busy > 0,
     remaining,
   });
+}
+
+/** A fetch that gives up after `ms`, so one slow provider can't hold the fill response. */
+function timed(fetcher: typeof fetch, ms: number): typeof fetch {
+  return ((input: RequestInfo | URL, init?: RequestInit) => fetcher(input, { ...init, signal: AbortSignal.timeout(ms) })) as typeof fetch;
 }

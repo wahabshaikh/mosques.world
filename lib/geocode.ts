@@ -159,3 +159,38 @@ export function placeHit(feature: PhotonFeature & { properties?: { street?: stri
     details: { placeId, name: p.name, address, lat, lng, locality, region: p.state ?? null, country: p.countrycode?.toUpperCase() ?? null },
   };
 }
+
+export type MosqueHit = { label: string; name: string; lat: number; lng: number; osmType: "node" | "way" | "relation"; osmId: number };
+
+/** Names that say "mosque" in the languages our visitors search in; Photon can't filter by religion. */
+export const MOSQUE_WORDS =
+  /\b(mosque|masjid|masjed|musall?a|mescit|mescidi?|cami|camii|jami|jamia|jame|jamea|islamic|muslim|madrasa|madrassa|surau|langgar|musholl?a|mushola|mosquée|moschee|mezquita|moskee|meczet|džamija|xhami)\b|مسجد|جامع|مصلى|মসজিদ/i;
+
+const OSM_TYPES = { N: "node", W: "way", R: "relation" } as const;
+
+/** Mosques from OpenStreetMap (through Photon) matching a typed name, nearest the map first. */
+export async function searchMosques(
+  query: string,
+  near: { lat: number; lng: number } | null,
+  options: { cache?: Cache; fetcher?: typeof fetch } = {},
+): Promise<MosqueHit[]> {
+  const q = query.trim().replace(/\s+/g, " ").slice(0, 80);
+  if (q.length < 3) return [];
+  const bias = near ? `&lat=${near.lat.toFixed(1)}&lon=${near.lng.toFixed(1)}&zoom=10&location_bias_scale=0.3` : "";
+  const result = await cached(options.cache, `geo:m:${q.toLowerCase()}${bias}`, async () => {
+    const features = await photon(`/api/?q=${encodeURIComponent(q)}&limit=12&lang=en&osm_tag=amenity:place_of_worship${bias}`, options.fetcher ?? fetch);
+    if (!features) return null;
+    return features.map(mosqueHit).filter((hit): hit is MosqueHit => hit !== null).slice(0, 5);
+  });
+  return result ?? [];
+}
+
+export function mosqueHit(feature: PhotonFeature & { properties?: { street?: string; locality?: string } }): MosqueHit | null {
+  const p = feature.properties ?? {};
+  const [lng, lat] = feature.geometry?.coordinates ?? [];
+  const osmType = OSM_TYPES[(p.osm_type ?? "") as keyof typeof OSM_TYPES];
+  if (!p.name || lat === undefined || lng === undefined || !osmType || !p.osm_id) return null;
+  if (!MOSQUE_WORDS.test(p.name)) return null;
+  const where = [p.locality ?? p.district, p.city, p.country].filter((part): part is string => Boolean(part) && part !== p.name);
+  return { label: [p.name, ...new Set(where)].join(", "), name: p.name, lat, lng, osmType, osmId: p.osm_id };
+}

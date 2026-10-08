@@ -1,5 +1,6 @@
 import { appEnv } from "@/lib/db/client";
 import { suggestPlaces } from "@/lib/db/queries";
+import { GOOGLE_PLACES_IN_USE } from "@/lib/places/google";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
   const placeId = url.searchParams.get("placeId");
   const q = url.searchParams.get("q");
   const env = appEnv();
-  if (placeId && env.GOOGLE_MAPS_API_KEY) {
+  if (GOOGLE_PLACES_IN_USE && placeId && env.GOOGLE_MAPS_API_KEY) {
     const response = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
       headers: {
         "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY,

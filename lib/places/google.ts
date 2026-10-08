@@ -8,6 +8,14 @@ import { encodeGeohash } from "@/lib/geo/geohash";
  * fixtures endpoint (`test:places:autocomplete`, `test:places:details:<id>`).
  */
 
+/**
+ * Google Places stays integrated but supplies no data for now: names, locations, search and live
+ * fields all come from free sources (OpenStreetMap, Photon, Wikidata, Mawaqit). Setting this to true
+ * turns the existing call sites back on (the add-form lookup, geocode details, the mosque page's
+ * phone/website/hours and the nightly location refresh); the API key alone no longer does.
+ */
+export const GOOGLE_PLACES_IN_USE = false;
+
 export type PlaceSuggestion = { placeId: string; label: string; secondary: string | null };
 
 export type PlaceDetails = {

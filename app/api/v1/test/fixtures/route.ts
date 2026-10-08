@@ -93,6 +93,8 @@ export async function POST(request: Request) {
       database.prepare(`DELETE FROM activity WHERE place_id = ?`).bind(place.id),
       database.prepare(`DELETE FROM timetable_row WHERE timetable_id IN (SELECT id FROM timetable WHERE place_id = ?)`).bind(place.id),
       database.prepare(`DELETE FROM timetable WHERE place_id = ?`).bind(place.id),
+      database.prepare(`DELETE FROM place_source WHERE place_id = ?`).bind(place.id),
+      database.prepare(`UPDATE place SET timetable_json = NULL WHERE id = ?`).bind(place.id),
       database.prepare(`DELETE FROM special_prayer WHERE place_id = ?`).bind(place.id),
       // Community adhan settings live on the row; put the country's calculation back.
       database

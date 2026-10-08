@@ -8,6 +8,21 @@
 
 Public directory: explore, search, mosque pages with calculated adhan times, city and country pages, sitemap, and waitlist double opt-in.
 
+## Discovery and mosque timetables (October 2026)
+
+- The explore view lists mosques around the visitor's IP location (Cloudflare request geo), with a List/Map switch on
+  phones, a blue location dot, "Search this locality" after the map moves, and free masjid-name search (Photon).
+- Mosques' own adhan/iqamah come from Mawaqit or Masjidal (`lib/sources/`, migration `0013_timetable_sources.sql`).
+  Links come from OpenStreetMap `website` tags and from people pasting a link on the mosque page. The nightly cron
+  (`15 2 * * *`) refreshes them; failures are kept in `place_source.error`.
+- Check health: `SELECT status, COUNT(*) FROM place_source GROUP BY status;` and
+  `SELECT place_id, error FROM place_source WHERE status = 'failed' LIMIT 20;`.
+- Remove a bad link: `DELETE FROM place_source WHERE place_id = ? AND provider = ?;` then
+  `UPDATE place SET timetable_json = NULL WHERE id = ?;`.
+- Google Places supplies no data (`GOOGLE_PLACES_IN_USE = false` in `lib/places/google.ts`); the key can stay set.
+- E2E: `e2e/phase-1/discovery.spec.ts`, `e2e/phase-2/mosque-timetable.spec.ts` (uses the `mw_source_fixture` cookie,
+  non-production only).
+
 ## Rollback
 
 Deploy the previous Worker version and leave the database as-is. Migrations are additive, so there is no database rollback.

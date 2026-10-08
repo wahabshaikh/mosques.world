@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getPrayerDay } from "@/lib/prayer/times";
 import type { FactView, FactValueView } from "@/lib/trust/read";
-import { iqamahCells, jumuahCards, localInstant, nextRows, statusFor, trustHeadline, updateData } from "./mosque";
+import { iqamahCells, jumuahCards, localInstant, nextRows, statusFor, timetableRows, trustHeadline, updateData } from "./mosque";
 
 const NOW = Date.parse("2026-09-25T11:00:00Z");
 const day = getPrayerDay({
@@ -108,5 +108,18 @@ describe("update dialog data", () => {
     const withAmenities = updateData({ place: { id: "p", slug: "s", name: "T" }, facts: [fact("amenity.parking", "verified", { v: true })], day, trustLevel: 0, amenities: true });
     expect(withAmenities.amenities.find((item) => item.key === "amenity.parking")?.current?.value).toEqual({ v: true });
     expect(withAmenities.amenities).toHaveLength(10);
+  });
+});
+
+describe("timetableRows", () => {
+  it("builds the next-prayer rows from the mosque's own timetable, with jumu'ah on Fridays", () => {
+    const friday = getPrayerDay({ lat: 51.5174, lng: -0.0654, timeZone: "Europe/London", method: "MoonsightingCommittee", madhab: "hanafi", highLat: "twilightangle", now: new Date("2026-10-09T09:00:00Z") });
+    const rows = timetableRows(friday, { a: { fajr: "05:30" }, i: { fajr: "05:45", asr: "16:00" }, j: ["13:15"] }, "Mawaqit");
+    expect(rows.map((row) => row.key)).toEqual(["fajr", "dhuhr", "asr", "maghrib", "isha"]);
+    expect(rows[0]).toMatchObject({ adhan: "5:30 AM", adhanAt: "2026-10-09T04:30:00.000Z", iqamah: "5:45 AM", iqamahAt: "2026-10-09T04:45:00.000Z", meta: "Mosque timetable · Mawaqit" });
+    // Friday: the dhuhr row is jumu'ah at the mosque's first jumu'ah time; no published adhan falls back to the calculated one.
+    expect(rows[1]).toMatchObject({ iqamah: "1:15 PM", iqamahAt: "2026-10-09T12:15:00.000Z" });
+    expect(rows[1]?.adhanAt).toBe(friday.rows.find((row) => row.key === "dhuhr")?.at);
+    expect(rows[3]?.iqamah).toBeUndefined();
   });
 });

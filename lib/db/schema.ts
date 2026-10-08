@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const place = sqliteTable(
   "place",
@@ -37,10 +37,28 @@ export const place = sqliteTable(
     adhanAdjustJson: text("adhan_adjust_json"),
     wikidataId: text("wikidata_id"),
     enrichmentJson: text("enrichment_json"),
+    timetableJson: text("timetable_json"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (table) => [uniqueIndex("place_osm").on(table.osmType, table.osmId)],
+);
+
+export const placeSource = sqliteTable(
+  "place_source",
+  {
+    placeId: text("place_id").notNull(),
+    provider: text("provider").notNull(),
+    externalId: text("external_id").notNull(),
+    url: text("url").notNull(),
+    status: text("status").notNull().default("pending"),
+    error: text("error"),
+    fetchedAt: integer("fetched_at"),
+    createdBy: text("created_by"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.placeId, table.provider] })],
 );
 
 export const city = sqliteTable("city", {

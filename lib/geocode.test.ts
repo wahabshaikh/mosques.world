@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { areaFrom, geocodeWhere, nameArea, searchAreas, suggestionLabel, toSuggestion } from "./geocode";
+import { areaFrom, geocodeWhere, mosqueHit, nameArea, searchAreas, searchMosques, suggestionLabel, toSuggestion } from "./geocode";
 
 const karachi = {
   geometry: { coordinates: [67.0207, 24.8547] as [number, number] },
@@ -80,5 +80,44 @@ describe("add-a-place search", () => {
     ]);
     expect(await searchPlaces("ab", null, { fetcher: fetcher as unknown as typeof fetch })).toEqual([]);
     expect(placeHit({ geometry: { coordinates: [1, 2] }, properties: { name: "Bare" } })?.details).toMatchObject({ address: null, locality: null, country: null });
+  });
+});
+
+describe("mosque search", () => {
+  const feature = (name: string, extra: Record<string, unknown> = {}) => ({
+    geometry: { coordinates: [-0.0653, 51.5174] as [number, number] },
+    properties: { osm_type: "W", osm_id: 241107520, osm_key: "amenity", name, district: "Whitechapel", city: "London", country: "United Kingdom", ...extra },
+  });
+
+  it("keeps mosques and drops other places of worship", () => {
+    expect(mosqueHit(feature("East London Mosque"))).toEqual({
+      label: "East London Mosque, Whitechapel, London, United Kingdom",
+      name: "East London Mosque",
+      lat: 51.5174,
+      lng: -0.0653,
+      osmType: "way",
+      osmId: 241107520,
+    });
+    expect(mosqueHit(feature("Masjid-e-Umer"))?.osmType).toBe("way");
+    expect(mosqueHit(feature("مسجد النور"))).not.toBeNull();
+    expect(mosqueHit(feature("St Mary's Church"))).toBeNull();
+    expect(mosqueHit(feature("Some Mosque", { osm_type: "X" }))).toBeNull();
+  });
+
+  it("asks Photon for places of worship near the map and caches the answer", async () => {
+    const urls: string[] = [];
+    const fetcher = (async (url: string) => {
+      urls.push(url);
+      return new Response(JSON.stringify({ features: [feature("East London Mosque"), feature("Christ Church")] }));
+    }) as unknown as typeof fetch;
+    const store = new Map<string, string>();
+    const cache = { get: async (key: string) => store.get(key) ?? null, put: async (key: string, value: string) => void store.set(key, value) };
+    const hits = await searchMosques("east london", { lat: 51.51, lng: -0.06 }, { fetcher, cache });
+    expect(hits.map((hit) => hit.name)).toEqual(["East London Mosque"]);
+    expect(urls[0]).toContain("osm_tag=amenity:place_of_worship");
+    expect(urls[0]).toContain("lat=51.5&lon=-0.1");
+    await searchMosques("east london", { lat: 51.51, lng: -0.06 }, { fetcher, cache });
+    expect(urls).toHaveLength(1);
+    expect(await searchMosques("ea", null, { fetcher })).toEqual([]);
   });
 });
