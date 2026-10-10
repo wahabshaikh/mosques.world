@@ -315,6 +315,20 @@ the reward for contributing.
 
 ---
 
+## October 2026 redesign (no phase)
+
+Mobile-first Airbnb-style redesign (spec 3.9): tab bar, explore with calculated area times and one ask,
+mosque page that never shows calculated times as a masjid's own, one-tap "Yes, still right", hasanat
+tally, levels and `/leaderboard`, WhatsApp share loops, FAQ/breadcrumb/WebSite structured data.
+No migration: hasanat are computed from `activity`.
+
+**Analytics goals:** `nudge_clicked` (`kind`: `add_times` | `confirm`); `share_click` gains `surface`
+values `explore_nudge`, `times_confirmed`, `times_confirmed_link`, `ask_for_times`,
+`after_update_whatsapp`; `update_opened` gains `from`; `vote_cast` with `fact_key: confirm_all` for the
+one-tap confirm.
+
+---
+
 ## Phase dependency map
 
 ```mermaid
