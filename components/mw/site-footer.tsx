@@ -19,8 +19,8 @@ const open: Array<[MessageKey, string]> = [
 export async function SiteFooter() {
   const l = await getTranslator();
   return (
-    <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-[1120px] flex-col gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
+    <footer className="pb-tabbar border-t border-border bg-muted/50">
+      <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <p>
           © {new Date().getFullYear()} mosques.world · {l.t("footer.tagline")}
         </p>

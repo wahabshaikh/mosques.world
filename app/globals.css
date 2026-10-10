@@ -5,47 +5,55 @@
 :root {
   --radius: 0.75rem;
   --background: #ffffff;
-  --foreground: #1f1d1a;
+  --foreground: #222222;
   --card: #ffffff;
   --popover: #ffffff;
-  --muted: #f6f4ef;
-  --muted-foreground: #5e5a53;
-  --border: #e8e4dc;
-  --input: #e0dbd2;
-  --border-strong: #c9c3b8;
+  --muted: #f7f7f7;
+  --muted-foreground: #6a6a6a;
+  --border: #ebebeb;
+  --input: #dddddd;
+  --border-strong: #b0b0b0;
   --primary: #0b6e4f;
   --primary-foreground: #ffffff;
-  --primary-soft: #e6f1eb;
-  --secondary: #1f1d1a;
+  --primary-soft: #ebf5f0;
+  --secondary: #222222;
   --secondary-foreground: #ffffff;
   --warning: #a4520a;
   --warning-soft: #fcf1e1;
   --destructive: #b42318;
   --ring: #0b6e4f;
   --info: #2f6fdb;
+  --gold: #7a5400;
+  --gold-soft: #fbf3dd;
+  --elev-card: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --elev-float: 0 2px 8px rgba(0, 0, 0, 0.14);
   --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Noto Naskh Arabic", ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {
-  --background: #121110;
-  --foreground: #f3f1ec;
-  --card: #1b1a18;
-  --popover: #1b1a18;
-  --muted: #24221f;
-  --muted-foreground: #a9a399;
-  --border: #2e2b27;
-  --input: #38352f;
-  --border-strong: #4a463f;
+  --background: #121212;
+  --foreground: #f2f2f2;
+  --card: #1c1c1c;
+  --popover: #1c1c1c;
+  --muted: #242424;
+  --muted-foreground: #a8a8a8;
+  --border: #2e2e2e;
+  --input: #3a3a3a;
+  --border-strong: #555555;
   --primary: #34b98a;
   --primary-foreground: #0b1f17;
   --primary-soft: #16322a;
-  --secondary: #f3f1ec;
-  --secondary-foreground: #121110;
+  --secondary: #f2f2f2;
+  --secondary-foreground: #121212;
   --warning: #e8a55a;
   --warning-soft: #3a2a14;
   --destructive: #f97066;
   --ring: #34b98a;
   --info: #6ea0f0;
+  --gold: #e9b949;
+  --gold-soft: #3a2f12;
+  --elev-card: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --elev-float: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
@@ -68,6 +76,10 @@
   --color-destructive: var(--destructive);
   --color-ring: var(--ring);
   --color-info: var(--info);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --shadow-card: var(--elev-card);
+  --shadow-float: var(--elev-float);
   --radius-lg: var(--radius);
   --font-sans: var(--font-sans);
 }
@@ -102,4 +114,29 @@ html[dir="rtl"] body {
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* Horizontal chip rows scroll like a native app: no scrollbar, momentum on iOS. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Room for the phone tab bar (and the home indicator) under the last thing on a page. */
+.pb-tabbar {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .pb-tabbar {
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
