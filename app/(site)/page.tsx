@@ -11,8 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const languages = languageAlternates("/");
   return {
-    title: "Find a mosque",
-    description: "Mosques and prayer spaces near you, with today's calculated adhan times.",
+    title: "Mosques near me: prayer and iqamah times",
+    description: "Find mosques near you with today's jamā'ah (iqamah) times, kept accurate by the community, and the calculated prayer times for your area.",
     alternates: { canonical: localePath(locale, "/"), ...(languages ? { languages } : {}) },
   };
 }
@@ -23,8 +23,28 @@ export default async function HomePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const suggested = await suggestedLocale();
+  const base = process.env.PUBLIC_BASE_URL ?? "https://mosques.world";
+  // Sitelinks search box and a named publisher, for search engines and answer engines.
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "mosques.world",
+      url: base,
+      potentialAction: { "@type": "SearchAction", target: `${base}/search?where={search_term_string}`, "query-input": "required name=search_term_string" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "mosques.world",
+      url: base,
+      logo: `${base}/icons/apple-touch-icon.png`,
+      description: "A community directory of mosques with jamā'ah (iqamah) times kept accurate by the people who pray there.",
+    },
+  ];
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {suggested ? (
         <p className="bg-primary-soft px-4 py-2 text-center text-sm" lang={suggested.locale} data-testid="locale-suggestion">
           <a href={suggested.href} className="font-semibold text-primary underline">
