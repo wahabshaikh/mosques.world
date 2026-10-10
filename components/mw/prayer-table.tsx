@@ -18,6 +18,8 @@ export type IqamahCell = {
   at: string;
   status: string;
   tone: "ok" | "muted" | "warning";
+  /** How the mosque sets it: a fixed clock time, or minutes after the adhan (mixed per prayer is common). */
+  rule?: "fixed" | number;
 };
 
 export type PrayerTableExtras = {
@@ -27,10 +29,10 @@ export type PrayerTableExtras = {
   jumuahNote?: string;
 };
 
-function nextKeyAt(day: PrayerDay, nowIso: string, extras?: PrayerTableExtras): PrayerKey {
+function nextKeyAt(day: PrayerDay, nowIso: string, extras?: PrayerTableExtras, iqamahOnly = false): PrayerKey | null {
   const now = new Date(nowIso).getTime();
-  const salah = day.rows.filter((row) => row.key !== "sunrise");
-  return salah.find((row) => new Date(extras?.iqamah[row.key]?.at ?? row.at).getTime() > now)?.key ?? "fajr";
+  const salah = day.rows.filter((row) => row.key !== "sunrise" && (!iqamahOnly || extras?.iqamah[row.key]));
+  return salah.find((row) => new Date(extras?.iqamah[row.key]?.at ?? row.at).getTime() > now)?.key ?? salah[0]?.key ?? null;
 }
 
 export function minutesUntil(atIso: string, nowIso: string): number {
@@ -55,6 +57,8 @@ const ENGLISH_LABELS = {
   adhanIqamah: "Adhan {time} · {meta}",
   calculated: "Adhan · calculated",
   iqamahWord: "iqamah",
+  fixed: "fixed time",
+  afterAdhan: "adhan + {n} min",
   minutes: "{n} min",
   hours: "{h}h",
   hoursMinutes: "{h}h {m}m",
@@ -75,11 +79,17 @@ export function PrayerTable({
   initialNow,
   extras,
   labels = ENGLISH_LABELS,
+  showAdhan = true,
 }: {
   day: PrayerDay;
   initialNow: string;
   extras?: PrayerTableExtras;
   labels?: TableLabels;
+  /**
+   * The adhan column only when it is this mosque's own (a community adjustment): the bare calculated
+   * time is a different thing from a masjid's adhan and is shown apart, labelled as calculated.
+   */
+  showAdhan?: boolean;
 }) {
   const [now, setNow] = useState(initialNow);
 
@@ -88,7 +98,8 @@ export function PrayerTable({
     return () => window.clearInterval(timer);
   }, []);
 
-  const nextKey = nextKeyAt(day, now, extras);
+  const nextKey = nextKeyAt(day, now, extras, !showAdhan);
+  const rows = showAdhan ? day.rows : day.rows.filter((row) => row.key !== "sunrise");
   // An all-empty "Community check" column is noise; it appears once there is something to check (or add per row).
   const community = Boolean(extras && (Object.keys(extras.iqamah).length > 0 || extras.addHref));
 
@@ -98,13 +109,13 @@ export function PrayerTable({
       <thead>
         <tr className="bg-muted text-start text-xs tracking-wide text-muted-foreground uppercase">
           <th className="px-3 py-3 font-bold sm:px-5">{labels.prayer}</th>
-          <th className="px-3 py-3 font-bold">{labels.adhan}</th>
+          {showAdhan ? <th className="px-3 py-3 font-bold">{labels.adhan}</th> : null}
           <th className="px-3 py-3 font-bold">{labels.iqamah}</th>
           {community ? <th className="hidden px-3 py-3 font-bold md:table-cell">{labels.community}</th> : null}
         </tr>
       </thead>
       <tbody>
-        {day.rows.map((row) => {
+        {rows.map((row) => {
           const cell = extras?.iqamah[row.key];
           const next = row.key === nextKey;
           const target = cell?.at ?? row.at;
@@ -118,10 +129,15 @@ export function PrayerTable({
                   </span>
                 ) : null}
               </th>
-              <td className={cn("tabular px-3 py-3", community ? "text-base text-muted-foreground" : "text-lg font-extrabold")}>{row.adhan}</td>
+              {showAdhan ? <td className={cn("tabular px-3 py-3", community ? "text-base text-muted-foreground" : "text-lg font-extrabold")}>{row.adhan}</td> : null}
               {cell ? (
                 <td className="tabular px-3 py-3 text-base font-extrabold" data-iqamah={row.key}>
                   {cell.label}
+                  {cell.rule !== undefined ? (
+                    <span className="mt-0.5 block text-xs font-semibold text-muted-foreground" data-rule={cell.rule === "fixed" ? "fixed" : "after_adhan"}>
+                      {cell.rule === "fixed" ? labels.fixed : fill(labels.afterAdhan, { n: cell.rule })}
+                    </span>
+                  ) : null}
                   <span className={cn("mt-0.5 block text-xs font-semibold md:hidden", toneClass(cell.tone))}>{cell.status}</span>
                   {cell.confirmable ? (
                     <span className="md:hidden">
@@ -179,7 +195,7 @@ export type NextRow = {
 };
 
 /** Sticky "next prayer" card; picks the next jamā'ah client-side so cached HTML stays correct. */
-export function Countdown({ rows, initialNow, labels = ENGLISH_LABELS }: { rows: NextRow[]; initialNow: string; labels?: TableLabels }) {
+export function Countdown({ rows, initialNow, labels = ENGLISH_LABELS, showAdhan = true }: { rows: NextRow[]; initialNow: string; labels?: TableLabels; showAdhan?: boolean }) {
   const [now, setNow] = useState(initialNow);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date().toISOString()), 30_000);
@@ -197,7 +213,7 @@ export function Countdown({ rows, initialNow, labels = ENGLISH_LABELS }: { rows:
           {next.label} · <span className="whitespace-nowrap">{next.iqamah ?? next.adhan}</span>
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {next.iqamah ? fill(labels.adhanIqamah, { time: next.adhan, meta: next.meta ?? labels.iqamahWord }) : labels.calculated}
+          {next.iqamah ? (showAdhan ? fill(labels.adhanIqamah, { time: next.adhan, meta: next.meta ?? labels.iqamahWord }) : (next.meta ?? labels.iqamahWord)) : labels.calculated}
         </p>
       </div>
       <span className="rounded-full bg-primary-soft px-3 py-1.5 text-[13px] font-extrabold whitespace-nowrap text-primary">

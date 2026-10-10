@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import { shareTimesMessage, whatsappHref } from "@/lib/reminders";
 import { asTrustLevel, confirmationsNeeded, shouldHold, voteWeight, type FactState } from "@/lib/trust/engine";
 import {
   adhanAdjustValue,
@@ -307,8 +308,19 @@ export function UpdateTimes({
           ))}
         </ul>
         <div className="flex flex-col gap-2 rounded-xl bg-primary-soft p-4 text-sm">
-          <p className="font-semibold">Help your jamā&apos;ah find these times</p>
+          <p className="font-semibold">Your hasanat grew. Now help your jamā&apos;ah find these times</p>
           <p className="text-muted-foreground">Share the page in your mosque&apos;s group. Every confirmation makes the times more trusted.</p>
+          <p className="text-xs text-muted-foreground italic">“Whoever guides someone to goodness will have a reward like the one who does it.” <span className="not-italic">— Sahih Muslim 1893</span></p>
+          <div className="flex flex-wrap gap-2">
+          <a
+            href={whatsappHref(shareTimesMessage(data.placeName, `${typeof window === "undefined" ? "" : window.location.origin}/m/${data.slug}`))}
+            target="_blank"
+            rel="noopener"
+            onClick={() => track("share_click", { surface: "after_update_whatsapp" })}
+            className="inline-flex h-10 items-center rounded-xl bg-[#25D366] px-4 text-sm font-bold text-[#0b2e17]"
+          >
+            WhatsApp
+          </a>
           <Button
             type="button"
             variant="outline"
@@ -327,6 +339,10 @@ export function UpdateTimes({
           >
             {shared ? "Link copied" : "Share this mosque"}
           </Button>
+          <a href="/leaderboard" className="inline-flex h-10 items-center px-2 text-sm font-semibold underline">
+            Leaderboard
+          </a>
+          </div>
         </div>
         <Button
           type="button"

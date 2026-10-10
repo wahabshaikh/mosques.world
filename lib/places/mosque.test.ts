@@ -50,8 +50,8 @@ describe("mosque page presenter", () => {
       fact("iqamah.dhuhr", "stale", { t: "13:30" }),
     ];
     const cells = iqamahCells(facts, day, NOW);
-    expect(cells.asr).toMatchObject({ label: "5:00 PM", status: "Verified 2 days ago · 3 people", tone: "ok" });
-    expect(cells.maghrib).toMatchObject({ label: "7:00 PM", status: "5 min after adhan · 3 people" });
+    expect(cells.asr).toMatchObject({ label: "5:00 PM", status: "Verified 2 days ago · 3 people", tone: "ok", rule: "fixed" });
+    expect(cells.maghrib).toMatchObject({ label: "7:00 PM", rule: 5, status: "Verified 2 days ago · 3 people" });
     expect(cells.isha).toMatchObject({ status: "Change reported 5 hours ago", tone: "warning" });
     expect(cells.fajr?.status).toBe("Unverified · 1 person");
     expect(cells.dhuhr?.status).toMatch(/^Needs check/);
@@ -64,9 +64,7 @@ describe("mosque page presenter", () => {
 
   it("covers disputed and after-adhan unverified states", () => {
     expect(statusFor(fact("iqamah.asr", "disputed", { t: "17:00" }), NOW)).toEqual({ status: "Change reported", tone: "warning" });
-    expect(statusFor(fact("iqamah.maghrib", "unverified", { rule: "after_adhan", min: 5 }), NOW).status).toBe(
-      "5 min after adhan · Unverified · 3 people",
-    );
+    expect(statusFor(fact("iqamah.maghrib", "unverified", { rule: "after_adhan", min: 5 }), NOW).status).toBe("Unverified · 3 people");
   });
 
   it("builds Jumu'ah cards", () => {

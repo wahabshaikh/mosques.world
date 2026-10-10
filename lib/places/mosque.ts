@@ -19,13 +19,9 @@ export function statusFor(fact: FactView, now: number, l: Translator = ENGLISH):
   const confirmed = shown?.lastConfirmedAt ?? null;
   if (fact.state === "disputed") return { status: l.t("status.changeReported"), tone: "warning" };
   if (fact.state === "stale") return { status: l.t("status.needsCheck", { age: l.relative(confirmed, now) }), tone: "warning" };
-  const rule = shown ? iqamahValue.safeParse(shown.value) : null;
-  const ruleText = rule?.success && "rule" in rule.data ? l.t("status.rule", { n: rule.data.min }) : "";
   const people = l.plural("status.people", shown?.backers ?? 0);
-  if (fact.state === "verified") {
-    return { status: ruleText ? `${ruleText}${people}` : l.t("status.verifiedAgo", { age: l.relative(confirmed, now), people }), tone: "ok" };
-  }
-  return { status: `${ruleText}${l.t("status.unverified", { people })}`, tone: "muted" };
+  if (fact.state === "verified") return { status: l.t("status.verifiedAgo", { age: l.relative(confirmed, now), people }), tone: "ok" };
+  return { status: l.t("status.unverified", { people }), tone: "muted" };
 }
 
 /** Iqamah cells for today's table, resolved against the calculated adhan. */
@@ -42,6 +38,7 @@ export function iqamahCells(facts: FactView[], day: PrayerDay, now: number, l: T
     if (!parsed.success) continue;
     const time = resolveIqamah(parsed.data, row.adhan);
     cells[prayer] = {
+      rule: dated || "t" in parsed.data ? "fixed" : parsed.data.min,
       candidateId: shown.candidateId,
       factKey: fact.key,
       confirmable: fact.state !== "verified" && !fact.challenger && shown.candidateId === fact.current?.candidateId,
