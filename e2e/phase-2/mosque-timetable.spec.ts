@@ -14,7 +14,8 @@ test.describe("the mosque's own timetable (Mawaqit, Masjidal)", () => {
     const { context, page } = await newUser(browser, "timetable");
     // Non-production stand-in for mawaqit.net: a mosque at this place with Fajr 05:30 adhan, 05:45 iqamah.
     await context.addCookies([{ name: "mw_source_fixture", value: "1", url: baseURL }]);
-    await page.setExtraHTTPHeaders({ "x-mw-now": "2026-10-08T03:00:00Z" });
+    // Before Fajr today: the linked timetable starts from the real date, so a fixed past date would have no row.
+    await page.setExtraHTTPHeaders({ "x-mw-now": `${new Date().toISOString().slice(0, 10)}T03:00:00Z` });
     await page.goto(`/m/${SLUG}`);
     await expect(page.locator("[data-app-ready=true]")).toBeAttached();
     await expect(page.getByTestId("mosque-timetable")).toHaveCount(0);
