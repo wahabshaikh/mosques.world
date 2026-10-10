@@ -1,7 +1,7 @@
 import { formatHm, getPrayerDay, nextAdhanLabel, type AsrMadhab, parseAdhanAdjust } from "@/lib/prayer/times";
-import { formatTime12, IQAMAH_PRAYERS, toMinutes } from "@/lib/trust/facts";
+import { formatTime12, iqamahValue, IQAMAH_PRAYERS, toMinutes } from "@/lib/trust/facts";
 import { dateRange, parseTimetable, PROVIDER_LABELS, timetableOn, type Timetable } from "@/lib/sources/timetable";
-import { hasOpenChange, nextJamaah, parseSummary } from "@/lib/trust/summary";
+import { hasOpenChange, nextIqamah, parseSummary, valueOn } from "@/lib/trust/summary";
 import { cardTag } from "./needs";
 import { placeMonogram } from "./monogram";
 import { commonsThumb, parseEnrichment } from "@/lib/enrich/wikidata";
@@ -29,12 +29,16 @@ export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boo
   const timetable = parseTimetable(place.timetableJson);
   // The mosque's own published timetable comes first, then the community's iqamah, then the calculated adhan.
   const own = nextFromTimetable(timetable, day.date, nowLocal, day.jumuah);
-  const jamaah = summary ? nextJamaah(summary, day, nowLocal) : null;
+  const jamaah = summary ? nextIqamah(summary, day, nowLocal) : null;
   const nextAdhan = nextAdhanLabel(day);
   const adhan = { label: nextAdhan.label, time: formatTime12(nextAdhan.time) };
   const iqamah = jamaah?.kind === "iqamah" ? jamaah : null;
   const next = own ?? (iqamah ? { label: iqamah.label, time: formatTime12(iqamah.time), kind: "iqamah" as const, minutes: iqamah.minutes } : { ...adhan, kind: "adhan" as const, minutes: null });
   const timeSource: ExplorePlace["timeSource"] = own ? "mosque" : iqamah ? "community" : "calculated";
+  // How the shown iqamah is set: a fixed clock time or minutes after the adhan (mosques mix both, e.g. Maghrib).
+  const ruleEntry = !own && iqamah && !summary?.tt?.[day.date]?.[iqamah.prayer] ? summary?.iqamah[iqamah.prayer] : undefined;
+  const ruleValue = ruleEntry ? iqamahValue.safeParse(valueOn(ruleEntry, day.date)) : null;
+  const iqamahRule: ExplorePlace["iqamahRule"] = own ? "fixed" : ruleValue?.success ? ("rule" in ruleValue.data ? ruleValue.data.min : "fixed") : null;
   const verifiers = summary ? Math.max(0, ...Object.values(summary.iqamah).map((entry) => entry?.n ?? 0)) : 0;
   return {
     id: place.id,
@@ -50,6 +54,7 @@ export function toCard(place: DirectoryPlace, now: Date, options: { photos?: boo
     nextKind: next.kind,
     minutesUntil: next.kind === "iqamah" && next.minutes !== null ? next.minutes - toMinutes(nowLocal) : null,
     timeSource,
+    iqamahRule,
     sourceLabel: own && timetable ? PROVIDER_LABELS[timetable.p] : null,
     verification: asVerification(place.verificationState),
     changeReported: hasOpenChange(summary),

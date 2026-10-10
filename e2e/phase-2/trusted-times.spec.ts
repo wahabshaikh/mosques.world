@@ -341,7 +341,9 @@ test.describe("phase 2 trusted iqamah times", () => {
     await resetPlace(request, slug);
     const setter = await newUser(browser, "adhan", { trustLevel: 2 });
     await visit(setter.page, `/m/${slug}`);
-    const calculated = (await setter.page.locator('[data-prayer="isha"]').innerText()).match(/\d{1,2}:\d\d [AP]M/)?.[0];
+    // With no times yet, the only Isha time on the page is the labelled calculation.
+    await expect(setter.page.locator('[data-prayer="isha"]')).toHaveCount(0);
+    const calculated = (await setter.page.getByTestId("calculated-times").getByRole("row", { name: /Isha/ }).innerText()).match(/\d{1,2}:\d\d [AP]M/)?.[0];
     await setter.page.getByRole("link", { name: "Mosque's adhan different?" }).click();
     await expect(setter.page.getByTestId("adhan-tab")).toBeVisible();
     await setToday(setter.page);

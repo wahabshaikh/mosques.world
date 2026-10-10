@@ -127,6 +127,25 @@ export function nextJamaah(summary: PlaceSummary | null, day: PrayerDay, nowLoca
   return { ...fajr, label: "Fajr", minutes: fajr.minutes + 1440 };
 }
 
+/**
+ * The next prayer this mosque has an iqamah for, skipping prayers with none (never the calculated adhan).
+ * After the last one today it is tomorrow's first known iqamah, assuming today's time.
+ */
+export function nextIqamah(summary: PlaceSummary | null, day: PrayerDay, nowLocal: string): NextJamaah | null {
+  const today = iqamahToday(summary, day);
+  const now = toMinutes(nowLocal);
+  const options = IQAMAH_PRAYERS.flatMap((prayer) => {
+    const iqamah = today[prayer];
+    if (!iqamah) return [];
+    const label = prayer === "dhuhr" && day.jumuah ? "Jumu'ah" : LABELS[prayer];
+    return [{ prayer, label, time: iqamah.time, kind: "iqamah" as const, minutes: toMinutes(iqamah.time) }];
+  });
+  const upcoming = options.find((option) => option.minutes > now);
+  if (upcoming) return upcoming;
+  const first = options[0];
+  return first ? { ...first, label: LABELS[first.prayer], minutes: first.minutes + 1440 } : null;
+}
+
 export function hasOpenChange(summary: PlaceSummary | null): boolean {
   if (!summary) return false;
   return Object.values(summary.iqamah).some((entry) => entry?.c) || summary.jumuah.some((entry) => entry.c);

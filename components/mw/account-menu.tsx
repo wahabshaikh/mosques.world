@@ -1,13 +1,13 @@
 "use client";
 
-import { Bell, Bookmark, Globe, LogOut, Menu, Settings, Shield, ShieldCheck, UserRound } from "lucide-react";
+import { Bell, Bookmark, Globe, LogOut, Menu, Settings, Shield, ShieldCheck, Trophy, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { avatarColor, initials } from "@/lib/people";
 import { useText } from "./text";
+import { useSessionUser } from "./use-session";
 
-type MenuUser = { id: string; name: string; username?: string | null; role?: string | null };
 
 /**
  * Header account menu. Deliberately free of the better-auth client and Radix so every page stays
@@ -16,7 +16,7 @@ type MenuUser = { id: string; name: string; username?: string | null; role?: str
 export function AccountMenu() {
   const pathname = usePathname();
   const text = useText();
-  const [user, setUser] = useState<MenuUser | null | undefined>(undefined);
+  const user = useSessionUser();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [stewarding, setStewarding] = useState(false);
@@ -32,21 +32,6 @@ export function AccountMenu() {
       })
       .catch(() => undefined);
   }, [user?.username]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/auth/get-session", { credentials: "same-origin" })
-      .then((response) => (response.ok ? (response.json() as Promise<{ user?: MenuUser } | null>) : null))
-      .then((body) => {
-        if (!cancelled) setUser(body?.user ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +68,7 @@ export function AccountMenu() {
         aria-expanded={open}
         aria-controls="account-menu"
         onClick={() => setOpen((value) => !value)}
-        className="relative inline-flex h-11 items-center gap-2 rounded-full border border-border pr-1 pl-3 hover:shadow-md"
+        className="relative inline-flex h-11 items-center gap-2 rounded-full border border-border ps-3 pe-1 transition-shadow hover:shadow-float"
       >
         <Menu className="size-4" />
         {unread > 0 ? (
@@ -100,7 +85,7 @@ export function AccountMenu() {
         </span>
       </button>
       {open ? (
-        <div id="account-menu" className="absolute right-0 z-50 mt-2 w-60 rounded-2xl border border-border bg-popover p-1 shadow-lg">
+        <div id="account-menu" className="absolute end-0 z-50 mt-2 w-64 rounded-2xl border border-border bg-popover p-1 shadow-card">
           <p className="px-3 py-2 text-xs text-muted-foreground">Signed in as {handle}</p>
           <ul onClick={() => setOpen(false)}>
             {!user.username ? (
@@ -115,6 +100,11 @@ export function AccountMenu() {
                 <li>
                   <Link className={item} href={`/@${user.username}`}>
                     <Globe className="size-4" /> Your map and profile
+                  </Link>
+                </li>
+                <li>
+                  <Link className={item} href="/leaderboard">
+                    <Trophy className="size-4" /> Hasanat and leaderboard
                   </Link>
                 </li>
                 <li>

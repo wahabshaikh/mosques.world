@@ -4,6 +4,11 @@ Source of truth for visuals: the [design canvas](https://claude.ai/artifact/C5Ad
 (snapshot in [`/design`](../../design)). This document turns it into tokens and components for
 **shadcn/ui + Tailwind CSS v4**.
 
+**October 2026 redesign:** the UI was simplified towards Airbnb's mobile app (references: Airbnb
+explore, map and listing screens on Mobbin): neutral greys instead of warm sand, one emerald accent,
+a gold "hasanat" accent for contribution rewards, a phone tab bar, and one clear ask per screen. See
+§3.9. Where this section and §3.9 disagree, §3.9 wins.
+
 **Character:** calm, warm and trustworthy, like Airbnb's clarity (white space, rounded
 photography, pill search, one strong accent) with an emerald accent, amber for
 "needs attention" and a night-green map as the signature moment.
@@ -206,3 +211,42 @@ Airbnb's "Share"/"Save"), `warning`.
 - Dialog/drawer focus trapping via Radix/vaul; ESC closes.
 - Color is never the only signal: disputed = amber **and** an icon/label.
 - Test with axe in E2E; manual VoiceOver pass on iOS Safari each phase.
+
+## 3.9 Mobile app shell and the October 2026 redesign
+
+Most visitors are on phones, so every screen is designed at 390px first and widened, never the reverse.
+
+**Tokens changed:** neutrals are Airbnb-style greys: `--foreground #222222`, `--muted #F7F7F7`,
+`--muted-foreground #6A6A6A`, `--border #EBEBEB`, `--input #DDDDDD`, `--border-strong #B0B0B0` (dark:
+`#121212` page, `#1C1C1C` cards). New: `--gold #7A5400` / `--gold-soft #FBF3DD` (dark `#E9B949` /
+`#3A2F12`) for hasanat rewards only; `shadow-card` `0 6px 16px rgba(0,0,0,.12)` and `shadow-float`
+`0 2px 8px rgba(0,0,0,.14)`. Cards and sheets use `rounded-3xl` (24px), buttons `rounded-xl` (12px).
+
+**Rules that drive every screen**
+
+1. *Calculated is not a masjid's time.* Calculated prayer times (when a prayer's time begins at a
+   location) are shown on their own, labelled "Calculated", and never stand in for a masjid's adhan or
+   iqamah. A masjid row or page shows adhan/iqamah only when the masjid has them: its own published
+   timetable, community iqamah, or a community adhan adjustment. Otherwise it says "No jamā'ah times
+   yet" and asks for them.
+2. *Fixed, offset and mixed iqamah.* Each iqamah is tagged "fixed time" or "adhan + N min" per prayer
+   (Maghrib is often an offset while the rest are fixed), on rows, in the table and in the card chip.
+3. *One ask per screen.* Confirm (one tap: "Yes, still right") when times exist; add them when they
+   don't; then a thank-you that invites sharing (WhatsApp first). The ask names its reward
+   (`+10`/`+25 hasanat`) and carries a cited ayah or hadith (`lib/reminders.ts`).
+
+**Shell components**
+
+| Component | Anatomy |
+|---|---|
+| `TabBar` | Phone only (`lg:hidden`), fixed bottom, 64px + safe area: Explore · Saved · Hasanat · You (Sign in). Hidden on mosque pages, which have their own bottom bar. |
+| `SiteHeader` | 56px phone / 80px desktop: logo, desktop links (Leaderboard, Add a mosque), "+" on phones, account menu. |
+| Explore search | One pill with a search icon, the input and a round emerald "Near me" button; chips row (Has jamā'ah times, Prayer rooms, Filters) scrolls sideways without a scrollbar. |
+| `AreaPrayerTimes` | Muted card with five calculated times for the area, next one filled emerald, labelled with the method. Always shown on explore and city pages. |
+| `HelpNudge` | The explore page's one ask: "N of M masajid here have no jamā'ah times" → Add times (+25) / Ask a friend; else "Confirm times" (+10). |
+| `PlaceRowContent` | 64px thumb, name, locality · distance, then next jamā'ah + chip ("iqamah · fixed", "iqamah 5 min after adhan · verified", "mosque timetable", amber "change reported"), or "No jamā'ah times yet" + gold "Add · +25". Chevron at the end. |
+| List/Map toggle | Phone: a dark segmented pill floating above the tab bar. Desktop keeps the split view. |
+| Map pins | Mosque timetable = solid emerald pill; community iqamah = white pill with dark text; no times = small grey dot; selected = ink pill. |
+| `TimesCheck` | Under the times: "Are these times still right?" [Yes, still right +10] [Something changed]; or, with no times, "Jamā'ah times not yet added" with a hadith, [Add times +25] and [Ask someone who prays here] (WhatsApp). Success: "JazakAllahu khayran! +N hasanat" with WhatsApp/Share/Leaderboard. |
+| `HasanatCard` | Tally, "+N this week", level pill (Talib → Mu'in → Dalil → Khadim → Amin) and a progress bar. Always paired with the note that the tally is symbolic and the true reward is with Allah. |
+| `MobileActionBar` | Mosque page: next jamā'ah + countdown · "I'm here"; with no times, "No jamā'ah times yet" · "Add times +25". |

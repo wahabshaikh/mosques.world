@@ -46,6 +46,7 @@ flowchart TD
 | `/@[username]/map` | 4 | rewrite → `/u/[username]/map` | public | Full-screen map, embeddable (`?embed=1`) |
 | `/saved` | 4 | RSC | user | Saved places + their next iqamah |
 | `/verify` | 5 | client | user | Quick verify at the nearest place |
+| `/leaderboard` | — | RSC | public | Hasanat leaderboard (this week / month / all time), your tally and level, how to earn |
 | `/settings/profile`, `/settings/privacy`, `/settings/notifications`, `/settings/account` | 2/4/6 | RSC | user | Settings (sections appear by phase) |
 | `/steward`, `/steward/[slug]` | 6 | RSC | steward | Steward dashboard |
 | `/admin`, `/admin/queue`, `/admin/reports`, `/admin/users`, `/admin/places/merge` | 2/3 | RSC | moderator | Moderation |
@@ -71,7 +72,11 @@ Usernames: `^[a-z0-9._]{3,30}$`, reserved list (`admin`, `api`, `m`, `u`, `setti
 
 For each screen: purpose → key content → states. Visual reference in brackets.
 
-### Explore / Search `/`, `/search` [Main.dc.html, P1]
+### Explore / Search `/`, `/search` [Main.dc.html, P1; October 2026 redesign, spec 3.9]
+- **Order on phones:** search pill + chips → "Prayer times · {area}" (calculated, labelled) → exact-location
+  prompt → `HelpNudge` (add missing times, else confirm) → "N masajid nearby" + sort → rows → floating
+  List/Map pill above the tab bar. Rows never show the calculated adhan: a masjid without jamā'ah times says
+  so and offers "Add · +25". The points below describe the earlier layout where they conflict.
 - **Header**: logo, `SearchPill` (Where · Prayer · Needs), "Add a mosque" (P3; before that "About"), account menu.
 - **Search**: "Where" with a **Near me** button; a location permission the visitor already granted is used straight away, a denied one hides the "Use your location" prompt.
 - **CategoryBar**: Has prayer times (mosque timetable or community-verified), Prayer rooms, then Filters (amenities live in the Filters dialog). The search box finds a masjid by name or an area.
@@ -81,7 +86,16 @@ For each screen: purpose → key content → states. Visual reference in bracket
 - **States**: location permission prompt (inline card, not a browser popup on load), empty area CTA, offline banner, error toast.
 - **Mobile**: list-first with a floating "Map" button; the map view has a bottom-sheet list (vaul snap points 20%/60%/100%).
 
-### Mosque page `/m/[slug]` [Mosque.dc.html, MobileMosque.dc.html]
+### Mosque page `/m/[slug]` [Mosque.dc.html, MobileMosque.dc.html; October 2026 redesign]
+- **Order:** breadcrumb (country › city) → name → summary → Get directions · Share · Save → **Jamā'ah times
+  today** (mosque timetable; community table whose adhan column appears only for a community adhan
+  adjustment, each iqamah tagged "fixed time" or "adhan + N min"; `TimesCheck`) → **Calculated prayer times
+  here** (all six, labelled, never mixed into the jamā'ah table) → trust → Jumu'ah → Eid/Taraweeh → photos →
+  facilities → about → **Questions people ask** (FAQ answered from the same data, also as `FAQPage`
+  JSON-LD) → steward/edit links. JSON-LD: `Mosque` (address, geo, sameAs), `BreadcrumbList`, `FAQPage`.
+- City pages split "With jamā'ah times" from "Waiting for their times", show the city's calculated times,
+  and carry `ItemList` + `BreadcrumbList` + `FAQPage`. The home page carries `WebSite` (SearchAction) and
+  `Organization`.
 - Title, address, Share/Save (Save P4), summary line (type · Jumu'ah count · top amenities).
 - **The mosque's own timetable** first when one is linked (Mawaqit/Masjidal): a solid-green table of its adhan and iqamah (jumu'ah on Fridays), credited "Published by the mosque on Mawaqit · updated …" with a link, and it drives the "Next prayer" card. The community table follows under "Community-reported times". Without one, a "Does this mosque publish its times on Mawaqit or Masjidal?" link opens a paste-the-link form.
 - **Today's prayer times** (`PrayerTimesTable`), date + Hijri date, "Update timings" (P2), `DisputeBanner` (P2), calculation note + "Monthly timetable" (P7). With no iqamah yet, a compact "Iqamah times not yet added · Add iqamah times" row sits above the table and the waitlist email field below it.
@@ -144,6 +158,12 @@ Notifications (P6), Account (email, connected Google, export data, delete accoun
 ### Admin `/admin/*` [P2+]
 Queue (held contributions from new accounts, flagged photos), Reports, Users (trust level
 override, suspend), Places (merge duplicates, close, restore), Audit log with revert.
+
+### Leaderboard `/leaderboard`
+Title "Serving the ummah", a cited hadith, your `HasanatCard` (or sign-in), period chips, ranked list
+(public profiles with a username only), and "How to earn hasanat". Hasanat are read from `activity`
+(`lib/hasanat.ts`): proposed 25, confirmed 10, reported change 10, place added 50, photo 15, Eid/Taraweeh
+time 15, check-in 5.
 
 ## 4.4 Key flows
 

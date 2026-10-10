@@ -37,9 +37,10 @@ test.describe("phase 8 global and open", () => {
     await visit(page, `/ar/m/${PLACE}`);
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
     await expect(page.locator("html")).toHaveAttribute("lang", "ar");
-    await expect(page.locator('tr[data-prayer="fajr"] th')).toContainText("الفجر");
-    await expect(page.locator('tr[data-prayer="isha"] th')).toContainText("العشاء");
-    await expect(page.getByRole("heading", { name: "مواقيت الصلاة اليوم" })).toBeVisible();
+    const calculated = page.getByTestId("calculated-times");
+    await expect(calculated.getByRole("rowheader").first()).toContainText("الفجر");
+    await expect(calculated.getByRole("rowheader").last()).toContainText("العشاء");
+    await expect(page.getByRole("heading", { name: "أوقات الجماعة اليوم" })).toBeVisible();
     await expect(page.locator('link[rel="alternate"][hreflang="fr"]')).toHaveAttribute("href", new RegExp(`/fr/m/${PLACE}$`));
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/ar/m/${PLACE}$`));
     expect(await seriousViolations(page)).toEqual([]);
@@ -49,12 +50,12 @@ test.describe("phase 8 global and open", () => {
     await page.getByRole("link", { name: "Français" }).click();
     await expect(page).toHaveURL(new RegExp(`/fr/m/${PLACE}$`));
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-    await expect(page.locator('tr[data-prayer="isha"] th')).toContainText("Icha");
+    await expect(page.getByTestId("calculated-times").getByRole("rowheader").last()).toContainText("Icha");
 
     await visit(page, `/m/${PLACE}`);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.locator('tr[data-prayer="fajr"] th')).toContainText("Fajr");
-    await expect(page.getByRole("heading", { name: "Today's prayer times" })).toBeVisible();
+    await expect(page.getByTestId("calculated-times").getByRole("rowheader").first()).toContainText("Fajr");
+    await expect(page.getByRole("heading", { name: "Jamā'ah times today" })).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/m/${PLACE}$`));
 
     // Unprefixed pages stay English; the home page offers the visitor's own language.
@@ -106,7 +107,8 @@ test.describe("phase 8 global and open", () => {
       for (const prayer of PRAYERS) {
         const row = body.prayers.find((item) => item.prayer === prayer);
         expect(row, prayer).toBeTruthy();
-        const cells = developer.page.locator(`tr[data-prayer="${prayer}"] td`);
+        // The sample has no community adhan adjustments, so the API's adhan is the page's labelled calculation.
+        const cells = developer.page.locator(`tr[data-calculated="${prayer}"] td`);
         expect(to24h((await cells.first().textContent()) ?? "")).toBe(row!.adhan);
         const iqamah = developer.page.locator(`td[data-iqamah="${prayer}"]`);
         if (row!.iqamah) {
