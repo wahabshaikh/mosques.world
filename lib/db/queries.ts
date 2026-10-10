@@ -231,6 +231,7 @@ export async function sitemapEntries(): Promise<Array<{ path: string }>> {
     { path: "/privacy" },
     { path: "/terms" },
     { path: "/attribution" },
+    { path: "/leaderboard" },
     ...(cities.results ?? []).flatMap((row) => [
       { path: `/countries/${row.country_code.toLowerCase()}` },
       { path: `/cities/${row.country_code.toLowerCase()}/${row.city_slug}` },

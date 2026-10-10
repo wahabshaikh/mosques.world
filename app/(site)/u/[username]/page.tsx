@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { HasanatCard } from "@/components/mw/hasanat";
+import { levelFor, userHasanat } from "@/lib/hasanat";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -113,6 +115,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
 
   const visibility = own ? "public" : user.checkinsVisibility;
   const mapFilter = asMapFilter(one(search.map));
+  const hasanat = await userHasanat(database, user.id, nowMs);
   const [pins, recent, badges, countries, city] = await Promise.all([
     visibility === "public" ? profilePins(database, user.id, mapFilter, year) : Promise.resolve([]),
     visibility === "public" ? recentVisits(database, user.id) : Promise.resolve([]),
@@ -200,7 +203,18 @@ export default async function ProfilePage({ params, searchParams }: { params: Pr
               { value: years.value, label: years.label },
             ]}
           />
-          <div className="flex flex-col gap-3.5 rounded-[20px] border border-input p-6">
+          {own ? (
+            <HasanatCard total={hasanat.total} week={hasanat.week} />
+          ) : hasanat.total > 0 ? (
+            <p className="flex items-center justify-between rounded-[20px] border border-border px-6 py-4 text-[15px]" data-testid="hasanat-public">
+              <span>
+                <span className="font-bold">{levelFor(hasanat.total).level.name}</span>{" "}
+                <span className="text-muted-foreground">· {levelFor(hasanat.total).level.meaning}</span>
+              </span>
+              <span className="tabular font-extrabold text-gold">{hasanat.total.toLocaleString("en")} hasanat</span>
+            </p>
+          ) : null}
+          <div className="flex flex-col gap-3.5 rounded-[20px] border border-border p-6">
             <h2 className="text-lg font-bold">{firstName}&apos;s confirmed information</h2>
             <ul className="flex flex-col gap-3 text-[15px]">
               {user.emailVerified ? <li>✓ Email address</li> : null}
