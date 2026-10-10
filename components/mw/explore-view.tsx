@@ -1,6 +1,6 @@
 "use client";
 
-import { List, LoaderCircle, LocateFixed, Map as MapIcon, Navigation, Search, ShieldCheck } from "lucide-react";
+import { List, LoaderCircle, LocateFixed, Map as MapIcon, Navigation, Search, Share2, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
@@ -13,7 +13,10 @@ import type { NeedSlug } from "@/lib/places/needs";
 import { FiltersDialog } from "./filters-dialog";
 import { cn } from "@/lib/utils";
 import type { MapArea, UserPosition } from "./place-map";
-import { PlaceRowContent, TimeSourceLegend } from "./place-row";
+import { PlaceRowContent } from "./place-row";
+import { RewardChip } from "./hasanat";
+import { REWARD } from "@/lib/hasanat";
+import { reminderFor, whatsappHref } from "@/lib/reminders";
 import type { AreaTimes } from "@/lib/places/area-times";
 
 // MapLibre is heavy: it loads after the list, and on phones only once someone opens the map.
@@ -41,6 +44,8 @@ export type ExplorePlace = {
   minutesUntil: number | null;
   /** Whose time `next*` is: the mosque's own published timetable, the community's iqamah, or the calculated adhan. */
   timeSource: "mosque" | "community" | "calculated";
+  /** How the shown iqamah is set: "fixed" clock time, or minutes after the adhan; null without an iqamah. */
+  iqamahRule?: "fixed" | number | null;
   /** The timetable provider ("Mawaqit") when timeSource is "mosque". */
   sourceLabel?: string | null;
   verification: "none" | "partial" | "verified" | "needs_check";
@@ -69,7 +74,6 @@ export function ExploreView({
   needs = [],
   fillBbox = null,
   areaTimes = null,
-  nextPrayer = null,
   searchedBbox,
   mapArea = false,
   truncated = false,
@@ -91,8 +95,6 @@ export function ExploreView({
   fillBbox?: { west: number; south: number; east: number; north: number } | null;
   /** Calculated adhan for the area, shown while it has no places listed. */
   areaTimes?: AreaTimes | null;
-  /** The next calculated adhan in this area, for the overline above the list. */
-  nextPrayer?: { label: string; time: string } | null;
   /** The area the places were loaded for. */
   searchedBbox: Bbox;
   /** The searched area came from "Search this locality", so filter changes keep it. */
@@ -412,6 +414,8 @@ export function ExploreView({
   }
 
   const withTimes = places.filter((place) => place.timeSource !== "calculated").length;
+  const missing = places.filter((place) => place.timeSource === "calculated");
+  const toConfirm = places.find((place) => place.timeSource === "community" && place.verification !== "verified");
   const listed = places.slice(0, shown);
   const showMap = desktop || mapMode;
 
@@ -420,37 +424,40 @@ export function ExploreView({
     // On wide screens the explore view is one screen tall: the list scrolls beside a map that fills the rest.
     <div
       data-filling={filling}
-      className={cn("flex flex-col lg:h-[calc(100dvh-81px)]", mapMode && "h-[calc(100dvh-65px)] overflow-hidden lg:overflow-visible")}
+      className={cn("flex flex-col lg:h-[calc(100dvh-81px)]", mapMode && "h-[calc(100dvh-57px)] overflow-hidden lg:overflow-visible")}
     >
-      <div className="shrink-0 border-b border-border bg-background">
-        <div className="mx-auto max-w-[1440px] px-4 py-3 lg:px-6">
-          <form
-            className="mx-auto flex max-w-3xl items-center gap-2 rounded-full border border-border bg-card p-1.5 shadow-[0_3px_12px_rgba(31,29,26,.08)]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const first = suggestions[0];
-              if (first) void choose(first);
-              else if (query.trim().length >= 2) router.push(`/search?where=${encodeURIComponent(query.trim())}`);
-            }}
-          >
-            <label className="relative min-w-0 flex-1">
-              <span className="sr-only">Search for a masjid or an area</span>
-              <input
-                aria-label="Where"
-                value={query}
-                onChange={(event) => onInput(event.target.value)}
-                onFocus={(event) => {
-                  // Deferred, or the click's mouseup drops the selection: typing then replaces "Near you".
-                  const input = event.currentTarget;
-                  requestAnimationFrame(() => input.select());
-                }}
-                className="h-11 w-full bg-transparent px-4 text-[15px] outline-none"
-                placeholder="Search a masjid, area or city"
-                autoComplete="off"
-              />
+      <div className="shrink-0 bg-background lg:border-b lg:border-border">
+        <div className="mx-auto max-w-[1440px] px-4 pt-3 pb-2 lg:px-6 lg:py-3">
+          <div className="mx-auto flex max-w-3xl items-center gap-2">
+            <form
+              className="relative flex min-w-0 flex-1 items-center gap-1 rounded-full border border-border bg-card py-1 ps-4 pe-1 shadow-card"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const first = suggestions[0];
+                if (first) void choose(first);
+                else if (query.trim().length >= 2) router.push(`/search?where=${encodeURIComponent(query.trim())}`);
+              }}
+            >
+              <Search className="size-5 shrink-0 text-foreground" aria-hidden="true" />
+              <label className="min-w-0 flex-1">
+                <span className="sr-only">Search for a masjid or an area</span>
+                <input
+                  aria-label="Where"
+                  value={query}
+                  onChange={(event) => onInput(event.target.value)}
+                  onFocus={(event) => {
+                    // Deferred, or the click's mouseup drops the selection: typing then replaces "Near you".
+                    const input = event.currentTarget;
+                    requestAnimationFrame(() => input.select());
+                  }}
+                  className="h-11 w-full bg-transparent px-2 text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground"
+                  placeholder="Search a masjid, area or city"
+                  autoComplete="off"
+                />
+              </label>
               {challenge ? <div ref={widgetRef} className="px-3 pb-2" /> : null}
               {suggestions.length > 0 ? (
-                <ul className="absolute top-full right-0 left-0 z-40 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-lg" data-testid="suggestions">
+                <ul className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-border bg-popover shadow-card" data-testid="suggestions">
                   {suggestions.map((item) => (
                     <li key={`${item.label}-${item.lat}-${item.slug ?? ""}`}>
                       <button
@@ -465,21 +472,19 @@ export function ExploreView({
                   ))}
                 </ul>
               ) : null}
-            </label>
-            <button
-              type="button"
-              onClick={() => locate()}
-              className="hidden h-11 shrink-0 items-center gap-1.5 rounded-full bg-primary-soft px-3.5 text-sm font-bold text-primary sm:inline-flex"
-            >
-              {locating ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Navigation className="size-4" aria-hidden="true" />} Near me
-            </button>
-            <button type="submit" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-label="Search">
-              <Search className="size-5" />
-            </button>
-          </form>
-          <div className="mx-auto mt-3 flex max-w-3xl gap-2 overflow-x-auto pb-0.5">
+              <button
+                type="button"
+                onClick={() => locate()}
+                aria-label="Near me"
+                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+              >
+                {locating ? <LoaderCircle className="size-5 animate-spin" aria-hidden="true" /> : <Navigation className="size-[18px]" aria-hidden="true" />}
+              </button>
+            </form>
+          </div>
+          <div className="no-scrollbar mx-auto mt-3 flex max-w-3xl gap-2 overflow-x-auto pb-1">
             <FilterChip active={verifiedOnly} onClick={() => setVerified(!verifiedOnly)} icon={<ShieldCheck className="size-4" />}>
-              Has prayer times
+              Has jamā&apos;ah times
             </FilterChip>
             <FilterChip active={kind === "prayer_room"} onClick={() => setKind(kind === "prayer_room" ? "all" : "prayer_room")}>
               Prayer rooms
@@ -489,98 +494,75 @@ export function ExploreView({
         </div>
       </div>
       <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
-        <section className={cn("min-w-0 px-4 pt-5 pb-24 lg:overflow-y-auto lg:px-6 lg:pb-6", mapMode && "hidden lg:block")} data-testid="place-list">
-          <div className="mb-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+        <section className={cn("min-w-0 px-4 pt-2 pb-28 lg:overflow-y-auto lg:px-6 lg:pt-5 lg:pb-6", mapMode && "hidden lg:block")} data-testid="place-list">
+          {areaTimes ? <AreaPrayerTimes times={areaTimes} where={where === "Map area" ? "this area" : where} /> : null}
+          {showGeoPrompt && geoPermission !== "denied" && !precise ? (
+            <button type="button" className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-border px-4 py-3 text-start text-sm" onClick={() => locate()}>
+              <LocateFixed className="size-5 shrink-0 text-primary" aria-hidden="true" />
+              <span>
+                <span className="font-semibold">Use your exact location</span>
+                <span className="block text-muted-foreground">We&apos;re showing masajid around your approximate area.</span>
+              </span>
+            </button>
+          ) : null}
+          {geoProblem ? (
+            <p role="status" className="mt-3 rounded-2xl bg-muted px-4 py-3 text-sm">
+              {geoProblem}
+            </p>
+          ) : null}
+          {places.length > 0 ? <HelpNudge missing={missing} toConfirm={toConfirm ?? null} total={places.length} /> : null}
+          <div className="mt-6 mb-1 flex items-end justify-between gap-3">
             <div className="min-w-0">
-              {nextPrayer ? (
-                <p className="text-xs font-extrabold tracking-wide text-primary uppercase" data-testid="next-prayer">
-                  Next prayer · {nextPrayer.label} adhan {nextPrayer.time}
-                </p>
-              ) : null}
-              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+              <h1 className="text-xl leading-tight font-extrabold tracking-tight">
                 {places.length}
-                {truncated ? "+" : ""} {places.length === 1 ? "place" : "mosques & prayer spaces"} nearby
+                {truncated ? "+" : ""} {places.length === 1 ? "masjid" : "masajid"} nearby
               </h1>
-              <p className="truncate text-sm text-muted-foreground">{subline}</p>
+              <p className="truncate text-sm text-muted-foreground" data-testid="with-times">
+                {places.length > 0 ? `${withTimes} with jamā'ah times · ` : ""}
+                {subline}
+              </p>
             </div>
-            <label className="flex items-center gap-2 text-sm font-semibold">
+            <label className="shrink-0">
               <span className="sr-only">Sort</span>
               <select
                 aria-label="Sort"
                 value={sort}
                 onChange={(event) => setSort(event.target.value as ExploreSort)}
-                className="h-10 rounded-full border border-border bg-card px-3"
+                className="h-10 rounded-full border border-border bg-card px-3 text-sm font-semibold"
               >
                 <option value="distance">Nearest</option>
                 <option value="iqamah">Soonest iqamah</option>
-                <option value="verified">Has prayer times</option>
+                <option value="verified">Has jamā&apos;ah times</option>
               </select>
             </label>
           </div>
-          {places.length > 0 ? (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <TimeSourceLegend />
-              <span className="text-[11px] font-semibold text-muted-foreground" data-testid="with-times">
-                {withTimes} with jamā&apos;ah times
-              </span>
-            </div>
-          ) : null}
-          {showGeoPrompt && geoPermission !== "denied" && !precise ? (
-            <button type="button" className="mb-4 flex w-full items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3 text-start text-sm" onClick={() => locate()}>
-              <LocateFixed className="size-4 shrink-0 text-primary" />
-              Showing mosques around your approximate location. Use your exact location for a closer list.
-            </button>
-          ) : null}
-          {geoProblem ? (
-            <p role="status" className="mb-4 rounded-2xl bg-muted px-4 py-3 text-sm">
-              {geoProblem}
-            </p>
-          ) : null}
           {filling === "loading" && places.length > 0 ? (
-            <p role="status" className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <p role="status" className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-              Loading more mosques in this area…
+              Loading more masajid in this area…
             </p>
-          ) : null}
-          {places.length === 0 && areaTimes ? (
-            <section className="mb-4 rounded-2xl bg-muted p-4" aria-labelledby="area-times" data-testid="area-times">
-              <h2 id="area-times" className="text-xs font-extrabold tracking-wide text-muted-foreground uppercase">
-                Prayer times here today
-              </h2>
-              <ol className="mt-3 grid grid-cols-5 gap-1.5 text-center">
-                {areaTimes.rows.map((row) => (
-                  <li key={row.key} className={cn("rounded-xl px-1 py-2", row.next ? "bg-primary text-primary-foreground" : "bg-card")}>
-                    <span className={cn("block text-xs", row.next ? "text-primary-foreground/80" : "text-muted-foreground")}>{row.label}</span>
-                    <span className="tabular block text-xs font-extrabold whitespace-nowrap sm:text-sm">{row.time}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-2 text-xs text-muted-foreground">Adhan, calculated ({areaTimes.method}). Each mosque&apos;s iqamah is on its page.</p>
-            </section>
           ) : null}
           {places.length === 0 && filling === "loading" ? (
-            <div role="status" className="flex items-center gap-3 rounded-2xl bg-muted p-6 text-sm" data-testid="area-filling">
+            <div role="status" className="mt-3 flex items-center gap-3 rounded-2xl bg-muted p-5 text-sm" data-testid="area-filling">
               <LoaderCircle className="size-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
-              <span>Finding mosques and prayer spaces in this area. This takes a few seconds the first time anyone looks here.</span>
+              <span>Finding masajid and prayer spaces here. This takes a few seconds the first time anyone looks.</span>
             </div>
           ) : places.length === 0 ? (
-            <div className="rounded-2xl bg-muted p-6 text-sm">
-              <p>
-                {filling === "error" ? "We couldn't load this area just now." : "No mosques or prayer spaces are mapped here yet."} Know one?{" "}
-                <Link href={`/add?lat=${lat}&lng=${lng}`} className="font-semibold text-primary">
-                  Add it to the map
-                </Link>{" "}
-                and the community can fill in its times.
-              </p>
+            <div className="mt-3 rounded-3xl border border-dashed border-input p-6 text-center">
+              <p className="font-bold">{filling === "error" ? "We couldn't load this area just now." : "No masajid mapped here yet"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Know one? Add it and the next traveller will find it.</p>
+              <Link href={`/add?lat=${lat}&lng=${lng}`} className="mt-4 inline-flex h-11 items-center gap-2 rounded-xl bg-secondary px-5 text-sm font-semibold text-secondary-foreground">
+                Add a masjid <RewardChip points={REWARD.addPlace} className="bg-white/15 text-inherit" />
+              </Link>
               {filling === "error" ? (
-                <button type="button" className="mt-3 font-semibold text-primary" onClick={() => setFillAttempt((value) => value + 1)}>
+                <button type="button" className="mt-3 block w-full font-semibold text-primary" onClick={() => setFillAttempt((value) => value + 1)}>
                   Try again
                 </button>
               ) : null}
             </div>
           ) : (
             <>
-              <ul className="-mx-2 flex flex-col">
+              <ul className="-mx-2 mt-2 flex flex-col">
                 {listed.map((place) => (
                   <li key={place.id}>
                     <Link
@@ -589,7 +571,7 @@ export function ExploreView({
                       onMouseEnter={() => setHighlightId(place.id)}
                       onMouseLeave={() => setHighlightId(null)}
                       onFocus={() => setHighlightId(place.id)}
-                      className={cn("flex min-w-0 items-center gap-3 rounded-2xl p-2 hover:bg-muted sm:gap-4 sm:p-2.5", highlightId === place.id && "bg-muted")}
+                      className={cn("flex min-w-0 items-center gap-3 rounded-2xl p-2 hover:bg-muted sm:gap-4", highlightId === place.id && "bg-muted")}
                     >
                       <PlaceRowContent place={place} />
                     </Link>
@@ -597,7 +579,7 @@ export function ExploreView({
                 ))}
               </ul>
               {places.length > shown ? (
-                <button type="button" onClick={() => setShown((value) => value + LIST_PAGE)} className="mt-3 h-11 w-full rounded-full border border-border text-sm font-semibold">
+                <button type="button" onClick={() => setShown((value) => value + LIST_PAGE)} className="mt-3 h-12 w-full rounded-xl border border-foreground text-sm font-semibold">
                   Show more ({places.length - shown})
                 </button>
               ) : null}
@@ -626,19 +608,116 @@ export function ExploreView({
           ) : null}
         </aside>
       </div>
-      <button
-        type="button"
-        className="fixed bottom-5 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-bold text-background shadow-lg lg:hidden"
-        onClick={() => {
-          setSelectedId(null);
-          setMapMode((value) => !value);
-        }}
-        data-testid="view-toggle"
-      >
-        {mapMode ? <List className="size-4" aria-hidden="true" /> : <MapIcon className="size-4" aria-hidden="true" />}
-        {mapMode ? "List" : "Map"}
-      </button>
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex justify-center lg:hidden">
+        <div className="pointer-events-auto inline-flex rounded-full bg-foreground p-1 shadow-card" role="group" aria-label="View">
+          <button
+            type="button"
+            aria-pressed={!mapMode}
+            onClick={() => {
+              setSelectedId(null);
+              setMapMode(false);
+            }}
+            className={cn("inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-bold", !mapMode ? "bg-background text-foreground" : "text-background")}
+          >
+            <List className="size-4" aria-hidden="true" /> List
+          </button>
+          <button
+            type="button"
+            aria-pressed={mapMode}
+            data-testid="view-toggle"
+            onClick={() => {
+              setSelectedId(null);
+              setMapMode((value) => !value);
+            }}
+            className={cn("inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-bold", mapMode ? "bg-background text-foreground" : "text-background")}
+          >
+            <MapIcon className="size-4" aria-hidden="true" /> Map
+          </button>
+        </div>
+      </div>
     </div>
+  );
+}
+
+/**
+ * Today's calculated prayer times for the area, kept apart from any masjid's own adhan and iqamah:
+ * they tell you when each prayer's time begins here, not when a congregation prays.
+ */
+function AreaPrayerTimes({ times, where }: { times: AreaTimes; where: string }) {
+  const nextPrayer = times.rows.find((row) => row.next);
+  return (
+    <section className="rounded-3xl bg-muted p-4" aria-labelledby="area-times" data-testid="area-times">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="area-times" className="truncate text-[15px] font-bold">
+          Prayer times · {where}
+        </h2>
+        {nextPrayer ? (
+          <p className="shrink-0 text-xs font-bold text-primary" data-testid="next-prayer">
+            Next: {nextPrayer.label} {nextPrayer.time}
+          </p>
+        ) : null}
+      </div>
+      <ol className="mt-3 grid grid-cols-5 gap-1.5 text-center">
+        {times.rows.map((row) => (
+          <li key={row.key} className={cn("rounded-2xl px-0.5 py-2", row.next ? "bg-primary text-primary-foreground" : "bg-card")} aria-current={row.next ? "time" : undefined}>
+            <span className={cn("block text-[11px] font-semibold", row.next ? "text-primary-foreground/85" : "text-muted-foreground")}>{row.label}</span>
+            <span className="tabular block text-[13px] font-extrabold whitespace-nowrap sm:text-sm">{row.time.replace(/ [AP]M$/, "")}</span>
+            <span className={cn("block text-[10px]", row.next ? "text-primary-foreground/85" : "text-muted-foreground")}>{row.time.slice(-2)}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-xs text-muted-foreground">Calculated start times ({times.method}). Each masjid&apos;s own adhan and iqamah are below.</p>
+    </section>
+  );
+}
+
+/**
+ * The one ask on the page: add times where they're missing (worth the most to the next visitor), else
+ * confirm unverified ones; then pass it on. Sadaqah jariyah framing, never a guilt trip.
+ */
+function HelpNudge({ missing, toConfirm, total }: { missing: ExplorePlace[]; toConfirm: ExplorePlace | null; total: number }) {
+  const target = missing[0] ?? null;
+  if (!target && !toConfirm) return null;
+  const reminder = reminderFor(target ? "add" : "confirm", (target ?? toConfirm)?.id ?? "");
+  const share = () => {
+    const url = window.location.href;
+    const text = `Help fill in the jamā'ah times for the masajid near us on mosques.world, so the next person knows when to pray: ${url}`;
+    track("share_click", { surface: "explore_nudge" });
+    if (navigator.share) void navigator.share({ text, url }).catch(() => undefined);
+    else window.open(whatsappHref(text), "_blank", "noopener");
+  };
+  return (
+    <section className="mt-4 rounded-3xl border border-border p-4" aria-labelledby="help-nudge" data-testid="help-nudge">
+      <div className="flex items-start gap-3">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-gold-soft text-gold">
+          <Sparkles className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 id="help-nudge" className="font-bold">
+            {target ? `${missing.length} of ${total} masajid here have no jamā'ah times` : "Help keep these times right"}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {target ? `Prayed at ${target.name}? Add its times so the next person can join the jamā'ah.` : `Been to ${toConfirm?.name} lately? Confirm its times in one tap.`}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground italic">
+        “{reminder.text}” <span className="not-italic">— {reminder.source}</span>
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          href={target ? `/m/${target.slug}/update` : `/m/${toConfirm?.slug}#times`}
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-secondary px-4 text-sm font-semibold text-secondary-foreground"
+          onClick={() => track("nudge_clicked", { kind: target ? "add_times" : "confirm" })}
+        >
+          {target ? "Add times" : "Confirm times"}
+          <span className="text-xs font-bold text-gold-soft">+{target ? REWARD.addTimes : REWARD.confirm}</span>
+        </Link>
+        <button type="button" onClick={share} className="inline-flex h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-semibold">
+          <Share2 className="size-4" aria-hidden="true" /> Ask a friend
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -660,7 +739,7 @@ function FilterChip({
       aria-pressed={active}
       className={cn(
         "inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap",
-        active ? "border-foreground bg-foreground text-background" : "border-border bg-card",
+        active ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:border-foreground",
       )}
     >
       {icon}

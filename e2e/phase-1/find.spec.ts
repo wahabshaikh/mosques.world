@@ -144,7 +144,7 @@ test.describe("phase 1 find a mosque", () => {
     await page.goto(`/search?where=Testville&lat=${lat}&lng=${lng}&z=12`);
     await waitForApp(page);
     await expect.poll(async () => page.locator("[data-place-card]").count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(3);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("mosques & prayer spaces nearby");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("masajid nearby");
     await expect(page.getByTestId("area-filling")).toHaveCount(0);
     // A second visit is served from the directory without filling again.
     await page.reload();

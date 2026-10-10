@@ -90,10 +90,19 @@ describe("explore upgrades", () => {
     expect(card.changeReported).toBe(true);
     expect(card.verifiers).toBe(9);
     expect(card.verification).toBe("partial");
+    expect(card.iqamahRule).toBe("fixed");
     const adhan = toCard(place, new Date("2026-09-25T14:00:00Z"));
     expect(adhan.nextKind).toBe("adhan");
     expect(adhan.minutesUntil).toBeNull();
     expect(adhan.verification).toBe("none");
+    expect(adhan.iqamahRule).toBeNull();
+  });
+
+  it("says when an iqamah follows the adhan by a few minutes", () => {
+    const offset = JSON.stringify({ iqamah: { maghrib: { v: { rule: "after_adhan", min: 5 }, from: "2026-01-01", prev: null, s: "unverified", n: 1, at: 1 } }, jumuah: [] });
+    const card = toCard({ ...place, iqamahSummaryJson: offset }, new Date("2026-09-25T14:00:00Z"));
+    expect(card.nextLabel).toBe("Maghrib");
+    expect(card.iqamahRule).toBe(5);
   });
 
   it("sorts by soonest iqamah, verification and distance", () => {

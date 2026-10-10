@@ -179,7 +179,7 @@ export function PlaceMap({
         <TimeSourceLegend />
       </div>
       {selected ? (
-        <div className="absolute inset-x-3 bottom-20 z-20 mx-auto max-w-md lg:bottom-3 rounded-2xl border border-border bg-background p-3 shadow-xl" data-testid="map-card">
+        <div className="absolute inset-x-3 bottom-[calc(8.5rem+env(safe-area-inset-bottom))] z-20 mx-auto max-w-md rounded-3xl bg-background p-3 shadow-card lg:bottom-3" data-testid="map-card">
           <button type="button" onClick={() => onSelect(null)} aria-label="Close" className="absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-full hover:bg-muted">
             <X className="size-4" aria-hidden="true" />
           </button>
@@ -191,9 +191,13 @@ export function PlaceMap({
                 {[selected.locality, selected.distanceKm !== null ? formatDistance(selected.distanceKm) : null].filter(Boolean).join(" · ")}
               </span>
               <span className="flex flex-wrap items-center gap-2">
-                <span className={cn("tabular text-sm font-extrabold", selected.timeSource === "calculated" && "font-semibold text-muted-foreground")}>
-                  {selected.nextLabel} {selected.nextTime}
-                </span>
+                {selected.timeSource === "calculated" ? (
+                  <span className="text-sm text-muted-foreground">No jamā&apos;ah times yet</span>
+                ) : (
+                  <span className="tabular text-sm font-extrabold">
+                    {selected.nextLabel} {selected.nextTime}
+                  </span>
+                )}
                 <CardStatus place={selected} />
               </span>
             </span>
@@ -209,7 +213,8 @@ function weight(place: ExplorePlace): number {
 }
 
 function pinLabel(place: ExplorePlace): string {
-  const whose = place.timeSource === "mosque" ? "mosque timetable" : place.timeSource === "community" ? "community iqamah" : "calculated adhan";
+  if (place.timeSource === "calculated") return `${place.name}, no jamā'ah times yet`;
+  const whose = place.timeSource === "mosque" ? "mosque timetable" : "community iqamah";
   return `${place.name}, ${place.nextLabel} ${place.nextKind} ${place.nextTime}, ${whose}${place.changeReported ? ", change reported" : ""}`;
 }
 
@@ -243,9 +248,9 @@ function Pin({ place, active }: { place: ExplorePlace; active: boolean }) {
       data-time-source={place.timeSource}
       data-active={active ? "true" : "false"}
       className={cn(
-        "tabular relative block rounded-full px-2 py-1 text-xs font-extrabold whitespace-nowrap shadow-md transition-transform",
-        mosque ? "bg-primary text-primary-foreground" : "border-2 border-primary bg-background text-foreground",
-        active && "z-10 scale-110 ring-2 ring-foreground",
+        "tabular relative block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap shadow-float transition-transform",
+        mosque ? "bg-primary text-primary-foreground" : "border border-black/10 bg-white text-[#222]",
+        active && "z-10 scale-110 bg-foreground text-background ring-2 ring-background",
       )}
     >
       {place.nextLabel} {place.nextTime}

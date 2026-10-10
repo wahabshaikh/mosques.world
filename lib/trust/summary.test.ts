@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getPrayerDay } from "@/lib/prayer/times";
-import { hasOpenChange, iqamahToday, jumuahToday, nextJamaah, parseSummary, relativeAge, shortAge, valueOn, type PlaceSummary } from "./summary";
+import { hasOpenChange, iqamahToday, jumuahToday, nextIqamah, nextJamaah, parseSummary, relativeAge, shortAge, valueOn, type PlaceSummary } from "./summary";
 
 const day = getPrayerDay({
   lat: 51.5173983,
@@ -60,6 +60,13 @@ describe("summary", () => {
     expect(nextJamaah(summary, day, "16:00")).toMatchObject({ label: "Asr", time: "17:00", kind: "iqamah" });
     expect(nextJamaah(summary, day, "23:00")).toMatchObject({ label: "Fajr", time: "05:45", minutes: 345 + 1440 });
     expect(nextJamaah(null, day, "04:00")).toMatchObject({ label: "Fajr", kind: "adhan" });
+  });
+
+  it("finds the next iqamah, skipping prayers without one", () => {
+    expect(nextIqamah(summary, day, "12:00")).toMatchObject({ label: "Asr", time: "17:00", kind: "iqamah" });
+    expect(nextIqamah(summary, day, "23:00")).toMatchObject({ label: "Fajr", time: "05:45", minutes: 345 + 1440 });
+    expect(nextIqamah(null, day, "04:00")).toBeNull();
+    expect(nextIqamah({ iqamah: {}, jumuah: [] }, day, "04:00")).toBeNull();
   });
 
   it("detects reported changes", () => {

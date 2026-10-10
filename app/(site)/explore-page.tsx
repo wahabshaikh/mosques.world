@@ -2,9 +2,8 @@ import { headers } from "next/headers";
 import { ExploreView } from "@/components/mw/explore-view";
 import { appEnv } from "@/lib/db/client";
 import { PLACES_LIMIT, placesInBbox } from "@/lib/db/queries";
-import { getPrayerDay, nextAdhanLabel, parseAdhanAdjust } from "@/lib/prayer/times";
+import { getPrayerDay, parseAdhanAdjust } from "@/lib/prayer/times";
 import { geocodeWhere } from "@/lib/geocode";
-import { formatTime12 } from "@/lib/trust/facts";
 import { areaNeedsFill } from "@/lib/osm-fill";
 import { parseNeeds } from "@/lib/places/amenities";
 import { isNonProductionHost } from "@/lib/environment";
@@ -45,7 +44,7 @@ export async function ExplorePage({
   const verifiedOnly = one("verified") === "1";
   const needs = parseNeeds(params.needs);
   // Independent reads in parallel: the places, whether this area still needs an OpenStreetMap fill, and
-  // the country's calculation preset (only used when the area has nothing listed yet).
+  // the country's calculation preset for the area's calculated prayer times.
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const [places, needsFill, preset] = await Promise.all([
     placesInBbox(view.bbox, view.kind, { lat: view.lat, lng: view.lng }, { verifiedOnly, needs, dates: dateRange(yesterday, 4) }),
@@ -61,7 +60,6 @@ export async function ExplorePage({
     sort,
   );
   const anchor = places[0];
-  let nextPrayer: { label: string; time: string } | null = null;
   const subline = anchor
     ? (() => {
         const day = getPrayerDay({
@@ -74,11 +72,9 @@ export async function ExplorePage({
           adjust: parseAdhanAdjust(anchor.adhanAdjustJson),
           now,
         });
-        const next = nextAdhanLabel(day);
-        nextPrayer = { label: next.label, time: formatTime12(next.time) };
         return `${view.where} · ${day.hijri}`;
       })()
-    : `${view.where} · no places in this view yet`;
+    : view.where;
 
   return (
     <ExploreView
@@ -89,7 +85,6 @@ export async function ExplorePage({
       zoom={view.zoom}
       kind={view.kind}
       subline={subline}
-      nextPrayer={nextPrayer}
       showGeoPrompt={view.source !== "url"}
       turnstileSiteKey={appEnv().TURNSTILE_SITE_KEY}
       sort={sort}
@@ -100,7 +95,7 @@ export async function ExplorePage({
       searchedBbox={view.bbox}
       mapArea={view.fromBbox}
       truncated={places.length >= PLACES_LIMIT}
-      areaTimes={places.length === 0 ? areaTimes(view.lat, view.lng, now, preset) : null}
+      areaTimes={areaTimes(view.lat, view.lng, now, preset ?? (anchor ? { method: anchor.calcMethod, madhab: anchor.asrMadhab } : null))}
     />
   );
 }
