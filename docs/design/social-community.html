@@ -1,0 +1,1039 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Live board: https://claude.ai/artifact/U8hsezQDQ2bityRCN3z7CP . This file is the versioned snapshot; open it directly in a browser. -->
+<title>Pray Together Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: a design board on sand, one band per buildable phase: phone frames scroll sideways, specs sit underneath. Tokens are the mosques.world design system (docs/spec/03-design-system.md). */
+:root {
+  --canvas: #F6F4EF;
+  --bg: #FFFFFF;
+  --fg: #1F1D1A;
+  --card: #FFFFFF;
+  --muted: #F6F4EF;
+  --muted-fg: #5E5A53;
+  --border: #E8E4DC;
+  --input: #E0DBD2;
+  --border-strong: #C9C3B8;
+  --primary: #0B6E4F;
+  --primary-hover: #08553D;
+  --primary-fg: #FFFFFF;
+  --primary-soft: #E6F1EB;
+  --secondary: #1F1D1A;
+  --secondary-fg: #FFFFFF;
+  --warning: #A4520A;
+  --warning-soft: #FCF1E1;
+  --destructive: #B42318;
+  --info: #2F6FDB;
+  --night: #0E2A22;
+  --night-land: #1D4A3A;
+  --night-stroke: #2A5E4B;
+  --gold: #E9B949;
+  --tint-sage: #D6E6DB; --tint-sage-2: #B3CFBC;
+  --tint-sand: #EDE3D1; --tint-sand-2: #D9C8A8;
+  --tint-lilac: #DEDAEA; --tint-lilac-2: #C3BDD8;
+  --tint-clay: #EFD9CC; --tint-clay-2: #DDBBA6;
+  --tint-sky: #D3E0EA; --tint-sky-2: #B3C8D8;
+  --av-1: #0B6E4F; --av-2: #A4520A; --av-3: #4B4F9C; --av-4: #1F1D1A;
+  --shadow-md: 0 3px 12px rgba(31,29,26,.08);
+  --shadow-lg: 0 6px 20px rgba(31,29,26,.12);
+  --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0C0B0A; --bg: #121110; --fg: #F3F1EC; --card: #1B1A18; --muted: #24221F; --muted-fg: #A9A399;
+    --border: #2E2B27; --input: #38352F; --border-strong: #4A463F;
+    --primary: #34B98A; --primary-hover: #52C99E; --primary-fg: #0B1F17; --primary-soft: #16322A;
+    --secondary: #F3F1EC; --secondary-fg: #121110; --warning: #E8A55A; --warning-soft: #3A2A14; --destructive: #F97066; --info: #6EA0F0;
+    --tint-sage: #1E2B23; --tint-sage-2: #2C4034; --tint-sand: #2B261D; --tint-sand-2: #413828;
+    --tint-lilac: #25232E; --tint-lilac-2: #363247; --tint-clay: #2E231D; --tint-clay-2: #45332A;
+    --tint-sky: #1D252C; --tint-sky-2: #2C3945;
+    --av-4: #4A463F;
+    --shadow-md: 0 3px 12px rgba(0,0,0,.4); --shadow-lg: 0 6px 20px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #0C0B0A; --bg: #121110; --fg: #F3F1EC; --card: #1B1A18; --muted: #24221F; --muted-fg: #A9A399;
+  --border: #2E2B27; --input: #38352F; --border-strong: #4A463F;
+  --primary: #34B98A; --primary-hover: #52C99E; --primary-fg: #0B1F17; --primary-soft: #16322A;
+  --secondary: #F3F1EC; --secondary-fg: #121110; --warning: #E8A55A; --warning-soft: #3A2A14; --destructive: #F97066; --info: #6EA0F0;
+  --tint-sage: #1E2B23; --tint-sage-2: #2C4034; --tint-sand: #2B261D; --tint-sand-2: #413828;
+  --tint-lilac: #25232E; --tint-lilac-2: #363247; --tint-clay: #2E231D; --tint-clay-2: #45332A;
+  --tint-sky: #1D252C; --tint-sky-2: #2C3945;
+  --av-4: #4A463F;
+  --shadow-md: 0 3px 12px rgba(0,0,0,.4); --shadow-lg: 0 6px 20px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--canvas); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: var(--primary); }
+a:hover { color: var(--primary-hover); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 24px; padding-block: 0 80px; }
+@media (max-width: 640px) { .wrap { padding-inline: 16px; } }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.ic { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Board header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: var(--fg); text-decoration: none; }
+.brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--primary); display: grid; place-items: center; }
+.brand-mark svg { width: 20px; height: 20px; fill: var(--primary-fg); }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; background: var(--bg); border: 1px solid var(--border); color: var(--muted-fg); white-space: nowrap; }
+.pill.em { background: var(--primary-soft); color: var(--primary); border-color: transparent; }
+.pill.amber { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; padding-block: 28px 44px; align-items: end; }
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 24px; } }
+.overline { font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--primary); }
+.hero h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.04; letter-spacing: -1.4px; font-weight: 800; margin-top: 12px; }
+.hero h1 em { font-style: normal; color: var(--primary); }
+.hero .lede { font-size: 17px; color: var(--muted-fg); max-width: 60ch; margin-top: 16px; }
+.hero-map { position: relative; background: var(--night); border-radius: 24px; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; box-shadow: var(--shadow-lg); }
+.hero-map svg.world { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero-map .caption { position: absolute; left: 18px; bottom: 16px; right: 18px; color: #F3F1EC; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.hero-map .caption b { font-size: 18px; font-weight: 800; display: block; }
+.hero-map .caption span { font-size: 12.5px; opacity: .8; }
+.hero-map .tag { background: rgba(255,255,255,.12); border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 700; }
+
+/* Section frame */
+section { padding-block: 40px; border-top: 1px solid var(--border); }
+.sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
+.sec-head h2 { font-size: 30px; line-height: 36px; letter-spacing: -.5px; font-weight: 800; }
+.sec-head p { color: var(--muted-fg); max-width: 62ch; margin-top: 8px; }
+
+/* Reference cards */
+.refs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .refs { grid-template-columns: 1fr; } }
+.ref { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ref h3 { font-size: 18px; font-weight: 800; }
+.ref .hook { font-size: 13px; font-weight: 700; color: var(--muted-fg); }
+.ref ul { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.ref .take { margin-top: auto; background: var(--primary-soft); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+.ref .take b { color: var(--primary); }
+
+.principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--card); margin-top: 20px; }
+@media (max-width: 900px) { .principles { grid-template-columns: 1fr; } }
+.principle { padding: 18px 20px; border-inline-end: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; gap: 12px; min-width: 0; }
+.principle .icw { width: 34px; height: 34px; border-radius: 10px; background: var(--muted); display: grid; place-items: center; flex-shrink: 0; color: var(--primary); }
+.principle .icw .ic { width: 18px; height: 18px; }
+.principle b { display: block; font-size: 14.5px; }
+.principle span { font-size: 13.5px; color: var(--muted-fg); }
+
+/* Phase map */
+.tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 16px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: 14px; }
+th, td { text-align: start; padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { background: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: var(--muted-fg); }
+tr:last-child td { border-bottom: 0; }
+td code, .spec code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 12.5px; background: var(--muted); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.pnum { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--secondary); color: var(--secondary-fg); font-weight: 800; font-size: 14px; }
+
+/* Phase bands */
+.phase-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: start; margin-bottom: 24px; }
+@media (max-width: 700px) { .phase-head { grid-template-columns: auto minmax(0, 1fr); } .phase-head .meta { grid-column: 1 / -1; } }
+.phase-head .pnum { width: 48px; height: 48px; font-size: 20px; border-radius: 14px; }
+.phase-head h2 { font-size: 30px; line-height: 36px; letter-spacing: -.5px; font-weight: 800; }
+.phase-head p { color: var(--muted-fg); margin-top: 6px; max-width: 70ch; }
+
+.screens { display: flex; gap: 28px; overflow-x: auto; padding: 6px 4px 18px; scroll-snap-type: x proximity; }
+.shot { display: flex; flex-direction: column; gap: 12px; scroll-snap-align: start; flex-shrink: 0; width: 300px; }
+.shot-cap b { display: block; font-size: 14px; }
+.shot-cap span { font-size: 12.5px; color: var(--muted-fg); }
+.shot-cap a { font-size: 12.5px; font-weight: 700; }
+
+.spec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
+@media (max-width: 1000px) { .spec { grid-template-columns: 1fr; } }
+.spec > div { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; min-width: 0; }
+.spec h3 { font-size: 12px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted-fg); margin-bottom: 10px; }
+.spec ul, .spec ol { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.spec p { font-size: 14px; }
+.spec p + p { margin-top: 8px; }
+
+/* Flow strip */
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; font-size: 13.5px; }
+.flow .step { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-weight: 600; }
+.flow .arrow { color: var(--muted-fg); }
+.flow .lbl { font-weight: 800; font-size: 12px; letter-spacing: .4px; text-transform: uppercase; color: var(--muted-fg); margin-inline-end: 4px; }
+
+/* ================= Phone mockups ================= */
+.phone { width: 300px; height: 640px; border-radius: 38px; background: var(--bg); border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg); position: relative; overflow: hidden; font-size: 13px; line-height: 1.35; color: var(--fg); }
+.phone .sb { height: 38px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; font-size: 12.5px; font-weight: 700; }
+.phone .sb i { display: inline-flex; gap: 4px; font-style: normal; }
+.phone .sb i::before { content: ""; width: 16px; height: 9px; border-radius: 2px; border: 1.5px solid currentColor; }
+.phone .body { padding: 4px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+.phone .body.flush { padding: 0; gap: 0; }
+.ph-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ph-title h4 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.4px; }
+.ph-sub { font-size: 12px; color: var(--muted-fg); display: flex; align-items: center; gap: 4px; }
+.iconbtn { width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); display: grid; place-items: center; color: var(--fg); flex-shrink: 0; }
+.iconbtn .ic { width: 15px; height: 15px; }
+.seg { display: flex; background: var(--muted); border-radius: 999px; padding: 3px; }
+.seg span { flex: 1; text-align: center; padding: 6px 0; border-radius: 999px; font-weight: 700; font-size: 12px; color: var(--muted-fg); }
+.seg span.on { background: var(--bg); color: var(--fg); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.chips { display: flex; gap: 6px; overflow: hidden; }
+.chip { border: 1px solid var(--input); border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; color: var(--fg); background: var(--bg); }
+.chip.on { background: var(--secondary); color: var(--secondary-fg); border-color: var(--secondary); }
+.chip.soft { background: var(--muted); border-color: transparent; color: var(--muted-fg); }
+.chip.em { background: var(--primary-soft); border-color: transparent; color: var(--primary); }
+.chip .ic { width: 12px; height: 12px; }
+.ovl { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--muted-fg); }
+.live { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--primary); }
+.live::before { content: ""; width: 7px; height: 7px; border-radius: 99px; background: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.soon { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; color: var(--muted-fg); }
+
+.gcard { border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--card); }
+.gcard .row1 { display: flex; justify-content: space-between; align-items: center; }
+.gcard h5 { margin: 0; font-size: 14.5px; font-weight: 800; }
+.gcard .where { font-size: 12px; color: var(--muted-fg); display: flex; align-items: center; gap: 4px; }
+.gcard .foot { display: flex; justify-content: space-between; align-items: center; }
+.gcard .time { font-weight: 800; font-size: 13px; }
+
+.stack { display: flex; align-items: center; }
+.av { width: 24px; height: 24px; border-radius: 999px; color: #fff; font-size: 9.5px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); flex-shrink: 0; }
+.stack .av + .av { margin-inline-start: -5px; }
+.stack .more { font-size: 11.5px; font-weight: 700; color: var(--muted-fg); margin-inline-start: 6px; }
+.av.a1 { background: var(--av-1); } .av.a2 { background: var(--av-2); } .av.a3 { background: var(--av-3); } .av.a4 { background: var(--av-4); }
+.av.lg { width: 44px; height: 44px; font-size: 14px; border-width: 0; }
+.av.xl { width: 64px; height: 64px; font-size: 20px; border-width: 3px; }
+
+.btn { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 12px; font-weight: 800; font-size: 13.5px; padding: 12px 14px; border: 0; }
+.btn.pri { background: var(--primary); color: var(--primary-fg); }
+.btn.ink { background: var(--secondary); color: var(--secondary-fg); }
+.btn.out { background: var(--bg); color: var(--fg); border: 1.5px solid var(--fg); }
+.btn.sm { padding: 7px 12px; font-size: 12px; border-radius: 999px; }
+.btn .ic { width: 14px; height: 14px; }
+
+.fab { position: absolute; right: 16px; bottom: 96px; background: var(--secondary); color: var(--secondary-fg); border-radius: 999px; padding: 11px 16px; font-weight: 800; font-size: 13px; display: flex; gap: 6px; align-items: center; box-shadow: var(--shadow-lg); }
+.fab .ic { width: 15px; height: 15px; }
+
+.tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; border-top: 1px solid var(--border); background: var(--bg); display: flex; justify-content: space-around; padding-top: 9px; }
+.tabbar span { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; color: var(--muted-fg); width: 56px; }
+.tabbar span .ic { width: 20px; height: 20px; stroke-width: 1.8; }
+.tabbar span.on { color: var(--primary); font-weight: 800; }
+.tabbar span.new::after { content: "New"; position: absolute; margin-top: -6px; margin-inline-start: 26px; font-size: 8px; font-weight: 800; background: var(--warning); color: #fff; border-radius: 99px; padding: 1px 4px; }
+
+.bottombar { position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid var(--border); background: var(--bg); padding: 12px 16px 26px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bottombar .l b { display: block; font-size: 14px; }
+.bottombar .l span { font-size: 11.5px; color: var(--muted-fg); }
+
+.cover { position: relative; height: 150px; overflow: hidden; }
+.cover > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cover .top-btns { position: absolute; top: 44px; left: 14px; right: 14px; display: flex; justify-content: space-between; }
+.cover .top-btns .iconbtn { border: 0; box-shadow: var(--shadow-md); }
+
+.sheet-dim { position: absolute; inset: 0; background: rgba(15,14,12,.42); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg); border-radius: 24px 24px 0 0; padding: 10px 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+.grab { width: 36px; height: 4px; border-radius: 99px; background: var(--border-strong); margin: 0 auto 4px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label { font-size: 11.5px; font-weight: 800; color: var(--muted-fg); }
+.input { white-space: nowrap; border: 1px solid var(--input); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+.input .ic { color: var(--muted-fg); }
+.input .end { margin-inline-start: auto; color: var(--muted-fg); font-size: 12px; font-weight: 600; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stepper { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--input); border-radius: 12px; padding: 6px 8px; font-weight: 800; }
+.stepper i { font-style: normal; width: 26px; height: 26px; border-radius: 99px; border: 1px solid var(--border-strong); display: grid; place-items: center; font-weight: 700; }
+.note { font-size: 11.5px; color: var(--muted-fg); display: flex; gap: 6px; align-items: flex-start; }
+.note .ic { width: 13px; height: 13px; margin-top: 1px; color: var(--primary); }
+.switch { width: 36px; height: 21px; border-radius: 99px; background: var(--primary); position: relative; flex-shrink: 0; }
+.switch::after { content: ""; position: absolute; right: 2px; top: 2px; width: 17px; height: 17px; border-radius: 99px; background: #fff; }
+.switch.off { background: var(--border-strong); }
+.switch.off::after { right: auto; left: 2px; }
+.lrow { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.lrow:last-child { border-bottom: 0; }
+.lrow .t { flex: 1; min-width: 0; }
+.lrow .t b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow .t span { display: block; font-size: 11.5px; color: var(--muted-fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.box { border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+.box.soft { background: var(--primary-soft); border-color: transparent; }
+.box.sand { background: var(--muted); border-color: transparent; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--input); border-radius: 14px; overflow: hidden; }
+.stats div { padding: 9px 10px; display: flex; flex-direction: column; border-inline-end: 1px solid var(--input); }
+.stats div:last-child { border-inline-end: 0; }
+.stats b { font-size: 17px; font-weight: 800; }
+.stats span { font-size: 10.5px; color: var(--muted-fg); }
+.kv { display: flex; gap: 10px; align-items: flex-start; }
+.kv .icw { width: 32px; height: 32px; border-radius: 10px; background: var(--muted); display: grid; place-items: center; flex-shrink: 0; }
+.kv b { display: block; font-size: 13px; }
+.kv span { font-size: 11.5px; color: var(--muted-fg); }
+
+.bubble { max-width: 78%; padding: 8px 11px; border-radius: 16px; font-size: 12.5px; }
+.bubble.them { background: var(--muted); border-end-start-radius: 4px; }
+.bubble.me { background: var(--primary); color: var(--primary-fg); margin-inline-start: auto; border-end-end-radius: 4px; }
+.who { font-size: 10.5px; font-weight: 700; color: var(--muted-fg); margin-bottom: 3px; }
+.sys { text-align: center; font-size: 10.5px; color: var(--muted-fg); }
+.composer { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px 26px; border-top: 1px solid var(--border); background: var(--bg); display: flex; gap: 8px; align-items: center; }
+.composer .in { flex: 1; border: 1px solid var(--input); border-radius: 999px; padding: 9px 14px; color: var(--muted-fg); font-size: 12.5px; }
+.composer .send { width: 36px; height: 36px; border-radius: 99px; background: var(--primary); color: var(--primary-fg); display: grid; place-items: center; }
+
+.nightmap { position: relative; height: 170px; border-radius: 16px; overflow: hidden; background: var(--night); }
+.nightmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.legend { position: absolute; left: 10px; bottom: 8px; display: flex; gap: 10px; font-size: 10.5px; font-weight: 700; color: #F3F1EC; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 99px; margin-inline-end: 4px; }
+
+.price { display: flex; align-items: baseline; gap: 4px; }
+.price b { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+.price span { color: var(--muted-fg); font-size: 12px; }
+.tick { display: flex; gap: 8px; font-size: 12.5px; align-items: flex-start; }
+.tick .ic { color: var(--primary); width: 14px; height: 14px; margin-top: 1px; }
+.bar { height: 6px; border-radius: 99px; background: var(--muted); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--primary); border-radius: 99px; }
+
+/* desktop frame */
+.desk { width: 640px; height: 640px; border-radius: 16px; background: var(--bg); border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg); overflow: hidden; font-size: 13px; line-height: 1.35; }
+.desk .chrome { height: 30px; background: var(--muted); display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid var(--border); }
+.desk .chrome i { width: 9px; height: 9px; border-radius: 99px; background: var(--border-strong); }
+.desk .chrome span { margin-inline-start: 10px; font-size: 11px; color: var(--muted-fg); background: var(--bg); border-radius: 6px; padding: 2px 10px; }
+.shot.wide { width: 640px; }
+
+/* Before you build */
+.risks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .risks { grid-template-columns: 1fr; } }
+.risk { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; min-width: 0; }
+.risk.warn { background: var(--warning-soft); border-color: transparent; }
+.risk h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.risk p { font-size: 14px; color: var(--muted-fg); }
+.risk.warn p { color: var(--fg); }
+.risk .rec { margin-top: 10px; font-size: 13.5px; font-weight: 700; }
+
+.mobbin { columns: 3 260px; column-gap: 24px; font-size: 14px; }
+.mobbin div { break-inside: avoid; margin-bottom: 8px; }
+.mobbin span { color: var(--muted-fg); }
+footer { padding-block: 32px 0; color: var(--muted-fg); font-size: 13px; border-top: 1px solid var(--border); }
+@media (prefers-reduced-motion: no-preference) { .pulse { animation: pulse 2.4s ease-out infinite; transform-origin: center; transform-box: fill-box; } }
+@keyframes pulse { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v13M7 8l5-5 5 5M5 14v7h14v-7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-nav" viewBox="0 0 24 24"><path d="M3 11 22 2l-9 19-2-8z"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M5 21c0-4 3.1-7 7-7s7 3 7 7"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-pray" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 21v-6a3 3 0 0 1 6 0v6"/><path d="M9 7h6"/></symbol>
+  <symbol id="dome" viewBox="0 0 24 24"><path d="M12 2.5c.4 1.2 1.2 2 2.2 2.6 2.6 1.4 4.3 3.7 4.3 6.9V20H5.5v-8c0-3.2 1.7-5.5 4.3-6.9 1-.6 1.8-1.4 2.2-2.6Z"/></symbol>
+  <symbol id="cover-mosque" viewBox="0 0 300 150" preserveAspectRatio="xMidYMid slice"><rect x="60" y="48" width="9" height="102"/><rect x="231" y="48" width="9" height="102"/><path d="M84 150V96q0-34 66-46 66 12 66 46v54Z"/><rect x="30" y="128" width="240" height="30"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<header class="top">
+  <a class="brand" href="https://mosques.world"><span class="brand-mark"><svg viewBox="0 0 24 24"><use href="#dome"/></svg></span>mosques.world</a>
+  <div class="meta">
+    <span class="pill">Design board · social &amp; community</span>
+    <span class="pill amber">Draft for review</span>
+    <span class="pill num">30 Sep 2026</span>
+  </div>
+</header>
+
+<div class="hero">
+  <div>
+    <div class="overline">Phases 9 to 12 · after Global &amp; open</div>
+    <h1>Every mosque is already a meetup. <em>Let people find each other there.</em></h1>
+    <p class="lede">TripBFF and NomadTable help travellers meet people who are in the same place on the same dates. PraySap lets people start a prayer anywhere and see who is going. mosques.world already knows the place and the jamā'ah time, so the social layer starts with one question: who is praying here, and when?</p>
+  </div>
+  <div class="hero-map" role="img" aria-label="Night world map with gold pins where people are praying together this week">
+    <svg class="world" viewBox="360 10 613 383" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect x="0" y="0" width="1000" height="520" fill="#0E2A22"/>
+      <g stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1"><path d="M0 83H1000M0 167H1000M0 250H1000M0 333H1000M417 0V520M500 0V520M583 0V520M667 0V520M750 0V520M833 0V520M917 0V520"/></g>
+      <path fill="#1D4A3A" stroke="#2A5E4B" stroke-width="0.8" stroke-linejoin="round" d="M472 150 L475 131 L494 128 L486 117 L500 111 L514 103 L522 92 L514 78 L542 58 L578 53 L611 64 L667 58 L722 47 L792 33 L889 50 L972 56 L1000 67 L972 83 L944 89 L931 111 L894 122 L875 131 L858 153 L839 139 L833 161 L839 181 L806 194 L797 219 L778 214 L786 247 L772 228 L769 203 L756 192 L744 189 L722 208 L717 228 L703 194 L686 181 L658 181 L656 175 L639 167 L633 169 L642 183 L656 183 L664 189 L644 206 L619 214 L608 192 L597 172 L594 164 L600 150 L583 150 L575 147 L572 139 L564 139 L556 139 L553 133 L542 125 L533 128 L544 139 L550 139 L542 144 L528 128 L508 131 L497 147 L483 150Z M453 192 L453 208 L467 231 L486 236 L514 236 L525 239 L528 258 L536 283 L533 300 L550 344 L572 344 L592 322 L597 306 L611 292 L611 258 L642 219 L619 217 L606 200 L592 172 L589 164 L556 161 L528 147 L500 150 L483 150 L472 167Z M817 311 L817 344 L828 347 L861 339 L883 347 L903 356 L917 353 L925 328 L903 292 L894 281 L878 283 L861 283 L839 297Z M764 236 L772 239 L794 267 L783 264 L767 247Z M803 247 L828 231 L831 250 L822 261 L806 258Z M864 253 L892 258 L917 278 L892 275 L881 264Z M861 164 L892 153 L894 131 L889 136 L875 156Z M486 111 L503 108 L500 103 L492 89 L483 92 L492 100Z M472 106 L483 106 L483 97 L475 100Z"/>
+      <g fill="#E9B949">
+        <circle class="pulse" cx="500" cy="107" r="5" fill-opacity=".5"/><circle cx="500" cy="107" r="4.5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle class="pulse" cx="580" cy="136" r="5" fill-opacity=".5"/><circle cx="580" cy="136" r="5.5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="611" cy="190" r="6.5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="651" cy="182" r="3.5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle class="pulse" cx="715" cy="170" r="5" fill-opacity=".5"/><circle cx="715" cy="170" r="4.5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="797" cy="267" r="5" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="487" cy="145" r="3" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="551" cy="128" r="3" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="782" cy="241" r="4" stroke="#0E2A22" stroke-width="1.5"/>
+        <circle cx="551" cy="330" r="3" stroke="#0E2A22" stroke-width="1.5"/>
+      </g>
+    </svg>
+    <div class="caption"><div><b class="num">2,418 prayers together this week</b><span>Sample data. Pins sized by people going.</span></div><span class="tag">mosques.world/together</span></div>
+  </div>
+</div>
+
+<!-- ============== REFERENCES ============== -->
+<section id="idea">
+  <div class="sec-head">
+    <div>
+      <h2>What we take from each reference</h2>
+      <p>Three apps, three mechanics. The board keeps the mechanic and drops the party. Every social object on mosques.world hangs off a place and a prayer time the community already verifies.</p>
+    </div>
+  </div>
+  <div class="refs">
+    <article class="ref">
+      <div class="hook">tripbff.com</div>
+      <h3>Same place, same dates</h3>
+      <ul>
+        <li>Add a trip, see who else is there on overlapping dates</li>
+        <li>"Trending trips" rail by city and date range</li>
+        <li>Groups started by one person, joined by many</li>
+      </ul>
+      <p class="take"><b>Our take:</b> Trips (phase 10). A traveller adds Istanbul, Oct 3 to 8 and sees Jumu'ah options, gatherings and Muslims overlapping their dates.</p>
+    </article>
+    <article class="ref">
+      <div class="hook">nomadtable.app</div>
+      <h3>Join something today</h3>
+      <ul>
+        <li>Browse nearby activities, join one, chat to finalise</li>
+        <li>"N going" is the whole social proof</li>
+        <li>Businesses pay to show listings to travellers in their city</li>
+      </ul>
+      <p class="take"><b>Our take:</b> Gathering chat (phase 11) and featured listings for hosts (phase 12), which is where the first revenue comes from.</p>
+    </article>
+    <article class="ref">
+      <div class="hook">praysap.com</div>
+      <h3>Pray together, anywhere</h3>
+      <ul>
+        <li>Prayers near you marked Live or Upcoming, with attending counts</li>
+        <li>Host a prayer in a mosque, home, park or office</li>
+        <li>Chips like Imam, Wudu, Women space, Bring mat</li>
+      </ul>
+      <p class="take"><b>Our take:</b> Pray together (phase 9). "I'm going" on every iqamah, and hosted prayers in spaces that are not mosques.</p>
+    </article>
+  </div>
+
+  <div class="principles">
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-pray"/></svg></span><div><b>Prayer first</b><span>The unit is a jamā'ah at a time. Activities come last and always sit next to a salah time.</span></div></div>
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-users"/></svg></span><div><b>Audience on everything</b><span>Every gathering is Everyone, Brothers, Sisters or Families. Sisters-only stays sisters-only in lists, chat and attendee avatars.</span></div></div>
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-lock"/></svg></span><div><b>No live location</b><span>We show "in Istanbul Oct 3 to 8", never a dot on a map. Home addresses go only to people the host approves.</span></div></div>
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-shield"/></svg></span><div><b>Trust-gated</b><span>Hosting and messaging need trust level 1 or more. Report and block sit one tap away on every person and chat.</span></div></div>
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-hand"/></svg></span><div><b>Salam, not swipe</b><span>People connect after praying together or through a salam request with context. No profile browsing grid, no photos required.</span></div></div>
+    <div class="principle"><span class="icw"><svg class="ic"><use href="#i-heart"/></svg></span><div><b>Core stays free</b><span>Finding, going, hosting and chatting are free forever. Money comes from hosts who promote and supporters who opt in.</span></div></div>
+  </div>
+</section>
+
+<!-- ============== PHASE MAP ============== -->
+<section id="phases">
+  <div class="sec-head">
+    <div>
+      <h2>Four phases, each shippable alone</h2>
+      <p>They continue the spec's numbering. Each ships behind its own KV flag, adds tables and routes only, and is useful if we stop after it.</p>
+    </div>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Phase</th><th>Name</th><th>User can…</th><th>Flag</th><th>New tables</th><th>New routes</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pnum">9</span></td><td><b>Pray together</b></td><td>Tap "I'm going" on any iqamah, see who else is going, host a prayer in a mosque or any space</td><td><code>phase9.together</code></td><td><code>gathering</code> <code>gathering_member</code></td><td><code>/together</code> <code>/g/[id]</code> <code>/g/new</code></td></tr>
+        <tr><td><span class="pnum">10</span></td><td><b>Trips</b></td><td>Add a trip, see Jumu'ah and gatherings on their dates and the Muslims overlapping them, send a salam</td><td><code>phase10.trips</code></td><td><code>trip</code> <code>salam_request</code></td><td><code>/trips</code> <code>/trips/[id]</code> <code>/cities/…/travellers</code></td></tr>
+        <tr><td><span class="pnum">11</span></td><td><b>Companions</b></td><td>Chat inside a gathering, add the people they prayed with, compare maps and message companions</td><td><code>phase11.companions</code></td><td><code>conversation</code> <code>message</code> <code>companion</code></td><td><code>/inbox</code> <code>/inbox/[id]</code> <code>/@a/with/@b</code></td></tr>
+        <tr><td><span class="pnum">12</span></td><td><b>Hosts &amp; supporters</b></td><td>Find halaqas, iftars and Qur'an circles; hosts promote activities to travellers; members become supporters</td><td><code>phase12.hosts</code></td><td><code>host</code> <code>promotion</code> <code>subscription</code></td><td><code>/activities</code> <code>/host</code> <code>/supporter</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============== PHASE 9 ============== -->
+<section id="p9">
+  <div class="phase-head">
+    <span class="pnum">9</span>
+    <div>
+      <h2>Pray together</h2>
+      <p>Turns every iqamah into something you can say you're going to, and lets anyone host a prayer where there's no mosque. This is the PraySap loop built on data we already have.</p>
+    </div>
+    <div class="meta"><span class="pill em">Flag phase9.together</span><span class="pill">New tab: Together</span></div>
+  </div>
+
+  <div class="screens">
+    <!-- S1 Together tab -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">8:31</span><i></i></div>
+        <div class="body">
+          <div class="ph-title"><div><h4>Together</h4><div class="ph-sub"><svg class="ic" style="width:12px;height:12px"><use href="#i-nav"/></svg>Whitechapel, London</div></div><span class="iconbtn"><svg class="ic"><use href="#i-search"/></svg></span></div>
+          <div class="seg"><span class="on">Now</span><span>Today</span><span>This week</span></div>
+          <div class="chips"><span class="chip on">Everyone</span><span class="chip">Brothers</span><span class="chip">Sisters</span><span class="chip">Families</span></div>
+          <div class="gcard">
+            <div class="row1"><span class="live">LIVE · IN 14 MIN</span><span class="chip em"><svg class="ic"><use href="#i-shield"/></svg>Verified time</span></div>
+            <h5>Isha jamā'ah</h5>
+            <div class="where"><svg class="ic" style="width:12px;height:12px"><use href="#i-pin"/></svg>East London Mosque · 0.4 mi</div>
+            <div class="foot"><span class="stack"><span class="av a1">AS</span><span class="av a3">YM</span><span class="av a2">HK</span><span class="more num">23 going</span></span><span class="time num">8:45 PM</span></div>
+          </div>
+          <div class="gcard">
+            <div class="row1"><span class="soon">TOMORROW</span><span class="chip soft">Brothers</span></div>
+            <h5>Fajr, then breakfast on Brick Lane</h5>
+            <div class="where"><svg class="ic" style="width:12px;height:12px"><use href="#i-pin"/></svg>Brick Lane Mosque · 0.7 mi</div>
+            <div class="foot"><span class="stack"><span class="av a4">OB</span><span class="av a1">IR</span><span class="more num">6 going</span></span><span class="time num">6:05 AM</span></div>
+          </div>
+          <div class="gcard">
+            <div class="row1"><span class="soon">SAT</span><span class="chip soft">Sisters</span></div>
+            <h5>Maghrib in Victoria Park</h5>
+            <div class="where"><svg class="ic" style="width:12px;height:12px"><use href="#i-pin"/></svg>By the boating lake · host @amina</div>
+          </div>
+        </div>
+        <span class="fab"><svg class="ic"><use href="#i-plus"/></svg>Host a prayer</span>
+        <nav class="tabbar"><span><svg class="ic"><use href="#i-search"/></svg>Explore</span><span><svg class="ic"><use href="#i-bookmark"/></svg>Saved</span><span class="on"><svg class="ic"><use href="#i-users"/></svg>Together</span><span><svg class="ic"><use href="#i-shield"/></svg>Verify</span><span><svg class="ic"><use href="#i-user"/></svg>Profile</span></nav>
+      </div>
+      <figcaption class="shot-cap"><b>Together tab</b><span><code>/together</code> · Live and upcoming prayers near you, filtered by audience.</span><br><a href="https://mobbin.com/screens/764c3777-25ce-44c6-af3b-6c2438d707ed">Ref: Meetup, Friends nearby</a></figcaption>
+    </figure>
+
+    <!-- S2 Mosque page module -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body flush">
+          <div class="cover" style="background:var(--tint-sage)"><svg style="fill:var(--tint-sage-2)"><use href="#cover-mosque"/></svg>
+            <div class="top-btns"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><span class="iconbtn"><svg class="ic"><use href="#i-share"/></svg></span></div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+            <div><div style="font-size:19px;font-weight:800">East London Mosque</div><div class="ph-sub">Whitechapel · 0.4 mi · Community verified</div></div>
+            <div class="box soft" style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><span class="ovl" style="color:var(--primary)">NEXT JAMĀ'AH · IN 14 MIN</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-end">
+                <div><div style="font-size:20px;font-weight:800" class="num">Isha · 8:45 PM</div><div class="ph-sub">Adhan 8:12 · verified 2 days ago</div></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span class="stack"><span class="av a1">AS</span><span class="av a3">YM</span><span class="av a2">HK</span><span class="av a4">+</span><span class="more num">23 going</span></span></div>
+              <span class="btn pri"><svg class="ic"><use href="#i-check"/></svg>I'm going</span>
+            </div>
+            <div class="ovl">This week at this mosque</div>
+            <div class="lrow"><span class="kv"><span class="icw"><svg class="ic"><use href="#i-cal"/></svg></span></span><div class="t"><b>Jumu'ah · 2nd jamā'ah 1:45 PM</b><span>Khutbah in English · 140 going</span></div><span class="btn sm out">Going</span></div>
+            <div class="lrow"><span class="kv"><span class="icw"><svg class="ic"><use href="#i-moon"/></svg></span></span><div class="t"><b>Fajr, then breakfast</b><span>Brothers · hosted by @omar · 6 going</span></div><span class="btn sm out">Join</span></div>
+          </div>
+        </div>
+        <div class="bottombar"><div class="l"><b class="num">Isha 8:45 PM</b><span>in 14 min · 23 going</span></div><span class="btn pri">I'm here</span></div>
+      </div>
+      <figcaption class="shot-cap"><b>Mosque page: who's praying here</b><span><code>/m/[slug]</code> · "I'm going" on the next iqamah plus hosted gatherings at this mosque.</span><br><a href="https://mobbin.com/screens/37eba205-fbaa-416d-9368-1b2d262a3cc3">Ref: Meetup, attendees</a></figcaption>
+    </figure>
+
+    <!-- S3 Host a prayer -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body"><div class="ph-title"><h4>Together</h4></div><div class="gcard" style="opacity:.6"><h5>Isha jamā'ah</h5></div></div>
+        <div class="sheet-dim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="font-size:18px;font-weight:800">Host a prayer</div>
+          <div class="field"><label>Prayer</label><div class="chips"><span class="chip">Fajr</span><span class="chip">Dhuhr</span><span class="chip">Asr</span><span class="chip on">Maghrib</span><span class="chip">Isha</span></div></div>
+          <div class="field"><label>Where</label><div class="seg"><span>Mosque</span><span class="on">Park</span><span>Office</span><span>Home</span></div><div class="input"><svg class="ic"><use href="#i-pin"/></svg>Victoria Park, boating lake</div></div>
+          <div class="two">
+            <div class="field"><label>Time</label><div class="input num">7:01 PM<span class="end">Maghrib</span></div></div>
+            <div class="field"><label>Spots</label><div class="stepper"><i>−</i><span class="num">15</span><i>+</i></div></div>
+          </div>
+          <div class="field"><label>Who can join</label><div class="chips"><span class="chip">Everyone</span><span class="chip">Brothers</span><span class="chip on">Sisters</span><span class="chip">Families</span></div></div>
+          <div class="field"><label>Bring</label><div class="chips"><span class="chip on"><svg class="ic"><use href="#i-check"/></svg>Prayer mat</span><span class="chip">Make wudhu first</span></div></div>
+          <p class="note"><svg class="ic"><use href="#i-lock"/></svg>For a home, the exact address goes only to people you approve.</p>
+          <span class="btn ink">Post prayer</span>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>Host a prayer</b><span><code>/g/new</code> · Time prefills from the place's calculated adhan or verified iqamah.</span><br><a href="https://mobbin.com/screens/a1b70bb2-26c6-4a50-88e2-11a2d5b94f25">Ref: Future, add sheet</a></figcaption>
+    </figure>
+
+    <!-- S4 Gathering page -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body flush">
+          <div class="cover" style="background:var(--tint-sky);height:140px">
+            <svg viewBox="0 0 300 140" preserveAspectRatio="none" aria-hidden="true"><path d="M0 90 Q80 60 150 85 T300 70 V140 H0Z" style="fill:var(--tint-sage)"/><ellipse cx="120" cy="80" rx="46" ry="16" style="fill:var(--tint-sky-2)"/><path d="M0 40 L300 55" style="stroke:var(--bg);stroke-width:5;fill:none"/></svg>
+            <span style="position:absolute;left:140px;top:62px;background:var(--secondary);color:var(--secondary-fg);border-radius:999px;padding:4px 9px;font-weight:800;font-size:11px" class="num">7:01 PM</span>
+            <div class="top-btns"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><span class="iconbtn"><svg class="ic"><use href="#i-share"/></svg></span></div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+            <div><span class="soon">SAT 4 OCT · MAGHRIB</span><div style="font-size:19px;font-weight:800;margin-top:2px">Maghrib in Victoria Park</div></div>
+            <div class="lrow" style="padding-top:0"><span class="av a2 lg">AR</span><div class="t"><b>Hosted by @amina</b><span>Trusted verifier · hosted 7 prayers</span></div></div>
+            <div class="kv"><span class="icw"><svg class="ic"><use href="#i-pin"/></svg></span><div><b>By the boating lake, east gate</b><span>Victoria Park, Hackney · 1.9 mi</span></div></div>
+            <div class="kv"><span class="icw"><svg class="ic"><use href="#i-users"/></svg></span><div><b>Sisters only · 9 of 15 spots</b><span>Only sisters see who's going</span></div></div>
+            <div class="chips"><span class="chip soft">Bring a mat</span><span class="chip soft">Make wudhu first</span><span class="chip soft">Outdoor</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><span class="stack"><span class="av a2">AR</span><span class="av a3">SF</span><span class="av a1">ZN</span><span class="av a4">MK</span><span class="more">+5</span></span><span style="font-size:11.5px;font-weight:700;color:var(--muted-fg);display:flex;gap:4px;align-items:center"><svg class="ic" style="width:12px;height:12px"><use href="#i-flag"/></svg>Report</span></div>
+          </div>
+        </div>
+        <div class="bottombar"><div class="l"><b>6 spots left</b><span>Free · leave any time</span></div><span class="btn pri">Join prayer</span></div>
+      </div>
+      <figcaption class="shot-cap"><b>Gathering page</b><span><code>/g/[id]</code> · Shareable link with an OG card; the attendee list follows the audience rule.</span><br><a href="https://mobbin.com/screens/1177d96b-90b8-441b-bfa2-c6717f9f3615">Ref: Posh, event page</a></figcaption>
+    </figure>
+  </div>
+
+  <div class="flow"><span class="lbl">Flow F9</span><span class="step">Open mosque page</span><span class="arrow">→</span><span class="step">I'm going (sign in if needed)</span><span class="arrow">→</span><span class="step">Reminder 20 min before iqamah</span><span class="arrow">→</span><span class="step">"I'm here" check-in</span><span class="arrow">→</span><span class="step">Counts toward "prayed together"</span></div>
+
+  <div class="spec">
+    <div><h3>Scope</h3><ul>
+      <li>"I'm going" on the next iqamah and on each Jumu'ah jamā'ah; the implicit gathering row is created lazily per place, prayer and date</li>
+      <li>Hosted prayers at a mosque or a custom space (park, office, home, campus)</li>
+      <li>Audience: Everyone, Brothers, Sisters, Families; self-declared on the profile and needed only for single-gender gatherings</li>
+      <li>Together tab with Now, Today, This week; card on Explore and city pages</li>
+      <li>Web push reminder (reuses phase 6 push) and ICS link (reuses phase 7)</li>
+      <li>Report, cancel and host removal of a member</li>
+    </ul></div>
+    <div><h3>Data &amp; routes</h3>
+      <p><code>gathering</code>: id, place_id or custom name + coarse lat/lng, prayer, starts_at (UTC) + timezone, audience, capacity, host_user_id, kind (jamaah or hosted), note, status.</p>
+      <p><code>gathering_member</code>: gathering_id, user_id, status (going, waitlist, requested, approved, left).</p>
+      <p><code>user.audience_group</code> nullable column. API: <code>/api/v1/gatherings</code> (bbox + time), <code>/api/v1/gatherings/[id]/members</code>.</p>
+    </div>
+    <div><h3>Measure &amp; accept</h3>
+      <p>Goals: <code>going_tapped</code>, <code>gathering_created</code>, <code>gathering_joined</code>, <code>gathering_shared</code>.</p>
+      <ol>
+        <li>Tapping I'm going on a mosque's Isha shows the user in the going list and the count goes up by one</li>
+        <li>A brother can't see or join a sisters-only gathering, and its members aren't listed to him</li>
+        <li>A home gathering hides the address until the host approves</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PHASE 10 ============== -->
+<section id="p10">
+  <div class="phase-head">
+    <span class="pnum">10</span>
+    <div>
+      <h2>Trips</h2>
+      <p>The TripBFF mechanic, with a halal twist: a trip tells you where Jumu'ah is on your Friday, which gatherings fall on your dates, and who else is in town.</p>
+    </div>
+    <div class="meta"><span class="pill em">Flag phase10.trips</span><span class="pill">Growth loop: shared trip pages</span></div>
+  </div>
+
+  <div class="screens">
+    <!-- S5 Add trip -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body"><div class="ph-title"><h4>Trips</h4></div></div>
+        <div class="sheet-dim"></div>
+        <div class="sheet" style="top:70px">
+          <div class="grab"></div>
+          <div style="font-size:18px;font-weight:800">Where are you going?</div>
+          <div class="input"><svg class="ic"><use href="#i-search"/></svg>Istanbul, Türkiye</div>
+          <div class="two">
+            <div class="field"><label>Arrive</label><div class="input num">Fri 3 Oct</div></div>
+            <div class="field"><label>Leave</label><div class="input num">Wed 8 Oct</div></div>
+          </div>
+          <div class="box soft" style="display:flex;gap:10px;align-items:center"><span class="stack"><span class="av a3">YM</span><span class="av a1">FA</span><span class="av a2">NK</span></span><span style="font-size:12.5px"><b class="num">214 Muslims</b> will be in Istanbul on your dates</span></div>
+          <div class="field"><label>Who can see this trip</label>
+            <div class="lrow" style="padding:6px 0"><div class="t"><b>Travellers in Istanbul</b><span>Shown on the city's traveller list</span></div><span class="switch"></span></div>
+            <div class="lrow" style="padding:6px 0"><div class="t"><b>On my profile</b><span>mosques.world/@wahabshaikh</span></div><span class="switch off"></span></div>
+          </div>
+          <div class="ovl">Popular this month</div>
+          <div class="chips"><span class="chip soft">Makkah · 1.2k</span><span class="chip soft">Madinah · 840</span><span class="chip soft">Istanbul · 214</span></div>
+          <span class="btn ink" style="margin-top:4px">Add trip</span>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>Add a trip</b><span><code>/trips/new</code> · City from Places autocomplete, dates, two visibility switches.</span><br><a href="https://mobbin.com/screens/69383b77-a298-4eae-ad31-7b014c7ff4e0">Ref: Mindtrip, trips</a></figcaption>
+    </figure>
+
+    <!-- S6 Trip page -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body flush">
+          <div class="cover" style="background:var(--tint-lilac);height:150px"><svg style="fill:var(--tint-lilac-2)"><use href="#cover-mosque"/></svg>
+            <div class="top-btns"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><span class="iconbtn"><svg class="ic"><use href="#i-share"/></svg></span></div>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+            <div><div style="font-size:21px;font-weight:800">Istanbul</div><div class="ph-sub num">Fri 3 – Wed 8 Oct · 5 nights · in 3 days</div></div>
+            <div class="stats"><div><b class="num">214</b><span>travellers</span></div><div><b class="num">38</b><span>gatherings</span></div><div><b class="num">412</b><span>mosques</span></div></div>
+            <div class="box" style="display:flex;flex-direction:column;gap:8px">
+              <span class="ovl" style="color:var(--primary)">YOUR JUMU'AH · FRI 3 OCT</span>
+              <div style="display:flex;justify-content:space-between;align-items:flex-end"><div><b style="font-size:14px">Sultan Ahmed Mosque</b><div class="ph-sub num">Khutbah 12:45 · salah 1:10 PM</div></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span class="stack"><span class="av a1">IR</span><span class="av a4">OB</span><span class="more num">64 travellers going</span></span><span class="btn sm pri">Going</span></div>
+            </div>
+            <div class="ovl">On your dates</div>
+            <div class="lrow"><div class="t"><b>Fajr at Süleymaniye, then simit</b><span class="num">Sat 4 Oct · 6:12 AM · 11 going</span></div><span class="btn sm out">Join</span></div>
+            <div class="lrow"><div class="t"><b>Asr at Eyüp Sultan, sisters walk</b><span class="num">Sun 5 Oct · 3:40 PM · 7 going</span></div><span class="btn sm out">Join</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>Trip page</b><span><code>/trips/[id]</code> · Jumu'ah first, then gatherings on your dates, then people.</span><br><a href="https://mobbin.com/screens/f1d9f159-1570-42ad-81e8-6002c2f105c3">Ref: Delta, my trips</a></figcaption>
+    </figure>
+
+    <!-- S7 Travellers list -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">9:12</span><i></i></div>
+        <div class="body">
+          <div class="ph-title"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><div style="flex:1;margin-inline-start:6px"><b style="font-size:15px">In Istanbul with you</b><div class="ph-sub num">214 people · 3 – 8 Oct</div></div></div>
+          <div class="chips"><span class="chip on">Overlapping dates</span><span class="chip">Brothers</span><span class="chip">Sisters</span></div>
+          <div>
+            <div class="lrow"><span class="av a3 lg">YM</span><div class="t"><b>Yusuf Malik</b><span class="num">From Manchester · 2 – 6 Oct</span><span class="num">22 mosques · 3 in common</span></div><span class="btn sm out"><svg class="ic"><use href="#i-hand"/></svg>Salam</span></div>
+            <div class="lrow"><span class="av a1 lg">IR</span><div class="t"><b>Ibrahim Rahman</b><span class="num">From Toronto · 1 – 9 Oct</span><span>Going to your Jumu'ah</span></div><span class="btn sm out"><svg class="ic"><use href="#i-hand"/></svg>Salam</span></div>
+            <div class="lrow"><span class="av a4 lg">OB</span><div class="t"><b>Omar Bakr</b><span class="num">From Berlin · 4 – 8 Oct</span><span class="num">Prayed together 2 times</span></div><span class="btn sm pri"><svg class="ic"><use href="#i-msg"/></svg>Message</span></div>
+            <div class="lrow"><span class="av a2 lg">HK</span><div class="t"><b>Hamza Khan</b><span class="num">From Dubai · 3 – 5 Oct</span><span class="num">51 mosques · 16 countries</span></div><span class="btn sm out"><svg class="ic"><use href="#i-hand"/></svg>Salam</span></div>
+          </div>
+          <p class="note"><svg class="ic"><use href="#i-shield"/></svg>People choose who sees their trip. We never show where anyone is staying.</p>
+        </div>
+        <nav class="tabbar"><span><svg class="ic"><use href="#i-search"/></svg>Explore</span><span><svg class="ic"><use href="#i-bookmark"/></svg>Saved</span><span class="on"><svg class="ic"><use href="#i-users"/></svg>Together</span><span><svg class="ic"><use href="#i-shield"/></svg>Verify</span><span><svg class="ic"><use href="#i-user"/></svg>Profile</span></nav>
+      </div>
+      <figcaption class="shot-cap"><b>Travellers in the city</b><span><code>/trips/[id]/people</code> · Rows show overlap and shared mosques, never location.</span><br><a href="https://mobbin.com/screens/387bb8ad-616c-4c64-8194-1b23f5f3f3d8">Ref: Polarsteps, people</a></figcaption>
+    </figure>
+
+    <!-- S7b Salam request sheet -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body"><div class="ph-title"><b style="font-size:15px">In Istanbul with you</b></div></div>
+        <div class="sheet-dim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="display:flex;gap:12px;align-items:center"><span class="av a3 lg">YM</span><div><b style="font-size:16px">Send salam to Yusuf</b><div class="ph-sub num">Istanbul · overlapping 3 – 6 Oct</div></div></div>
+          <div class="field"><label>Why you're reaching out</label>
+            <div class="chips" style="flex-wrap:wrap"><span class="chip on">Pray Jumu'ah together</span><span class="chip">Explore mosques</span><span class="chip">Share a meal</span></div>
+          </div>
+          <div class="input" style="align-items:flex-start;min-height:74px;font-weight:500;white-space:normal">Assalamu alaikum! I'm at Sultan Ahmed for Jumu'ah on Friday, want to pray together?</div>
+          <p class="note"><svg class="ic"><use href="#i-lock"/></svg>Yusuf sees your name, trip dates and mosques in common. He can accept, ignore or block.</p>
+          <span class="btn pri"><svg class="ic"><use href="#i-send"/></svg>Send salam</span>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>Salam request</b><span>One request per person per trip; a short reason is required, rate limited by trust level.</span><br><a href="https://mobbin.com/screens/085af4e5-0e66-43fc-8779-510ed2ee9094">Ref: Alta, find people</a></figcaption>
+    </figure>
+  </div>
+
+  <div class="flow"><span class="lbl">Flow F10</span><span class="step">Add trip</span><span class="arrow">→</span><span class="step">See Jumu'ah on your Friday</span><span class="arrow">→</span><span class="step">Going</span><span class="arrow">→</span><span class="step">Browse travellers</span><span class="arrow">→</span><span class="step">Send salam</span><span class="arrow">→</span><span class="step">Accepted: chat opens (phase 11)</span></div>
+
+  <div class="spec">
+    <div><h3>Scope</h3><ul>
+      <li>Trips on the Together tab and on profiles (optional)</li>
+      <li>Trip page: Jumu'ah pick, gatherings on your dates, saved mosques in the city</li>
+      <li>City pages gain "Travelling here this month" with a count, which is also SEO copy</li>
+      <li>Salam request with a reason; accept, ignore, block</li>
+      <li>Until phase 11 ships, an accepted salam reveals each other's profile only</li>
+      <li>Email digest the day before arrival: Jumu'ah time plus three gatherings</li>
+    </ul></div>
+    <div><h3>Data &amp; routes</h3>
+      <p><code>trip</code>: id, user_id, city_id, starts_on, ends_on (local dates), show_to_travellers, show_on_profile.</p>
+      <p><code>salam_request</code>: from_user, to_user, trip_id, reason, message, status, created_at. Unique on (from, to, trip).</p>
+      <p><code>user_block</code>: blocker, blocked. It's checked on every social read from this phase on.</p>
+    </div>
+    <div><h3>Measure &amp; accept</h3>
+      <p>Goals: <code>trip_added</code>, <code>trip_shared</code>, <code>salam_sent</code>, <code>salam_accepted</code>.</p>
+      <ol>
+        <li>Two users with overlapping Istanbul trips see each other; a third with non-overlapping dates does not</li>
+        <li>A blocked user disappears from traveller lists both ways</li>
+        <li>Hiding a trip from travellers removes it within one request</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PHASE 11 ============== -->
+<section id="p11">
+  <div class="phase-head">
+    <span class="pnum">11</span>
+    <div>
+      <h2>Companions</h2>
+      <p>NomadTable's group chat, scoped to a gathering and time-boxed, then a lightweight way to keep the people you prayed with. The profile map becomes a shared map.</p>
+    </div>
+    <div class="meta"><span class="pill em">Flag phase11.companions</span><span class="pill">New tab badge: Inbox</span></div>
+  </div>
+
+  <div class="screens">
+    <!-- S8 Gathering chat -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">6:48</span><i></i></div>
+        <div class="body" style="gap:10px">
+          <div class="ph-title"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><div style="flex:1;margin-inline-start:6px"><b style="font-size:14.5px">Maghrib in Victoria Park</b><div class="ph-sub">9 sisters · chat closes Sun 7 PM</div></div><span class="iconbtn"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="box sand" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><div><b class="num" style="font-size:13px">Today · 7:01 PM</b><div class="ph-sub">Boating lake, east gate</div></div><span class="live">IN 13 MIN</span></div>
+          <div class="sys">Chat opens a day before and closes a day after</div>
+          <div><div class="who">Amina · host</div><div class="bubble them">Assalamu alaikum! I'm by the gate with a green mat. I have two spare mats too.</div></div>
+          <div><div class="who">Sara</div><div class="bubble them">Running 5 min late, please start without me if needed</div></div>
+          <div class="bubble me">On my way, bringing dates for after</div>
+          <div><div class="who">Zainab</div><div class="bubble them">Is there somewhere for wudhu nearby?</div></div>
+          <div><div class="who">Amina · host</div><div class="bubble them">Café toilets by the lake, or make wudhu before you come</div></div>
+        </div>
+        <div class="composer"><span class="in">Message the group</span><span class="send"><svg class="ic"><use href="#i-send"/></svg></span></div>
+      </div>
+      <figcaption class="shot-cap"><b>Gathering chat</b><span><code>/g/[id]/chat</code> · Members only, time-boxed, host can remove, anyone can report.</span><br><a href="https://mobbin.com/screens/a01372cf-4ca3-43fb-a68a-a737fc11032f">Ref: Luma, event chat</a></figcaption>
+    </figure>
+
+    <!-- S9 After prayer -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body"><div class="ph-title"><h4>Together</h4></div></div>
+        <div class="sheet-dim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center">
+            <span style="width:48px;height:48px;border-radius:99px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center"><svg class="ic" style="width:22px;height:22px"><use href="#i-check"/></svg></span>
+            <b style="font-size:17px">JazakAllahu khayran</b>
+            <span class="ph-sub" style="justify-content:center">You prayed Maghrib with 8 sisters</span>
+          </div>
+          <div class="box sand" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px"><span style="font-size:12.5px"><b>Victoria Park</b> added to your map</span><svg class="ic" style="color:var(--primary)"><use href="#i-check"/></svg></div>
+          <div class="ovl">Keep in touch</div>
+          <div class="lrow"><span class="av a2 lg">AR</span><div class="t"><b>Amina R.</b><span>Host · prayed together 3 times</span></div><span class="btn sm pri"><svg class="ic"><use href="#i-check"/></svg>Added</span></div>
+          <div class="lrow"><span class="av a3 lg">SF</span><div class="t"><b>Sara F.</b><span>First time together</span></div><span class="btn sm out"><svg class="ic"><use href="#i-plus"/></svg>Add</span></div>
+          <div class="lrow"><span class="av a1 lg">ZN</span><div class="t"><b>Zainab N.</b><span>First time together</span></div><span class="btn sm out"><svg class="ic"><use href="#i-plus"/></svg>Add</span></div>
+          <span class="btn ink">Done</span>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>After the prayer</b><span>Fires 20 min after start for members who checked in; both sides must add each other.</span><br><a href="https://mobbin.com/screens/37eba205-fbaa-416d-9368-1b2d262a3cc3">Ref: Meetup, connect with attendees</a></figcaption>
+    </figure>
+
+    <!-- S10 Shared map -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">10:02</span><i></i></div>
+        <div class="body">
+          <div class="ph-title"><span class="iconbtn"><svg class="ic"><use href="#i-back"/></svg></span><span class="iconbtn"><svg class="ic"><use href="#i-share"/></svg></span></div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <span class="stack"><span class="av a4 xl">WS</span><span class="av a3 xl" style="margin-inline-start:-16px">YM</span></span>
+            <div><b style="font-size:18px">You and Yusuf</b><div class="ph-sub">Companions since Jumu'ah in Istanbul</div></div>
+          </div>
+          <div class="nightmap">
+            <svg viewBox="440 40 420 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect x="0" y="0" width="1000" height="520" fill="#0E2A22"/>
+              <path fill="#1D4A3A" stroke="#2A5E4B" stroke-width="0.8" d="M472 150 L475 131 L494 128 L486 117 L500 111 L514 103 L522 92 L514 78 L542 58 L578 53 L611 64 L667 58 L722 47 L792 33 L889 50 L860 90 L858 153 L839 139 L833 161 L839 181 L806 194 L797 219 L778 214 L786 247 L772 228 L769 203 L756 192 L744 189 L722 208 L717 228 L703 194 L686 181 L658 181 L656 175 L639 167 L633 169 L642 183 L656 183 L664 189 L644 206 L619 214 L608 192 L597 172 L594 164 L600 150 L583 150 L575 147 L572 139 L564 139 L556 139 L553 133 L542 125 L533 128 L544 139 L550 139 L542 144 L528 128 L508 131 L497 147 L483 150Z M453 192 L453 208 L467 231 L486 236 L514 236 L525 239 L528 258 L536 283 L533 300 L550 344 L572 344 L592 322 L597 306 L611 292 L611 258 L642 219 L619 217 L606 200 L592 172 L589 164 L556 161 L528 147 L500 150 L483 150 L472 167Z M486 111 L503 108 L500 103 L492 89 L483 92 L492 100Z"/>
+              <g stroke="#0E2A22" stroke-width="1.5">
+                <circle cx="500" cy="107" r="6" fill="#FFFFFF"/><circle cx="580" cy="136" r="7" fill="#FFFFFF"/><circle cx="611" cy="190" r="6" fill="#FFFFFF"/>
+                <circle cx="487" cy="145" r="4" fill="#E9B949"/><circle cx="651" cy="182" r="4" fill="#E9B949"/><circle cx="715" cy="170" r="4" fill="#E9B949"/>
+                <circle cx="494" cy="100" r="4" fill="#6FD3AE"/><circle cx="551" cy="128" r="4" fill="#6FD3AE"/><circle cx="600" cy="175" r="4" fill="#6FD3AE"/>
+              </g>
+            </svg>
+            <div class="legend"><span><i style="background:#FFFFFF"></i>Both</span><span><i style="background:#E9B949"></i>You</span><span><i style="background:#6FD3AE"></i>Yusuf</span></div>
+          </div>
+          <div class="stats"><div><b class="num">14</b><span>mosques in common</span></div><div><b class="num">6</b><span>prayed together</span></div><div><b class="num">3</b><span>countries</span></div></div>
+          <div class="box soft" style="padding:10px 12px"><span class="ovl" style="color:var(--primary)">NEXT OVERLAP</span><div style="font-size:12.5px;margin-top:2px"><b>Both in Madinah</b>, 14 – 19 Nov</div></div>
+          <span class="btn pri"><svg class="ic"><use href="#i-msg"/></svg>Message Yusuf</span>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>You and a companion</b><span><code>/@wahabshaikh/with/@yusuf</code> · The profile map, overlaid. Shareable as an OG card.</span><br><a href="https://mobbin.com/screens/8beaa5c3-a5d8-4e38-81c5-22b00641008a">Ref: corner, places in common</a></figcaption>
+    </figure>
+
+    <!-- S11 Inbox -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">10:05</span><i></i></div>
+        <div class="body">
+          <div class="ph-title"><h4>Inbox</h4><span class="iconbtn"><svg class="ic"><use href="#i-more"/></svg></span></div>
+          <div class="box sand" style="display:flex;flex-direction:column;gap:8px">
+            <span class="ovl">Salam requests · 2</span>
+            <div class="lrow" style="padding:4px 0;border:0"><span class="av a1 lg">IR</span><div class="t"><b>Ibrahim R. · Istanbul trip</b><span>"Pray Jumu'ah together"</span></div></div>
+            <div class="two"><span class="btn sm ink" style="border-radius:10px">Accept</span><span class="btn sm out" style="border-radius:10px">Ignore</span></div>
+          </div>
+          <div>
+            <div class="lrow"><span class="av a2 lg">MP</span><div class="t"><b>Maghrib in Victoria Park</b><span>Amina: Café toilets by the lake…</span></div><span class="ph-sub">6:52</span></div>
+            <div class="lrow"><span class="av a3 lg">YM</span><div class="t"><b>Yusuf Malik</b><span>See you at Süleymaniye for Fajr</span></div><span class="ph-sub">Tue</span></div>
+            <div class="lrow"><span class="av a4 lg">FJ</span><div class="t"><b>Fajr &amp; breakfast, Brick Lane</b><span>Chat closed · 6 went</span></div><span class="ph-sub">Sep 21</span></div>
+          </div>
+          <p class="note"><svg class="ic"><use href="#i-shield"/></svg>Only companions and people who accepted your salam can message you.</p>
+        </div>
+        <nav class="tabbar"><span><svg class="ic"><use href="#i-search"/></svg>Explore</span><span><svg class="ic"><use href="#i-users"/></svg>Together</span><span class="on"><svg class="ic"><use href="#i-msg"/></svg>Inbox</span><span><svg class="ic"><use href="#i-shield"/></svg>Verify</span><span><svg class="ic"><use href="#i-user"/></svg>Profile</span></nav>
+      </div>
+      <figcaption class="shot-cap"><b>Inbox</b><span><code>/inbox</code> · Requests on top, gathering chats and direct messages below. Saved moves into Profile.</span><br><a href="https://mobbin.com/screens/5568ac83-f206-4852-95da-09464b884b8b">Ref: LinkedIn, messaging</a></figcaption>
+    </figure>
+  </div>
+
+  <div class="flow"><span class="lbl">Flow F11</span><span class="step">Join gathering</span><span class="arrow">→</span><span class="step">Group chat opens</span><span class="arrow">→</span><span class="step">Pray, check in</span><span class="arrow">→</span><span class="step">Add companions (mutual)</span><span class="arrow">→</span><span class="step">Shared map + direct messages</span></div>
+
+  <div class="spec">
+    <div><h3>Scope</h3><ul>
+      <li>Gathering chat for members, open from 24h before to 24h after</li>
+      <li>Companions: mutual add after a shared check-in, or after an accepted salam</li>
+      <li>Direct messages only between companions or accepted salams</li>
+      <li>Shared map page and OG card; "Prayed together N times" on profiles</li>
+      <li>Message report queue in <code>/admin/reports</code>; host can remove members</li>
+      <li>Email and push for new messages, batched, respecting notification settings</li>
+    </ul></div>
+    <div><h3>Data &amp; routes</h3>
+      <p><code>conversation</code> (kind gathering or direct), <code>conversation_member</code>, <code>message</code> (text only at launch, 1,000 chars, soft delete).</p>
+      <p><code>companion</code>: user_a &lt; user_b, since, source. <code>prayed_together</code> derived from matching check-ins on the same gathering.</p>
+      <p>Live delivery: one Durable Object per conversation (new binding), D1 keeps history. Polling every 10s is the fallback if we skip DOs at first.</p>
+    </div>
+    <div><h3>Measure &amp; accept</h3>
+      <p>Goals: <code>message_sent</code>, <code>companion_added</code>, <code>shared_map_viewed</code>.</p>
+      <ol>
+        <li>A non-member gets 404 on a gathering chat; a removed member loses access at once</li>
+        <li>A direct message to a non-companion is rejected with a clear sentence</li>
+        <li>After the close time the chat is read-only</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PHASE 12 ============== -->
+<section id="p12">
+  <div class="phase-head">
+    <span class="pnum">12</span>
+    <div>
+      <h2>Hosts &amp; supporters</h2>
+      <p>Where the first revenue comes from. Mosques and Muslim organisations list halaqas, iftars and Qur'an circles for free and pay to put them in front of travellers in their city. Members can become supporters. Finding and joining always stay free.</p>
+    </div>
+    <div class="meta"><span class="pill em">Flag phase12.hosts</span><span class="pill amber">Needs a spec change first</span></div>
+  </div>
+
+  <div class="screens">
+    <!-- S12 Activities -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="sb"><span class="num">4:20</span><i></i></div>
+        <div class="body">
+          <div class="ph-title"><div><h4>This week</h4><div class="ph-sub">Istanbul · during your trip</div></div><span class="iconbtn"><svg class="ic"><use href="#i-cal"/></svg></span></div>
+          <div class="chips"><span class="chip on">All</span><span class="chip"><svg class="ic"><use href="#i-book"/></svg>Halaqa</span><span class="chip"><svg class="ic"><use href="#i-moon"/></svg>Iftar</span><span class="chip">Qur'an circle</span></div>
+          <div class="gcard" style="padding:0;overflow:hidden">
+            <div style="height:84px;background:var(--tint-sand);position:relative"><svg style="position:absolute;inset:0;width:100%;height:100%;fill:var(--tint-sand-2)"><use href="#cover-mosque"/></svg><span class="chip" style="position:absolute;top:8px;left:8px;box-shadow:var(--shadow-md)">Promoted</span></div>
+            <div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:6px">
+              <h5>Seerah night after Isha, in English</h5>
+              <div class="where"><svg class="ic" style="width:12px;height:12px"><use href="#i-shield"/></svg>Hosted by Süleymaniye Visitors Office · verified host</div>
+              <div class="foot"><span class="more num" style="margin:0">Sat 4 Oct · after Isha 8:10 PM</span><span class="more num">48 going</span></div>
+            </div>
+          </div>
+          <div class="gcard">
+            <div class="row1"><span class="soon">SUN 5 OCT</span><span class="chip soft">Families</span></div>
+            <h5>Mosque architecture walk, 4 mosques</h5>
+            <div class="where">Starts after Dhuhr at Rüstem Paşa · host @istanbulwalks</div>
+          </div>
+          <div class="gcard">
+            <div class="row1"><span class="soon">MON 6 OCT</span><span class="chip soft">Sisters</span></div>
+            <h5>Tajweed circle for beginners</h5>
+            <div class="where">Between Maghrib and Isha · Fatih</div>
+          </div>
+        </div>
+        <nav class="tabbar"><span><svg class="ic"><use href="#i-search"/></svg>Explore</span><span class="on"><svg class="ic"><use href="#i-users"/></svg>Together</span><span><svg class="ic"><use href="#i-msg"/></svg>Inbox</span><span><svg class="ic"><use href="#i-shield"/></svg>Verify</span><span><svg class="ic"><use href="#i-user"/></svg>Profile</span></nav>
+      </div>
+      <figcaption class="shot-cap"><b>Activities</b><span><code>/activities</code> · Every activity is anchored to a salah ("after Isha"). One promoted card per screen, labelled.</span><br><a href="https://mobbin.com/screens/51ddffb5-c0b2-49f5-aa2e-ff65b4a1a53b">Ref: LinkedIn, events</a></figcaption>
+    </figure>
+
+    <!-- S13 Host dashboard desktop -->
+    <figure class="shot wide" style="margin:0">
+      <div class="desk">
+        <div class="chrome"><i></i><i></i><i></i><span>mosques.world/host</span></div>
+        <div style="display:grid;grid-template-columns:170px 1fr;height:610px">
+          <div style="border-inline-end:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:12.5px">
+            <a class="brand" style="font-size:13px;margin-bottom:10px"><span class="brand-mark" style="width:24px;height:24px;border-radius:7px"><svg viewBox="0 0 24 24" style="width:14px;height:14px"><use href="#dome"/></svg></span>Host</a>
+            <span style="background:var(--muted);border-radius:8px;padding:7px 10px">Activities</span>
+            <span style="padding:7px 10px;color:var(--muted-fg)">Promotions</span>
+            <span style="padding:7px 10px;color:var(--muted-fg)">Team</span>
+            <span style="padding:7px 10px;color:var(--muted-fg)">Billing</span>
+          </div>
+          <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:18px">East London Mosque</b><div class="ph-sub"><svg class="ic" style="width:12px;height:12px;color:var(--primary)"><use href="#i-shield"/></svg>Verified host · stewards: 3</div></div><span class="btn sm ink"><svg class="ic"><use href="#i-plus"/></svg>New activity</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <div class="box"><span class="ph-sub">Views, last 7 days</span><b style="font-size:20px" class="num">1,284</b></div>
+              <div class="box"><span class="ph-sub">Joined</span><b style="font-size:20px" class="num">86</b></div>
+              <div class="box"><span class="ph-sub">From travellers</span><b style="font-size:20px" class="num">41%</b></div>
+            </div>
+            <div class="box" style="padding:0">
+              <div class="lrow" style="padding:10px 12px"><div class="t"><b>Friday youth halaqa</b><span class="num">Weekly · after Isha · 32 going this week</span></div><span class="chip em">Promoted until 7 Oct</span></div>
+              <div class="lrow" style="padding:10px 12px"><div class="t"><b>Community iftar (Mondays)</b><span class="num">Weekly · at Maghrib · 120 going</span></div><span class="btn sm out">Promote</span></div>
+              <div class="lrow" style="padding:10px 12px"><div class="t"><b>New Muslim circle</b><span>Sisters · Saturdays after Dhuhr</span></div><span class="btn sm out">Promote</span></div>
+            </div>
+            <div class="box soft" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center">
+              <div><span class="ovl" style="color:var(--primary)">PROMOTE TO TRAVELLERS</span><div style="font-size:13px;margin-top:4px">Shown first on the Together tab and on trip pages for people in London on those dates. <b class="num">~2,300 trips overlap next week.</b></div></div>
+              <div class="price"><b class="num">£9</b><span>/ 7 days</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between" class="ph-sub"><span>Joined from promotion</span><span class="num">35 of 86</span></div><div class="bar"><i style="width:41%"></i></div></div>
+          </div>
+        </div>
+      </div>
+      <figcaption class="shot-cap"><b>Host dashboard</b><span><code>/host</code> · Stewards (phase 6) become verified hosts. Listing is free, promotion is paid via Stripe Checkout.</span><br><span>Ref: NomadTable business listings (hyper-targeted, analytics, group chat)</span></figcaption>
+    </figure>
+
+    <!-- S14 Supporter -->
+    <figure class="shot" style="margin:0">
+      <div class="phone">
+        <div class="body flush">
+          <div style="background:var(--night);height:210px;position:relative;overflow:hidden;color:#F3F1EC;padding:48px 18px 0">
+            <svg viewBox="0 0 300 210" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true"><g fill="#E9B949"><circle cx="40" cy="160" r="4"/><circle cx="96" cy="130" r="6"/><circle cx="160" cy="170" r="3"/><circle cx="220" cy="140" r="5"/><circle cx="262" cy="176" r="3"/></g><g fill="#6FD3AE"><circle cx="130" cy="186" r="4"/><circle cx="200" cy="120" r="3"/></g><path d="M40 160 Q70 120 96 130 T160 170 T220 140" fill="none" stroke="#E9B949" stroke-opacity=".6" stroke-dasharray="3 4"/></svg>
+            <span class="iconbtn" style="position:relative;border:0"><svg class="ic"><use href="#i-back"/></svg></span>
+            <div style="position:relative;margin-top:14px"><div style="font-size:11px;font-weight:800;letter-spacing:.5px;opacity:.8">SUPPORTER</div><div style="font-size:21px;font-weight:800;line-height:1.2;margin-top:4px">Keep mosques.world free for everyone</div></div>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div class="seg"><span>Monthly</span><span class="on">Yearly · save 30%</span></div>
+            <div class="price"><b class="num">£25</b><span>/ year</span></div>
+            <div class="tick"><svg class="ic"><use href="#i-check"/></svg><span>Map themes and your own pin colour</span></div>
+            <div class="tick"><svg class="ic"><use href="#i-check"/></svg><span>Journey lines between your trips</span></div>
+            <div class="tick"><svg class="ic"><use href="#i-check"/></svg><span>Supporter mark on your profile</span></div>
+            <div class="tick"><svg class="ic"><use href="#i-check"/></svg><span>Print-ready poster of your map, once a year</span></div>
+            <p class="note"><svg class="ic"><use href="#i-heart"/></svg>Finding mosques, going, hosting and chatting stay free. Supporters fund servers and moderation.</p>
+          </div>
+        </div>
+        <div class="bottombar"><div class="l"><b class="num">£25 a year</b><span>Cancel any time</span></div><span class="btn pri">Become a supporter</span></div>
+      </div>
+      <figcaption class="shot-cap"><b>Supporter</b><span><code>/supporter</code> · Cosmetic perks on the profile map only. Nothing that affects trust or ranking.</span><br><a href="https://mobbin.com/screens/f62dd356-a479-4ccc-b086-618cf85e46a4">Ref: Places, share profile</a></figcaption>
+    </figure>
+  </div>
+
+  <div class="flow"><span class="lbl">Flow F12</span><span class="step">Steward claims host</span><span class="arrow">→</span><span class="step">Lists weekly halaqa</span><span class="arrow">→</span><span class="step">Promote £9 / 7 days</span><span class="arrow">→</span><span class="step">Shown on trips overlapping London</span><span class="arrow">→</span><span class="step">Dashboard: views, joins</span></div>
+
+  <div class="spec">
+    <div><h3>Scope</h3><ul>
+      <li>Activity kinds on <code>gathering</code>: halaqa, iftar, Qur'an circle, walk, volunteering, sport after Jumu'ah</li>
+      <li>Every activity anchors to a salah (before/after) at a place</li>
+      <li>Verified hosts: stewards and vetted organisations</li>
+      <li>Promotions via Stripe Checkout, one labelled slot per list</li>
+      <li>Supporter subscription via Stripe Billing, cosmetic perks only</li>
+      <li>Host analytics: views, joins, joins from promotion</li>
+    </ul></div>
+    <div><h3>Data &amp; routes</h3>
+      <p><code>host</code>: id, name, place_id, verified_at, members. <code>promotion</code>: gathering_id, city_id, starts_on, ends_on, amount, stripe_session_id, status.</p>
+      <p><code>subscription</code>: user_id, stripe_customer, plan, status, current_period_end. Webhook: <code>/api/v1/stripe/webhook</code>.</p>
+      <p>New secrets: <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>.</p>
+    </div>
+    <div><h3>Measure &amp; accept</h3>
+      <p>Goals: <code>activity_created</code>, <code>promotion_purchased</code>, <code>supporter_started</code>.</p>
+      <ol>
+        <li>A paid promotion appears first for trips overlapping its city and dates, and is labelled Promoted</li>
+        <li>A cancelled subscription removes perks at period end</li>
+        <li>An unverified user cannot create a promoted activity</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============== BEFORE YOU BUILD ============== -->
+<section id="decisions">
+  <div class="sec-head">
+    <div>
+      <h2>Decide before building</h2>
+      <p>These change the spec, so they need a yes before the phase starts. The recommendation is what the board assumes.</p>
+    </div>
+  </div>
+  <div class="risks">
+    <div class="risk warn"><h3>Spec §1.7 rules out events and payments</h3><p>"Event listings beyond prayer times, Eid and Taraweeh" and "donations and payments" are out of scope today. Phases 9 to 11 fit because they're about prayers. Phase 12 needs both lines amended.</p><p class="rec">Recommend: amend §1.7 when phase 12 starts; keep donations out.</p></div>
+    <div class="risk warn"><h3>Audience needs a gender field</h3><p>Sisters-only and brothers-only gatherings need users to self-declare. It's sensitive data and never public.</p><p class="rec">Recommend: optional, asked only when joining a single-gender gathering; never shown on profiles.</p></div>
+    <div class="risk"><h3>Minimum age for social features</h3><p>Going counts are harmless, but chat and salam requests between adults and minors are not.</p><p class="rec">Recommend: 18+ declared at first salam or chat; under 18 can join Families gatherings only.</p></div>
+    <div class="risk"><h3>Live chat infrastructure</h3><p>The app has no Durable Objects yet. Chat works on D1 with polling but feels slow.</p><p class="rec">Recommend: ship phase 11 on polling behind the flag, add a Durable Object per conversation once volume justifies it.</p></div>
+    <div class="risk"><h3>Tab bar change</h3><p>Phase 9 adds Together as a fifth tab. Phase 11 swaps Saved for Inbox and moves Saved into Profile.</p><p class="rec">Recommend: accept; Saved is still one tap from Profile and the mosque page.</p></div>
+    <div class="risk"><h3>Moderation load</h3><p>Chat, salam requests and hosted prayers all create new report types.</p><p class="rec">Recommend: extend <code>/admin/reports</code> with gathering, message and user targets in phase 9, before chat exists.</p></div>
+  </div>
+</section>
+
+<section id="refs">
+  <div class="sec-head"><div><h2>Mobbin references</h2><p>Patterns borrowed, visuals our own. Each screen caption above links its closest reference.</p></div></div>
+  <div class="mobbin">
+    <div><a href="https://mobbin.com/screens/764c3777-25ce-44c6-af3b-6c2438d707ed">Meetup · Friends nearby</a> <span>location filter + people grid</span></div>
+    <div><a href="https://mobbin.com/screens/37eba205-fbaa-416d-9368-1b2d262a3cc3">Meetup · Connect with attendees</a> <span>host badge, going bar</span></div>
+    <div><a href="https://mobbin.com/screens/0341b6c5-7cd4-49b8-b904-6b189bb85c8e">Meetup · Event comments</a> <span>"You're going" sticky bar</span></div>
+    <div><a href="https://mobbin.com/screens/1177d96b-90b8-441b-bfa2-c6717f9f3615">Posh · Event page</a> <span>guest avatars, location, RSVP</span></div>
+    <div><a href="https://mobbin.com/screens/a01372cf-4ca3-43fb-a68a-a737fc11032f">Luma · Event chat</a> <span>welcome system line, group bubbles</span></div>
+    <div><a href="https://mobbin.com/screens/d57a0760-5c3a-4d4c-93fe-5037f0d7b071">Luma · Upcoming / Past</a> <span>going state on list rows</span></div>
+    <div><a href="https://mobbin.com/screens/69383b77-a298-4eae-ad31-7b014c7ff4e0">Mindtrip · Trips</a> <span>upcoming trip card</span></div>
+    <div><a href="https://mobbin.com/screens/f1d9f159-1570-42ad-81e8-6002c2f105c3">Fly Delta · My trips</a> <span>countdown on the trip</span></div>
+    <div><a href="https://mobbin.com/screens/a1b70bb2-26c6-4a50-88e2-11a2d5b94f25">Future · Add travel</a> <span>destination + dates sheet</span></div>
+    <div><a href="https://mobbin.com/screens/387bb8ad-616c-4c64-8194-1b23f5f3f3d8">Polarsteps · People search</a> <span>traveller rows with home city</span></div>
+    <div><a href="https://mobbin.com/screens/085af4e5-0e66-43fc-8779-510ed2ee9094">Alta · Find people</a> <span>mutuals under the name</span></div>
+    <div><a href="https://mobbin.com/screens/8beaa5c3-a5d8-4e38-81c5-22b00641008a">corner · Places in common</a> <span>two people, one map</span></div>
+    <div><a href="https://mobbin.com/screens/f62dd356-a479-4ccc-b086-618cf85e46a4">Places · Share your profile</a> <span>profile link as the invite</span></div>
+    <div><a href="https://mobbin.com/screens/51ddffb5-c0b2-49f5-aa2e-ff65b4a1a53b">LinkedIn · Events</a> <span>attendee count on event cards</span></div>
+    <div><a href="https://mobbin.com/screens/5568ac83-f206-4852-95da-09464b884b8b">LinkedIn · Messaging</a> <span>thread list and composer</span></div>
+  </div>
+</section>
+
+<footer>
+  <p>mosques.world design board for phases 9 to 12. Tokens, type and icons follow <code>docs/spec/03-design-system.md</code>. All names, counts and prices are sample data. Source: <code>docs/design/social-community.html</code>.</p>
+</footer>
+</div>
