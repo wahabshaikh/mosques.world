@@ -9,7 +9,6 @@ export default function robots(): MetadataRoute.Robots {
     "/saved",
     "/admin",
     "/account",
-    "/api/",
     "/m/*/timetable/import",
     "/settings",
     "/onboarding",
