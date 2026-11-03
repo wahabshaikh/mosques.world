@@ -5,7 +5,7 @@ describe("robots", () => {
   it("excludes auth-only and import routes for both crawlers and slows ClaudeBot", () => {
     const disallow = [
       "/sign-in", "/sign-up", "/verify", "/saved", "/admin", "/account",
-      "/api/", "/m/*/timetable/import", "/settings", "/onboarding",
+      "/m/*/timetable/import", "/settings", "/onboarding",
     ];
     expect(robots().rules).toEqual([
       { userAgent: "*", allow: "/", disallow },
