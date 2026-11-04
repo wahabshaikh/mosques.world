@@ -1,5 +1,25 @@
 import type { MetadataRoute } from "next";
 
+export const AI_CRAWLERS = [
+  "GPTBot",
+  "ChatGPT-User",
+  "OAI-SearchBot",
+  "CCBot",
+  "ClaudeBot",
+  "anthropic-ai",
+  "Claude-Web",
+  "Google-Extended",
+  "PerplexityBot",
+  "Bytespider",
+  "Amazonbot",
+  "Applebot-Extended",
+  "meta-externalagent",
+  "cohere-ai",
+  "Diffbot",
+  "omgilibot",
+];
+
+
 export default function robots(): MetadataRoute.Robots {
   const base = process.env.PUBLIC_BASE_URL ?? "https://mosques.world";
   const disallow = [
@@ -16,7 +36,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       { userAgent: "*", allow: "/", disallow },
-      { userAgent: "ClaudeBot", allow: "/", disallow, crawlDelay: 5 },
+      ...AI_CRAWLERS.map((userAgent) => ({ userAgent, disallow: "/" })),
     ],
     sitemap: `${base}/sitemap.xml`,
     host: base,
