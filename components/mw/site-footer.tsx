@@ -4,6 +4,7 @@ import type { MessageKey } from "@/lib/i18n/messages/en";
 import { getTranslator } from "@/lib/i18n/server";
 
 const links: Array<[MessageKey, string]> = [
+  ["footer.forMosques", "/for-mosques"],
   ["footer.about", "/about"],
   ["footer.guidelines", "/guidelines"],
   ["footer.privacy", "/privacy"],

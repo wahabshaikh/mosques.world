@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canChangeUsername, exportableUser, firstIssue, onboardingInput, profileInput } from "./account";
+import { canChangeUsername, exportableUser, firstIssue, likeSubstring, onboardingInput, profileInput } from "./account";
 
 describe("account inputs", () => {
   it("validates onboarding", () => {
@@ -23,6 +23,11 @@ describe("account inputs", () => {
     expect(canChangeUsername(null, 0)).toBe(true);
     expect(canChangeUsername(0, 29 * day)).toBe(false);
     expect(canChangeUsername(0, 30 * day)).toBe(true);
+  });
+
+  it("escapes LIKE wildcards in an email", () => {
+    expect(likeSubstring("a@b.c")).toBe("%a@b.c%");
+    expect(likeSubstring("100%_done@b.c")).toBe("%100\\%\\_done@b.c%");
   });
 
   it("drops moderator-only fields from exports", () => {

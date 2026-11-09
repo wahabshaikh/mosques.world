@@ -113,6 +113,8 @@ unused, so later phases need no infrastructure change.
 | `DATAFAST_WEBSITE_ID` / `DATAFAST_API_KEY` | var / secret | analytics script / server goals |
 | `SENTRY_DSN` | secret | errors |
 | `PUBLIC_BASE_URL` | var | links in emails, OG images |
+| `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_PRODUCT_MONTHLY_ID`, `POLAR_PRODUCT_YEARLY_ID` | secret | Masjid Pro checkout. Off when the token or both product ids are unset. |
+| `POLAR_SERVER` | secret | `production` charges live cards. Any other value, including unset, uses Polar's sandbox. |
 
 ## 2.4 Repository layout
 
@@ -189,6 +191,11 @@ unused, so later phases need no infrastructure change.
 - **GDPR**: `/settings/account` offers data export (JSON) and deletion (hard-delete PII,
   anonymise contributions to "former member" so the facts' history remains consistent).
 - **Secrets** only in Wrangler secrets; the Google key is never sent to the client.
+- **Masjid Pro**: checkout and the webhook are off until Polar secrets are set. The webhook verifies
+  a Standard Webhooks signature, ignores unknown products, and is idempotent. Only an approved
+  steward of that mosque can start checkout or edit the notice and donation link. The donation
+  link is an https URL on a public host; nothing is fetched from it. AI crawlers named in
+  `lib/crawlers.ts` are disallowed in `robots.txt` and refused with 403.
 
 ## 2.8 Testing and verification
 

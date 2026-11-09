@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if ("response" in guarded) return guarded.response;
   const { user } = guarded;
   const database = appEnv().DB;
-  const [profile, accounts, candidates, votes, activity, reports, waitlist, checkins, saved, badges, stewards, prefs, notifications, timetableLinks] = await database.batch([
+  const [profile, accounts, candidates, votes, activity, reports, waitlist, checkins, saved, badges, stewards, prefs, notifications, timetableLinks, masjidPro] = await database.batch([
     database.prepare(`SELECT * FROM user WHERE id = ?`).bind(user.id),
     database.prepare(`SELECT provider_id, account_id, created_at FROM account WHERE user_id = ?`).bind(user.id),
     database
@@ -31,6 +31,12 @@ export async function GET(request: Request) {
     database.prepare(`SELECT channel, topic, enabled FROM notification_pref WHERE user_id = ?`).bind(user.id),
     database.prepare(`SELECT topic, title, body, created_at, read_at FROM notification WHERE user_id = ? ORDER BY created_at DESC LIMIT 500`).bind(user.id),
     database.prepare(`SELECT place_id, provider, url, created_at FROM place_source WHERE created_by = ?`).bind(user.id),
+    database
+      .prepare(
+        `SELECT place_id, status, billing_interval, current_period_end, polar_subscription_id, notice, donation_url, donation_label, created_at
+         FROM masjid_pro WHERE activated_by = ?`,
+      )
+      .bind(user.id),
   ]);
   const body = {
     exportedAt: new Date().toISOString(),
@@ -48,6 +54,7 @@ export async function GET(request: Request) {
     notificationSettings: prefs?.results ?? [],
     notifications: notifications?.results ?? [],
     timetableLinks: timetableLinks?.results ?? [],
+    masjidPro: masjidPro?.results ?? [],
   };
   return new Response(JSON.stringify(body, null, 2), {
     headers: {

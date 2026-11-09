@@ -1,11 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { contentSecurityPolicy } from "@/lib/csp";
+import { isAiCrawler } from "@/lib/crawlers";
 import { isNonProductionHost } from "@/lib/environment";
 import { DEFAULT_LOCALE, splitLocale, type Locale } from "@/lib/i18n/config";
 
 type CfFields = { latitude?: string | number; longitude?: string | number; country?: string };
 
 export async function proxy(request: NextRequest) {
+  if (isAiCrawler(request.headers.get("user-agent"))) {
+    return new NextResponse("Forbidden", {
+      status: 403,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "public, max-age=86400",
+        "x-robots-tag": "noai, noimageai",
+      },
+    });
+  }
   const host = request.nextUrl.hostname;
   if (host === "www.mosques.world") {
     const url = request.nextUrl.clone();
@@ -68,8 +79,9 @@ export async function proxy(request: NextRequest) {
   } else {
     response = NextResponse.next({ request: { headers } });
   }
-  // `/@name/map?embed=1` is meant to be iframed on other sites (spec P4).
-  const embeddable = Boolean(profile?.[2]) && request.nextUrl.searchParams.get("embed") === "1";
+  // Profile maps (`?embed=1`) and the Masjid Pro widget are meant to be iframed. The lobby screen is not.
+  const widget = /^\/m\/[^/]+\/widget\/?$/.test(rawPath);
+  const embeddable = (Boolean(profile?.[2]) && request.nextUrl.searchParams.get("embed") === "1") || widget;
   response.headers.set("Content-Security-Policy", contentSecurityPolicy(nonProd, embeddable));
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "geolocation=(self)");

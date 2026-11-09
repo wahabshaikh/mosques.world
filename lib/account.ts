@@ -43,6 +43,14 @@ export function canChangeUsername(changedAt: number | null, now: number): boolea
   return changedAt === null || now - changedAt >= USERNAME_CHANGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
+/**
+ * A LIKE pattern that matches `value` as a substring. `%`, `_` and `\` in the value are escaped
+ * so an email cannot widen the match. Use with `ESCAPE '\'`.
+ */
+export function likeSubstring(value: string): string {
+  return `%${value.replace(/[\\%_]/g, (character) => `\\${character}`)}%`;
+}
+
 /** Fields of the user row safe to include in a personal data export. */
 export function exportableUser(row: Record<string, unknown>): Record<string, unknown> {
   const { banReason: _banReason, trustOverride: _trustOverride, ...rest } = row;

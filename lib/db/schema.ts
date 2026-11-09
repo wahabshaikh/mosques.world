@@ -357,3 +357,32 @@ export const enrichCell = sqliteTable("enrich_cell", {
   matched: integer("matched").notNull().default(0),
   error: text("error"),
 });
+
+/** One Masjid Pro subscription per mosque. The committee's notice is not touched by billing events. */
+export const masjidPro = sqliteTable(
+  "masjid_pro",
+  {
+    placeId: text("place_id").primaryKey(),
+    status: text("status").notNull().default("inactive"),
+    polarSubscriptionId: text("polar_subscription_id"),
+    polarCustomerId: text("polar_customer_id"),
+    productId: text("product_id"),
+    billingInterval: text("billing_interval"),
+    currentPeriodEnd: integer("current_period_end"),
+    notice: text("notice"),
+    donationUrl: text("donation_url"),
+    donationLabel: text("donation_label"),
+    activatedBy: text("activated_by"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    polarEventAt: integer("polar_event_at"),
+  },
+  (table) => [uniqueIndex("masjid_pro_subscription").on(table.polarSubscriptionId)],
+);
+
+export const masjidProEvent = sqliteTable("masjid_pro_event", {
+  id: text("id").primaryKey(),
+  placeId: text("place_id"),
+  type: text("type").notNull(),
+  createdAt: integer("created_at").notNull(),
+});

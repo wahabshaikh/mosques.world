@@ -268,3 +268,26 @@ approved. Contributions that are later reverted by a moderator count −5.
   promotion of replacements.
 - Burst detection: > N votes on one place from new accounts within 1h → hold + flag.
 - Moderator revert restores the previous current value and recomputes affected facts and users.
+
+## 5.8 Masjid Pro
+
+One row per mosque. Billing events never write `notice`, `donation_url` or `donation_label`.
+
+**`masjid_pro`** (`place_id` PK → place)
+
+| Column | Type | Notes |
+|---|---|---|
+| `status` | text | `inactive` \| `active` \| `past_due` \| `canceled` \| `revoked` |
+| `polar_subscription_id` | text null | unique when set |
+| `polar_customer_id`, `product_id` | text null | Polar ids. Not shown on public pages. |
+| `billing_interval` | text null | `month` \| `year` |
+| `current_period_end` | integer null | unix ms. A `canceled` row stays entitled until this time. |
+| `notice` | text null | ≤ 180 characters, shown only while entitled |
+| `donation_url`, `donation_label` | text null | https link out. We do not fetch it. |
+| `activated_by` | text null | user id of the steward who paid. Nulled on account deletion. |
+| `polar_event_at` | integer null | newest applied Polar delivery. Older deliveries do not overwrite. |
+| `created_at`, `updated_at` | integer | |
+
+**`masjid_pro_event`** (`id` PK = Polar `webhook-id`, `place_id`, `type`, `created_at`). Insert-once, so a retried delivery is a no-op.
+
+Entitled when `status = active`, or `status = canceled` and `current_period_end` is still in the future. `past_due` and `revoked` are not entitled. The public directory does not change.

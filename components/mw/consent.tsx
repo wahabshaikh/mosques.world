@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { isKioskPath } from "@/lib/kiosk";
 
 export function ConsentBanner({ websiteId }: { websiteId?: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!websiteId) return;
+    if (!websiteId || isKioskPath(window.location.pathname)) return;
     if (localStorage.getItem("mw_consent") === "1") {
       loadScript(websiteId);
       return;

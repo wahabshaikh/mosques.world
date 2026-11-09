@@ -49,6 +49,15 @@ export default function PrivacyPage() {
         address your browser gives us) to tell you when a saved mosque changes. Notifications also appear in your in-app inbox.
         Choose what you get in Settings → Notifications; every email has a one-click unsubscribe link.
       </p>
+      <h2 className="text-lg font-bold">Masjid Pro</h2>
+      <p>
+        If you subscribe a mosque to Masjid Pro, we store the mosque, the subscription status, the period you have paid for, and
+        the Polar subscription id. The notice and donation link you write are shown on that mosque&apos;s page, lobby screen and
+        widget. Polar, the merchant of record, receives your email address so it can send a receipt and take payment. Card
+        numbers are entered on Polar&apos;s page and are never stored here. Deleting your account removes your name from the
+        subscription; the mosque keeps the screen until the period that was paid for ends. A donation link only points at a page
+        the mosque already uses. We do not receive or hold that money.
+      </p>
       <h2 className="text-lg font-bold">Your choices</h2>
       <p>
         In <strong>Settings → Account</strong> you can download everything we hold about you as JSON, or delete your account.

@@ -22,9 +22,14 @@ export function StewardDashboard({ places }: { places: StewardPlace[] }) {
                 {place.name}
               </Link>
             </h2>
-            <Link href={`/m/${place.slug}/update`} className="text-sm font-semibold underline">
-              Update timings
-            </Link>
+            <span className="flex gap-3 text-sm font-semibold">
+              <Link href={`/m/${place.slug}/pro`} className="underline">
+                Masjid Pro
+              </Link>
+              <Link href={`/m/${place.slug}/update`} className="underline">
+                Update timings
+              </Link>
+            </span>
           </div>
           {place.locality ? <p className="text-sm text-muted-foreground">{place.locality}</p> : null}
           {place.items.length === 0 ? (
