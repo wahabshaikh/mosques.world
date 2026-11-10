@@ -15,6 +15,7 @@ import { languageAlternates, localePath } from "@/lib/i18n/config";
 import type { Translator } from "@/lib/i18n";
 import { getTranslator } from "@/lib/i18n/server";
 import { clientText } from "@/lib/i18n/client-messages";
+import { readPublicBoard } from "@/lib/masjid-pro";
 import { stewardCount } from "@/lib/stewards";
 import { eidSeason, specialDates, upcomingSpecial } from "@/lib/special";
 import { MobileActionBar } from "@/components/mw/mobile-action-bar";
@@ -131,10 +132,11 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
   const specials = await upcomingSpecial(appEnv().DB, place.id, day.date);
   const eidTime = eidSeason(now, place.timezone);
   const database = appEnv().DB;
-  const [facts, activity, stats] = await Promise.all([
+  const [facts, activity, stats, board] = await Promise.all([
     placeFacts(database, place.id, day.date),
     placeActivity(database, place.id),
     placeTrustStats(database, place.id, nowMs),
+    readPublicBoard(database, place.id, nowMs),
   ]);
   const cells = iqamahCells(facts, loaded.day, nowMs, l);
   // The mosque's own published timetable (Mawaqit, Masjidal), shown apart from community-reported times.
@@ -263,6 +265,12 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
           {summaryLine}
           {place.address ? ` · ${place.address}` : ""}
         </p>
+        {board?.notice ? (
+          <p className="mt-4 border-s-2 border-primary ps-3 text-[15px]" data-testid="committee-notice">
+            <span className="block text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">{l.t("mosque.committeeNotice")}</span>
+            {board.notice}
+          </p>
+        ) : null}
         <div className="mt-4 flex items-center gap-2">
           <DirectionsLink
             lat={place.lat}
@@ -270,6 +278,16 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             label={l.t("mosque.directions")}
             className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground"
           />
+          {board?.donationUrl ? (
+            <a
+              href={board.donationUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+              className="inline-flex h-11 items-center rounded-full border border-border px-4 text-sm font-semibold"
+            >
+              {board.donationLabel || l.t("display.donate")}
+            </a>
+          ) : null}
           <div className="ms-auto flex gap-1">
             <ShareButton title={place.name} path={path} />
             <SaveButton placeId={place.id} />
@@ -402,6 +420,14 @@ export default async function MosquePage({ params, searchParams }: { params: Pro
             {" · "}
             <Link href={l.href(`/m/${place.slug}/timetable`)} className="font-semibold text-foreground underline">
               {l.t("mosque.monthly")}
+            </Link>
+            {" · "}
+            <Link href={l.href(`/m/${place.slug}/display`)} className="font-semibold text-foreground underline">
+              {l.t("mosque.lobby")}
+            </Link>
+            {" · "}
+            <Link href={l.href(`/m/${place.slug}/pro`)} className="font-semibold text-foreground underline">
+              {l.t("mosque.pro")}
             </Link>
             {" · "}
             <CalendarLink path={`/m/${place.slug}/calendar.ics`} label={l.t("mosque.calendar")} scope="place" />

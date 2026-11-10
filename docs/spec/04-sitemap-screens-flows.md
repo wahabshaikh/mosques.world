@@ -12,6 +12,8 @@ flowchart TD
   Place --> Photos["/m/:slug/photos"]
   Place --> Update["/m/:slug/update (modal route)"]
   Place --> Timetable["/m/:slug/timetable (P7)"]
+  Place --> Lobby["/m/:slug/display"]
+  Place --> Pro["/m/:slug/pro"]
   Home --> Add["/add (P3)"]
   Home --> Auth["/sign-in"] --> Onb["/onboarding"]
   Home --> Profile["/@:username (P4)"]
@@ -36,6 +38,11 @@ flowchart TD
 | `/m/[slug]/update` | 2 | intercepted modal (`@modal/(.)m/[slug]/update`) + full page fallback | user | Update times/amenities |
 | `/m/[slug]/history` | 2 | RSC | public | Per-fact change history (transparency) |
 | `/m/[slug]/timetable` | 7 | RSC | public | Monthly timetable |
+| `/m/[slug]/display` | — | RSC, edge-cached | public | Masjid Pro lobby screen. Times are public. The notice, donation link and the removal of the preview bar need an active subscription. `?theme=light` is the light board; anything else is dark. |
+| `/m/[slug]/widget` | — | RSC, embeddable | public | Prayer-times widget. Times render only while Masjid Pro is active. |
+| `/m/[slug]/pro` | — | RSC | steward | Subscribe and edit the notice and donation link |
+| `/m/[slug]/pro/times` | — | RSC | steward | An approved steward of a mosque with Masjid Pro sets iqamah (fixed or minutes after adhan) and Jumu'ah. The values go through the trust engine. |
+| `/for-mosques` | — | RSC | public | Masjid Pro positioning and price |
 | `/m/[slug]/calendar.ics` | 7 | route handler | public | ICS feed |
 | `/cities/[country]/[city]` | 1 | ISR-style cache (1h) | public | SEO landing: list + map + counts |
 | `/countries/[country]` | 1 | cached | public | City index |

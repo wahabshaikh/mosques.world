@@ -3,6 +3,7 @@
 import { Download, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
+import { isKioskPath } from "@/lib/kiosk";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
@@ -37,6 +38,8 @@ export function Pwa() {
     if ("serviceWorker" in navigator) {
       void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
     }
+    // A lobby TV should not grow an install prompt or a consent bar over the prayer board.
+    if (isKioskPath(window.location.pathname)) return;
     if (!navigator.onLine) track("offline_open");
     const from = new URLSearchParams(window.location.search).get("from");
     if (from === "push" || from === "email") track("notification_opened", { channel: from });

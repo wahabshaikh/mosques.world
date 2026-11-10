@@ -18,6 +18,12 @@ export default function TermsPage() {
         the rest of the directory.
       </p>
       <p>We may hold, reject or remove contributions and suspend accounts that break the guidelines.</p>
+      <p>
+        Masjid Pro is a subscription for one mosque&apos;s committee: a lobby screen, a website widget, one notice and a donation
+        link. The price is $19 a month or $180 a year, charged by Polar when checkout is open. Cancel and the screen stays up
+        until the end of the period that was paid for. A donation link leaves this site; we do not take donations. The free
+        directory is not changed by a subscription.
+      </p>
     </ContentPage>
   );
 }

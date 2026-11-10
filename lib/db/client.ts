@@ -27,6 +27,15 @@ export type AppEnv = {
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_SITE_KEY?: string;
   SENTRY_DSN?: string;
+  /**
+   * Masjid Pro checkout (Polar). Off unless an access token and a product id are set.
+   * `POLAR_SERVER=production` is required to charge; otherwise the sandbox API is used.
+   */
+  POLAR_ACCESS_TOKEN?: string;
+  POLAR_WEBHOOK_SECRET?: string;
+  POLAR_PRODUCT_MONTHLY_ID?: string;
+  POLAR_PRODUCT_YEARLY_ID?: string;
+  POLAR_SERVER?: string;
   EMAIL?: SendEmail;
   Q_EMAIL?: Queue;
   Q_RECOMPUTE?: Queue;

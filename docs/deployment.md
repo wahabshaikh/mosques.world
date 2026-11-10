@@ -93,6 +93,9 @@ pnpm exec wrangler preview secret put BETTER_AUTH_SECRET --name my-branch
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | optional | optional | Web Push. |
 | `SENTRY_DSN` | optional | optional | Errors are tagged with `ENVIRONMENT`. |
 | `DATAFAST_WEBSITE_ID`, `DATAFAST_API_KEY` | optional | not used | Analytics. |
+| `POLAR_ACCESS_TOKEN`, `POLAR_PRODUCT_MONTHLY_ID`, `POLAR_PRODUCT_YEARLY_ID` | optional | optional | Masjid Pro checkout. Off if the token or both product ids are unset. |
+| `POLAR_WEBHOOK_SECRET` | optional | optional | Polar webhook (`POST /api/v1/webhooks/polar`). The route 404s while this is unset. |
+| `POLAR_SERVER` | optional | optional | Set to `production` to charge live cards. Unset uses Polar's sandbox. |
 
 ## Manual commands
 

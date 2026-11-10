@@ -150,6 +150,27 @@ export const en = {
   "source.linked": "Linked. The mosque's timetable now shows on this page.",
   "source.community": "Community-reported times",
   "source.meta": "Mosque timetable · {provider}",
+
+  "footer.forMosques": "For mosques",
+  "mosque.lobby": "Lobby display",
+  "mosque.pro": "Masjid Pro for the committee",
+  "mosque.committeeNotice": "From the committee",
+  "display.preview": "Preview. This bar stays on the lobby screen until the committee subscribes to Masjid Pro.",
+  "display.forCommittees": "For mosque committees",
+  "display.next": "Next",
+  "display.published": "Published by the committee",
+  "display.donate": "Donate",
+  "display.widgetLocked": "This mosque has not published a prayer-times widget.",
+  "display.widgetCta": "Masjid Pro for committees",
+  "display.adhan": "Adhan",
+  "display.iqamah": "Iqamah",
+  "display.noIqamah": "—",
+  "display.countdown": "Iqamah in",
+  "display.countdownAdhan": "Adhan in",
+  "display.now": "Now",
+  "display.jumuah": "Jumu'ah",
+  "display.light": "Light",
+  "display.dark": "Dark",
 } as const;
 
 type Widen<T> = T extends string ? string : Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };

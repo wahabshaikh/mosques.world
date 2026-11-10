@@ -1,3 +1,4 @@
+import { likeSubstring } from "@/lib/account";
 import { appEnv } from "@/lib/db/client";
 import { deliver } from "@/lib/email/send";
 import { deletionMail } from "@/lib/email/templates";
@@ -22,7 +23,8 @@ export async function POST(request: Request) {
   await database.batch([
     database.prepare(`DELETE FROM session WHERE user_id = ?`).bind(user.id),
     database.prepare(`DELETE FROM account WHERE user_id = ?`).bind(user.id),
-    database.prepare(`DELETE FROM verification WHERE identifier LIKE ?`).bind(`%${email}%`),
+    database.prepare(`DELETE FROM verification WHERE identifier LIKE ? ESCAPE '\\'`).bind(likeSubstring(email)),
+    database.prepare(`UPDATE masjid_pro SET activated_by = NULL WHERE activated_by = ?`).bind(user.id),
     database.prepare(`DELETE FROM waitlist WHERE email = ?`).bind(email),
     database.prepare(`DELETE FROM username_history WHERE user_id = ?`).bind(user.id),
     database.prepare(`UPDATE report SET note = NULL WHERE reporter_id = ?`).bind(user.id),

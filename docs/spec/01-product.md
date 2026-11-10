@@ -79,7 +79,10 @@ consumer-grade experience inspired by Airbnb:
 ## 1.7 Out of scope (all phases unless stated)
 
 - Reviews, star ratings or rankings of mosques.
-- Donations and payments.
+- Taking donations, or processing a mosque's own payments. Masjid Pro may show a link the committee
+  already uses; the gift is paid on that other site. Masjid Pro itself is a subscription for the
+  committee (lobby screen and widget), billed by Polar when checkout is configured.
+- Sponsorships or advertising on a mosque page.
 - Event listings beyond prayer times, Eid and Taraweeh (Phase 7).
 - Native iOS/Android apps (the PWA covers the MVP).
 - Classifying mosques by school of thought or sect.

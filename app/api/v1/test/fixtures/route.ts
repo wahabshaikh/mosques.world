@@ -63,6 +63,8 @@ export async function POST(request: Request) {
         database.prepare(`DELETE FROM place_slug_history WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM report WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM checkin WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM masjid_pro_event WHERE place_id = ?`).bind(row.id),
+        database.prepare(`DELETE FROM masjid_pro WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM saved_place WHERE place_id = ?`).bind(row.id),
         database.prepare(`DELETE FROM user_place_stat WHERE place_id = ?`).bind(row.id),
         database.prepare(`UPDATE place SET merged_into_id = NULL WHERE merged_into_id = ?`).bind(row.id),

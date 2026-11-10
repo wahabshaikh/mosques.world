@@ -24,3 +24,12 @@ VAPID_PRIVATE_KEY=
 SENTRY_DSN=
 DATAFAST_WEBSITE_ID=
 DATAFAST_API_KEY=
+
+# Masjid Pro (Polar). Checkout stays off until an access token and at least one product id are set.
+# POLAR_SERVER must be the string production to charge a real card; anything else uses the sandbox.
+# Create the products in Polar at $19/month and $180/year, then paste their ids. Never commit the token.
+POLAR_ACCESS_TOKEN=
+POLAR_WEBHOOK_SECRET=
+POLAR_PRODUCT_MONTHLY_ID=
+POLAR_PRODUCT_YEARLY_ID=
+POLAR_SERVER=
