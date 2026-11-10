@@ -348,9 +348,9 @@ A paid screen for one mosque's committee. The directory, the trust engine and st
 
 **Price:** $19 a month or $180 a year, per mosque, charged by Polar. Checkout is off until `POLAR_ACCESS_TOKEN` and a product id are set, and live charges also need `POLAR_SERVER=production`.
 
-**What is live without those secrets:** `/for-mosques`, the lobby screen at `/m/:slug/display` (with a preview bar), a locked widget at `/m/:slug/widget`, and `/m/:slug/pro` for an approved steward. A non-production host can grant a mosque via `POST /api/v1/test/pro` (404 in production).
+**What is live without those secrets:** `/for-mosques`, the lobby screen at `/m/:slug/display` (with a preview bar; `?theme=light` or dark), a locked widget at `/m/:slug/widget`, and `/m/:slug/pro` for an approved steward. `/m/:slug/pro/times` lets that steward set iqamah and Jumu'ah only while Masjid Pro is in force. A non-production host can grant a mosque via `POST /api/v1/test/pro` (404 in production).
 
-**Analytics goals:** `pro_checkout_started` (`interval`), `pro_notice_saved`, `pro_embed_copied`, `pro_display_view`, `pro_widget_view`. No email, no notice text.
+**Analytics goals:** `pro_checkout_started` (`interval`), `pro_notice_saved`, `pro_embed_copied`, `pro_display_view`, `pro_widget_view`, `pro_times_saved`. No email, no notice text.
 
 ## Open questions
 

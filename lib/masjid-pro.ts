@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { PolarInterval } from "@/lib/polar";
+import { IQAMAH_PRAYERS, type IqamahPrayer } from "@/lib/trust/facts";
 
 /**
  * Masjid Pro: a committee subscription for one mosque. The directory stays free. The committee
@@ -124,18 +125,122 @@ export const checkoutInput = z.object({ interval: z.enum(["month", "year"]) });
  * The next congregation: the soonest iqamah still ahead, or that prayer's adhan when iqamah
  * is unknown. Sunrise is not a congregation. After isha, tomorrow's fajr (already on the row) wins.
  */
-export function nextCongregation(rows: { key: string; at: string }[], iqamahAt: Partial<Record<string, string>>, now: number): { key: string; at: string } | null {
-  let best: { key: string; at: string; time: number } | null = null;
+export function nextCongregation(
+  rows: { key: string; at: string }[],
+  iqamahAt: Partial<Record<string, string>>,
+  now: number,
+): { key: string; at: string; iqamah: boolean } | null {
+  let best: { key: string; at: string; time: number; iqamah: boolean } | null = null;
   for (const row of rows) {
     if (row.key === "sunrise") continue;
-    const at = iqamahAt[row.key] ?? row.at;
+    const listed = iqamahAt[row.key];
+    const at = listed ?? row.at;
     const time = new Date(at).getTime();
     if (!Number.isFinite(time) || time <= now) continue;
-    if (!best || time < best.time) best = { key: row.key, at, time };
+    if (!best || time < best.time) best = { key: row.key, at, time, iqamah: Boolean(listed) };
   }
-  if (best) return { key: best.key, at: best.at };
+  if (best) return { key: best.key, at: best.at, iqamah: best.iqamah };
   const fajr = rows.find((row) => row.key === "fajr");
-  return fajr ? { key: fajr.key, at: fajr.at } : null;
+  return fajr ? { key: fajr.key, at: fajr.at, iqamah: Boolean(iqamahAt.fajr) } : null;
+}
+
+/** How long the lobby waits before reloading. At the next congregation, and never longer than 30 minutes. */
+export function reloadDelay(reloadAt: number | null, now: number): number {
+  const next = reloadAt ?? now + 30 * 60_000;
+  return Math.min(Math.max(next - now + 1500, 60_000), 30 * 60_000);
+}
+
+/** Remaining time on the lobby clock: `5:04`, or `1:05:04` once it is an hour or more. */
+export function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const ss = String(seconds).padStart(2, "0");
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${ss}`;
+  return `${minutes}:${ss}`;
+}
+
+/** `?theme=light` is the light board. Anything else, including a missing value, stays dark. */
+export function lobbyTheme(value: string | null | undefined): "dark" | "light" {
+  return value === "light" ? "light" : "dark";
+}
+
+const PRAYER_LABEL: Record<IqamahPrayer, string> = {
+  fajr: "Fajr",
+  dhuhr: "Dhuhr",
+  asr: "Asr",
+  maghrib: "Maghrib",
+  isha: "Isha",
+};
+
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a time like 13:15.");
+
+export const proTimesInput = z.object({
+  prayers: z
+    .array(
+      z.object({
+        prayer: z.enum(IQAMAH_PRAYERS),
+        mode: z.enum(["fixed", "offset"]),
+        time: clockTime.optional(),
+        minutes: z.number().int().min(0).max(90).optional(),
+      }),
+    )
+    .max(5)
+    .default([]),
+  jumuah: z
+    .array(
+      z.object({
+        slot: z.number().int().min(1).max(6),
+        time: clockTime,
+        khutbah: clockTime.nullable().optional(),
+      }),
+    )
+    .max(6)
+    .default([]),
+});
+
+export type ProTimeChange = { key: string; qualifier: string; value: { t: string } | { t: string; khutbah: string } | { rule: "after_adhan"; min: number } };
+
+/**
+ * An approved steward of a mosque with Masjid Pro in force. Anyone else is refused before a time is written.
+ * Steward is checked first, so a stranger does not learn whether the mosque subscribes.
+ */
+export function proTimesDecision(input: { approved: boolean; entitled: boolean }): { ok: true } | { ok: false; status: 403 | 402; error: string } {
+  if (!input.approved) return { ok: false, status: 403, error: "Only an approved steward of this mosque can set iqamah times." };
+  if (!input.entitled) return { ok: false, status: 402, error: "Masjid Pro is not active for this mosque." };
+  return { ok: true };
+}
+
+/** Turns a steward's form into fact changes. Fixed clock times and minutes after adhan are the only two shapes. */
+export function normalizeProTimes(input: z.infer<typeof proTimesInput>): { ok: true; changes: ProTimeChange[] } | { ok: false; error: string } {
+  const changes: ProTimeChange[] = [];
+  const seen = new Set<string>();
+  for (const prayer of input.prayers) {
+    const label = PRAYER_LABEL[prayer.prayer];
+    if (seen.has(prayer.prayer)) return { ok: false, error: `${label} was sent twice.` };
+    seen.add(prayer.prayer);
+    if (prayer.mode === "fixed") {
+      if (!prayer.time) return { ok: false, error: `Enter a clock time for ${label}.` };
+      changes.push({ key: `iqamah.${prayer.prayer}`, qualifier: "", value: { t: prayer.time } });
+    } else if (prayer.minutes === undefined) {
+      return { ok: false, error: `Enter the minutes after adhan for ${label}.` };
+    } else {
+      changes.push({ key: `iqamah.${prayer.prayer}`, qualifier: "", value: { rule: "after_adhan", min: prayer.minutes } });
+    }
+  }
+  const slots = new Set<number>();
+  for (const row of input.jumuah) {
+    if (slots.has(row.slot)) return { ok: false, error: `Jumu'ah ${row.slot} was sent twice.` };
+    slots.add(row.slot);
+    changes.push({
+      key: "jumuah.jamaah",
+      qualifier: String(row.slot),
+      value: row.khutbah ? { t: row.time, khutbah: row.khutbah } : { t: row.time },
+    });
+  }
+  if (changes.length === 0) return { ok: false, error: "Set at least one time." };
+  return { ok: true, changes };
 }
 
 export function embedSnippet(origin: string, slug: string): string {

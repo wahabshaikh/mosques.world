@@ -159,4 +159,10 @@ export const ms: Messages = {
   "display.adhan": "Azan",
   "display.iqamah": "Iqamah",
   "display.noIqamah": "—",
+  "display.countdown": "Iqamah dalam",
+  "display.countdownAdhan": "Azan dalam",
+  "display.now": "Sekarang",
+  "display.jumuah": "Jumaat",
+  "display.light": "Cerah",
+  "display.dark": "Gelap",
 };

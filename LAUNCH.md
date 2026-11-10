@@ -4,48 +4,39 @@ Masjid Pro is the paid offer for a mosque committee: a lobby screen, a website w
 
 Checkout is **off** until the secrets below are set. Merging this branch does not charge anyone.
 
-Product code on this branch is still commit `10a058f` (Add Masjid Pro lobby screen). The follow-up below was not started. This file is the only change after that commit.
-
 ## Done
 
-Already on `10a058f`, and described in the sections under this one:
-
-- `/for-mosques`, the lobby at `/m/:slug/display` (preview bar until the mosque subscribes), the widget at `/m/:slug/widget`, and `/m/:slug/pro` for an approved steward (notice and donation link only).
+- `/for-mosques`, the lobby at `/m/:slug/display` (preview bar until the mosque subscribes), the widget at `/m/:slug/widget`, and `/m/:slug/pro` for an approved steward (notice and donation link).
+- `/m/:slug/pro/times`: an approved steward of a mosque with Masjid Pro in force sets each iqamah as a fixed clock time or as minutes after adhan, and sets Jumu'ah. A stranger gets 403. An approved steward of a mosque that is not subscribed gets 402. The write goes through the trust engine, so the mosque page and the lobby show the same times. There is no private timetable.
+- The lobby is a television board: it fills the screen, does not scroll, shows a clock and a countdown to the next iqamah, and reloads at that congregation (at most every 30 minutes). `?theme=light` is the light board. Anything else is dark. Checked at 1920×1080 and 1280×720 with no document scroll.
 - Polar checkout and webhook, both inert until the secrets below are set. No Polar keys are in the repo.
-- AI crawlers stay blocked (`lib/crawlers.ts`, `robots.txt`, 403). Search crawlers stay allowed.
-- Migration `0014_masjid_pro.sql` is additive. No dependency was bumped.
-
-Checks recorded on the pull request from the session that landed `10a058f`, and not re-run after this note:
-
-- `pnpm verify` passed (lines 94.72%). `pnpm build` passed.
-- `pnpm e2e e2e/masjid-pro --project=chromium` passed (3 tests).
-- Not run then: the other E2E suites, Lighthouse, a sandbox Polar purchase, the Preview URL.
+- AI crawlers stay blocked (`lib/crawlers.ts`, `robots.txt`, 403). Search crawlers stay allowed. This follow-up did not change that list.
+- Migration `0014_masjid_pro.sql` is additive. No dependency was bumped. No new migration.
 
 ## Unfinished
 
-Asked for on this branch, and not built. Do not treat the lobby as a television board or as a place a steward can set iqamah.
-
-1. **Steward iqamah.** An approved steward still cannot set the times the lobby shows. There is no form for fixed clock times, offsets from adhan, Jumu'ah slots, or a seasonal schedule. Nothing new was saved through the trust engine. The board does not say "checked by steward" and a date. The screen still reads the same community iqamah the mosque page already shows. It does not keep a private timetable, which is the right rule, and the steward controls were never added on top of it.
-2. **Television board.** The lobby is still the first screen: a table, a clock, and a preview bar. It is not laid out for 5 m, it has no 16:9 and portrait layouts, no next-prayer countdown, and no night dim. Layout shift was not addressed. Screenshots at 1920×1080 and 1080×1920 were not taken.
-3. **Remaining proof.** The phase 1–8 E2E suites were not run. Lighthouse was not run on `/for-mosques` or the lobby.
+1. **Seasonal schedule.** A steward cannot yet file a different timetable for a season. Dated timetable rows (phase 7) are unchanged.
+2. **"Checked by steward" line.** The lobby does not print "checked by steward" and a date. The mosque page shows the contribution the way every other time does (who, and unverified until someone else confirms).
+3. **Portrait.** 1080×1920 was not laid out or screenshotted. 16:9 at 1920×1080 and 1280×720 was.
+4. **Automatic night dim.** Dark and light are a query (`?theme=light`), not a clock that dims the panel on its own.
+5. **Remaining proof.** The phase 1–8 E2E suites were not run. Lighthouse was run on the lobby and on two mosque pages (below), not on `/for-mosques`. No sandbox Polar purchase. The Preview URL was not opened.
 
 ## What Wahab must approve
 
 Before this branch is treated as on sale, the checklist further down still stands (offer, price, Polar, secrets, copy, no private timetable, crawler blocks, and that merging applies the migration and deploys).
 
-Also, before anyone expects the follow-up:
-
-- [ ] This pull request does **not** include steward-set iqamah, Jumu'ah, a seasonal schedule, or "checked by steward &lt;date&gt;".
-- [ ] This pull request does **not** include the television layout, the countdown, night dim, or the 1920×1080 and 1080×1920 shots.
-- [ ] The other E2E suites and Lighthouse were not run in the follow-up session. The green checks above are only for `10a058f`.
-- [ ] Do not merge expecting that follow-up. Finish it on this branch, or say the first lobby is enough to ship.
+- [x] An approved steward of a subscribed mosque can set fixed iqamah, minutes after adhan, and Jumu'ah. It is the directory's times.
+- [ ] A seasonal schedule, and a "checked by steward &lt;date&gt;" line on the board, are still not in this pull request.
+- [x] The lobby is a 16:9 television board with a countdown and dark and light variants. Portrait is not included.
+- [ ] Do not merge expecting Polar to charge anyone. Checkout stays off until the secrets below are set.
 
 ## What changed
 
 - `/for-mosques` states the offer and the price.
-- `/m/:slug/display` is the lobby screen. Without a subscription it shows today's times and a preview bar. With one, the bar goes and the committee's notice and donation link appear.
+- `/m/:slug/display` is the lobby screen. It fills the television, shows today's adhan and iqamah, a clock, and a countdown, and reloads on its own. `?theme=light` switches the board. Without a subscription it shows today's times and a preview bar. With one, the bar goes and the committee's notice and donation link appear.
 - `/m/:slug/widget` is the embed for the mosque's own website. Times render only while the subscription is in force. The route may be iframed. The lobby screen may not.
-- `/m/:slug/pro` is where an approved steward subscribes and edits the notice and the link. The times on the screen are the times already on the mosque page. Masjid Pro does not keep a second timetable.
+- `/m/:slug/pro` is where an approved steward subscribes and edits the notice and the link.
+- `/m/:slug/pro/times` is where that steward sets iqamah and Jumu'ah, only while Masjid Pro is in force. Masjid Pro does not keep a second timetable.
 - Polar checkout (`POST /api/v1/places/:id/pro/checkout`) and the webhook (`POST /api/v1/webhooks/polar`). The webhook verifies a Standard Webhooks signature, ignores other products, and does not apply an older delivery over a newer one.
 - `POST /api/v1/test/pro` grants a mosque without Polar on localhost and preview only. It 404s in production.
 - AI crawlers (ClaudeBot, GPTBot, Google-Extended, and the rest of the list in `lib/crawlers.ts`) are disallowed in `robots.txt` and refused with 403. Search crawlers stay allowed. They were not blocked in the repo before this change.
@@ -116,4 +107,12 @@ Not folded, and not redundant:
 
 ## Checks
 
-The session that landed `10a058f` recorded `pnpm verify`, `pnpm build`, and `pnpm e2e e2e/masjid-pro --project=chromium` on the pull request. The follow-up session changed only this file and did not re-run them. The other E2E suites and Lighthouse are still outstanding.
+Re-run on this follow-up, against the local production build (`vite preview`) for Lighthouse:
+
+- `pnpm verify` passed (lines 94.8%). `pnpm build` passed.
+- `pnpm e2e e2e/masjid-pro --project=chromium` passed (4 tests), including the steward edit and the lobby at 1920×1080 and 1280×720.
+- Lighthouse desktop, local preview, not Cloudflare's edge (so text compression is the local server's):
+  - Lobby `/m/locksley-estate-mosque-limehouse/display`: performance 97, accessibility 100, best practices 100, SEO 63. SEO is low because the lobby is `noindex` on purpose.
+  - Mosque page `/m/locksley-estate-mosque-limehouse`: performance 89, accessibility 100, best practices 100, SEO 100.
+  - Mosque page `/m/east-london-mosque-whitechapel`: performance 90, accessibility 100, best practices 100, SEO 100.
+- Not run: phase 1–8 E2E, Lighthouse on `/for-mosques`, a sandbox Polar purchase, the Preview URL. AI-crawler blocks were left as they were.

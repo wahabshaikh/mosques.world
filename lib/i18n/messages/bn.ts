@@ -162,4 +162,10 @@ export const bn: Messages = {
   "display.adhan": "আজান",
   "display.iqamah": "ইকামত",
   "display.noIqamah": "—",
+  "display.countdown": "ইকামত",
+  "display.countdownAdhan": "আজান",
+  "display.now": "এখন",
+  "display.jumuah": "জুমা",
+  "display.light": "আলো",
+  "display.dark": "অন্ধকার",
 };

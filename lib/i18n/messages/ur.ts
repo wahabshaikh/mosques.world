@@ -162,4 +162,10 @@ export const ur: Messages = {
   "display.adhan": "اذان",
   "display.iqamah": "اقامت",
   "display.noIqamah": "—",
+  "display.countdown": "اقامت میں",
+  "display.countdownAdhan": "اذان میں",
+  "display.now": "اب",
+  "display.jumuah": "جمعہ",
+  "display.light": "روشن",
+  "display.dark": "تاریک",
 };

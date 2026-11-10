@@ -164,4 +164,10 @@ export const ar: Messages = {
   "display.adhan": "الأذان",
   "display.iqamah": "الإقامة",
   "display.noIqamah": "—",
+  "display.countdown": "الإقامة بعد",
+  "display.countdownAdhan": "الأذان بعد",
+  "display.now": "الآن",
+  "display.jumuah": "الجمعة",
+  "display.light": "فاتح",
+  "display.dark": "داكن",
 };

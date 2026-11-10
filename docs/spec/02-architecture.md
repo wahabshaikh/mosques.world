@@ -193,7 +193,9 @@ unused, so later phases need no infrastructure change.
 - **Secrets** only in Wrangler secrets; the Google key is never sent to the client.
 - **Masjid Pro**: checkout and the webhook are off until Polar secrets are set. The webhook verifies
   a Standard Webhooks signature, ignores unknown products, and is idempotent. Only an approved
-  steward of that mosque can start checkout or edit the notice and donation link. The donation
+  steward of that mosque can start checkout, edit the notice and donation link, or set iqamah and
+  Jumu'ah (`/m/:slug/pro/times`, and only while Masjid Pro is in force). Those times are ordinary
+  trust-engine facts, not a private timetable. The donation
   link is an https URL on a public host; nothing is fetched from it. AI crawlers named in
   `lib/crawlers.ts` are disallowed in `robots.txt` and refused with 403.
 

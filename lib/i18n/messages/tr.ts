@@ -159,4 +159,10 @@ export const tr: Messages = {
   "display.adhan": "Ezan",
   "display.iqamah": "Kamet",
   "display.noIqamah": "—",
+  "display.countdown": "Kamete",
+  "display.countdownAdhan": "Ezana",
+  "display.now": "Şimdi",
+  "display.jumuah": "Cuma",
+  "display.light": "Açık",
+  "display.dark": "Koyu",
 };

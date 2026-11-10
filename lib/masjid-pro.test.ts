@@ -7,10 +7,16 @@ import {
   donationHref,
   embedSnippet,
   entitled,
+  formatCountdown,
+  lobbyTheme,
   nextCongregation,
   normalizeBoard,
+  normalizeProTimes,
   parsePolarDelivery,
+  proTimesDecision,
+  proTimesInput,
   readPublicBoard,
+  reloadDelay,
   saveBoard,
   setProForTest,
 } from "./masjid-pro";
@@ -89,8 +95,27 @@ describe("entitlement and board input", () => {
     expect(nextCongregation(rows, { fajr: "2026-11-09T05:45:00Z" }, Date.parse("2026-11-09T05:40:00Z"))).toEqual({
       key: "fajr",
       at: "2026-11-09T05:45:00Z",
+      iqamah: true,
     });
-    expect(nextCongregation(rows, {}, Date.parse("2026-11-09T06:00:00Z"))?.key).toBe("dhuhr");
+    expect(nextCongregation(rows, {}, Date.parse("2026-11-09T06:00:00Z"))).toMatchObject({ key: "dhuhr", iqamah: false });
+  });
+
+  it("reloads at the next congregation and never waits more than half an hour", () => {
+    expect(reloadDelay(NOW + 10 * 60_000, NOW)).toBe(10 * 60_000 + 1500);
+    expect(reloadDelay(NOW + 1000, NOW)).toBe(60_000);
+    expect(reloadDelay(NOW + 2 * 60 * 60_000, NOW)).toBe(30 * 60_000);
+    expect(reloadDelay(null, NOW)).toBe(30 * 60_000);
+  });
+
+  it("formats a countdown without a leading zero on the minutes", () => {
+    expect(formatCountdown(4_000)).toBe("0:04");
+    expect(formatCountdown(5 * 60_000 + 4_000)).toBe("5:04");
+    expect(formatCountdown(60 * 60_000 + 5 * 60_000 + 4_000)).toBe("1:05:04");
+    expect(formatCountdown(-1)).toBe("0:00");
+    expect(lobbyTheme("light")).toBe("light");
+    expect(lobbyTheme("dark")).toBe("dark");
+    expect(lobbyTheme(undefined)).toBe("dark");
+    expect(lobbyTheme("nope")).toBe("dark");
   });
 
   it("builds an embed snippet from the site origin", () => {
@@ -159,14 +184,82 @@ describe("applyPolarDelivery", () => {
   });
 });
 
+describe("steward iqamah permissions", () => {
+  it("allows an approved steward only while Masjid Pro is in force", () => {
+    expect(proTimesDecision({ approved: true, entitled: true })).toEqual({ ok: true });
+    expect(proTimesDecision({ approved: false, entitled: true })).toEqual({
+      ok: false,
+      status: 403,
+      error: "Only an approved steward of this mosque can set iqamah times.",
+    });
+    expect(proTimesDecision({ approved: true, entitled: false })).toEqual({
+      ok: false,
+      status: 402,
+      error: "Masjid Pro is not active for this mosque.",
+    });
+    // A stranger is refused before the subscription is mentioned.
+    const stranger = proTimesDecision({ approved: false, entitled: false });
+    expect(stranger.ok).toBe(false);
+    if (!stranger.ok) expect(stranger.status).toBe(403);
+  });
+
+  it("accepts a fixed time, minutes after adhan, and Jumu'ah, and refuses the rest", () => {
+    const parsed = proTimesInput.parse({
+      prayers: [
+        { prayer: "fajr", mode: "fixed", time: "05:40" },
+        { prayer: "maghrib", mode: "offset", minutes: 10 },
+      ],
+      jumuah: [{ slot: 1, time: "13:15", khutbah: "12:55" }, { slot: 2, time: "14:00", khutbah: null }],
+    });
+    expect(normalizeProTimes(parsed)).toEqual({
+      ok: true,
+      changes: [
+        { key: "iqamah.fajr", qualifier: "", value: { t: "05:40" } },
+        { key: "iqamah.maghrib", qualifier: "", value: { rule: "after_adhan", min: 10 } },
+        { key: "jumuah.jamaah", qualifier: "1", value: { t: "13:15", khutbah: "12:55" } },
+        { key: "jumuah.jamaah", qualifier: "2", value: { t: "14:00" } },
+      ],
+    });
+    expect(normalizeProTimes(proTimesInput.parse({ prayers: [{ prayer: "asr", mode: "fixed" }] })).ok).toBe(false);
+    expect(normalizeProTimes(proTimesInput.parse({ prayers: [{ prayer: "asr", mode: "offset" }] })).ok).toBe(false);
+    expect(normalizeProTimes(proTimesInput.parse({ prayers: [], jumuah: [] })).ok).toBe(false);
+    expect(
+      normalizeProTimes(
+        proTimesInput.parse({
+          prayers: [
+            { prayer: "fajr", mode: "fixed", time: "05:40" },
+            { prayer: "fajr", mode: "fixed", time: "05:50" },
+          ],
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(
+      normalizeProTimes(
+        proTimesInput.parse({
+          jumuah: [
+            { slot: 1, time: "13:15" },
+            { slot: 1, time: "13:30" },
+          ],
+        }),
+      ).ok,
+    ).toBe(false);
+    expect(proTimesInput.safeParse({ prayers: [{ prayer: "fajr", mode: "offset", minutes: 91 }] }).success).toBe(false);
+    expect(proTimesInput.safeParse({ prayers: [{ prayer: "fajr", mode: "fixed", time: "5:40" }] }).success).toBe(false);
+    expect(proTimesInput.safeParse({ jumuah: [{ slot: 7, time: "13:15" }] }).success).toBe(false);
+    expect(proTimesInput.safeParse({ prayers: [{ prayer: "sunrise", mode: "fixed", time: "06:00" }] }).success).toBe(false);
+  });
+});
+
 describe("stewards and the test grant", () => {
   it("lets an approved steward save the board on an active subscription", async () => {
     const db = createTestD1();
     place(db);
     expect(await approvedSteward(db.d1, "p1", "u1")).toBe(false);
     db.sqlite
-      .prepare(`INSERT INTO steward (id, place_id, user_id, role, status, evidence, created_at) VALUES ('s1', 'p1', 'u1', 'steward', 'approved', 'committee', 0)`)
+      .prepare(`INSERT INTO steward (id, place_id, user_id, role, status, evidence, created_at) VALUES ('s1', 'p1', 'u1', 'steward', 'requested', 'committee', 0)`)
       .run();
+    expect(await approvedSteward(db.d1, "p1", "u1")).toBe(false);
+    db.sqlite.prepare(`UPDATE steward SET status = 'approved' WHERE id = 's1'`).run();
     expect(await approvedSteward(db.d1, "p1", "u1")).toBe(true);
     expect(await saveBoard(db.d1, "p1", { notice: "No" }, NOW)).toBe(false);
     await setProForTest(db.d1, { placeId: "p1", active: true, notice: "Class cancelled tonight.", donationUrl: "https://give.example.org/elm", donationLabel: "Give", userId: "u1", now: NOW });

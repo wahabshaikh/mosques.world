@@ -159,4 +159,10 @@ export const id: Messages = {
   "display.adhan": "Azan",
   "display.iqamah": "Ikamah",
   "display.noIqamah": "—",
+  "display.countdown": "Ikamah dalam",
+  "display.countdownAdhan": "Azan dalam",
+  "display.now": "Sekarang",
+  "display.jumuah": "Jumat",
+  "display.light": "Terang",
+  "display.dark": "Gelap",
 };

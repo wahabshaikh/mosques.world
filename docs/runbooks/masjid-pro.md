@@ -5,9 +5,10 @@ A subscription for one mosque's committee: a lobby screen, a website widget, one
 ## What is live
 
 - `/for-mosques` explains the offer. The price on the page is $19 a month or $180 a year.
-- `/m/:slug/display` is the lobby screen. Without a subscription it shows the times and a preview bar. With one, the bar goes, and the notice and donation link appear.
+- `/m/:slug/display` is the lobby screen. It fills the viewport (no scroll), shows a clock and a countdown, and has `?theme=light` besides the default dark board. Without a subscription it shows the times and a preview bar. With one, the bar goes, and the notice and donation link appear.
 - `/m/:slug/widget` renders times only while the subscription is in force. It may be iframed (`frame-ancestors *`). The lobby screen may not.
 - `/m/:slug/pro` is for an approved steward of that mosque. Anyone else is told to ask to look after it.
+- `/m/:slug/pro/times` is where that steward sets iqamah, fixed or as minutes after adhan, and Jumu'ah. It requires Masjid Pro in force. The write goes through the trust engine (`PUT /api/v1/places/:id/pro/times`). A stranger gets 403. An approved steward of a mosque that is not subscribed gets 402. Checkout stays off until the Polar secrets below are set.
 - `POST /api/v1/webhooks/polar` accepts Polar deliveries. It 404s while `POLAR_WEBHOOK_SECRET` is unset.
 - `POST /api/v1/test/pro` grants or revokes a mosque without Polar. It 404s wherever the email sink is off, including production.
 
@@ -53,4 +54,4 @@ Rollback of the code is the previous Worker version. The tables can stay. Cleari
 
 ## Abuse
 
-Only an approved steward can start checkout or edit the board. The webhook signature is checked before any write, deliveries are stored once by `webhook-id`, and an older delivery cannot overwrite a newer one. A donation link has to be https on a public host. Account deletion nulls `activated_by` and leaves the mosque's screen in place.
+Only an approved steward can start checkout, edit the board, or set iqamah and Jumu'ah, and the times route also requires Masjid Pro in force. The webhook signature is checked before any write, deliveries are stored once by `webhook-id`, and an older delivery cannot overwrite a newer one. A donation link has to be https on a public host. Account deletion nulls `activated_by` and leaves the mosque's screen in place.

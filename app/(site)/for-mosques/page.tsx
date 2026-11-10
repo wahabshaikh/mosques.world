@@ -49,7 +49,7 @@ export default function ForMosquesPage() {
           <div className="grid gap-1 py-5 sm:grid-cols-[11rem_1fr] sm:gap-6">
             <dt className="font-bold">Lobby screen</dt>
             <dd className="text-sm leading-6 text-muted-foreground">
-              Today&apos;s adhan and iqamah, the next congregation, and a clock in the mosque&apos;s time zone. The times are the ones on the mosque&apos;s page. Large enough to read from the entrance. A preview bar stays on the screen until the mosque subscribes.
+              Today&apos;s adhan and iqamah, a clock, and a countdown to the next iqamah, in the mosque&apos;s time zone. It fills a television, in dark or light, and does not scroll. An approved steward sets each iqamah as a fixed time or as minutes after the adhan, and sets Jumu&apos;ah. Those times are the ones on the mosque&apos;s page. A preview bar stays on the screen until the mosque subscribes.
             </dd>
           </div>
           <div className="grid gap-1 py-5 sm:grid-cols-[11rem_1fr] sm:gap-6">
@@ -72,7 +72,7 @@ export default function ForMosquesPage() {
           What it does not do
         </h2>
         <ul className="mt-4 max-w-[42rem] list-disc space-y-2 ps-5 text-sm leading-6 text-muted-foreground">
-          <li>It does not replace the community. A time on the mosque page still shows who checked it and when.</li>
+          <li>It does not replace the community. A time on the mosque page still shows who checked it and when. A steward does not get a private timetable.</li>
           <li>It does not charge the people who come to pray, and it does not sell a sponsorship beside a mosque.</li>
           <li>It does not rank, review, or label a mosque by school of thought.</li>
         </ul>

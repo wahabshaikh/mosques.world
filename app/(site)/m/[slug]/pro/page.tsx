@@ -81,6 +81,7 @@ export default async function MasjidProPage({ params, searchParams }: { params: 
           donationLabel={pro?.donationLabel ?? null}
           embed={entitled ? embedSnippet(origin, place.slug) : null}
           checkoutReturn={query.checkout === "return"}
+          timesHref={`/m/${place.slug}/pro/times`}
         />
       )}
       <SubscriptionLine pro={pro} />

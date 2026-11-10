@@ -20,6 +20,7 @@ export function MasjidProPanel({
   donationLabel,
   embed,
   checkoutReturn,
+  timesHref,
 }: {
   placeId: string;
   intervals: Interval[];
@@ -31,6 +32,7 @@ export function MasjidProPanel({
   donationLabel: string | null;
   embed: string | null;
   checkoutReturn: boolean;
+  timesHref: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -90,6 +92,14 @@ export function MasjidProPanel({
       {error ? (
         <p className="rounded-2xl bg-warning-soft px-4 py-3 text-sm text-warning" role="alert">
           {error}
+        </p>
+      ) : null}
+
+      {entitled ? (
+        <p>
+          <a href={timesHref} className="text-sm font-bold underline">
+            Set iqamah and Jumu&apos;ah times
+          </a>
         </p>
       ) : null}
 

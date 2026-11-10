@@ -165,6 +165,12 @@ export const en = {
   "display.adhan": "Adhan",
   "display.iqamah": "Iqamah",
   "display.noIqamah": "—",
+  "display.countdown": "Iqamah in",
+  "display.countdownAdhan": "Adhan in",
+  "display.now": "Now",
+  "display.jumuah": "Jumu'ah",
+  "display.light": "Light",
+  "display.dark": "Dark",
 } as const;
 
 type Widen<T> = T extends string ? string : Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };

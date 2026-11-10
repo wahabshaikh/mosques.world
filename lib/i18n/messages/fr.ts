@@ -162,4 +162,10 @@ export const fr: Messages = {
   "display.adhan": "Adhan",
   "display.iqamah": "Iqama",
   "display.noIqamah": "—",
+  "display.countdown": "Iqama dans",
+  "display.countdownAdhan": "Adhan dans",
+  "display.now": "Maintenant",
+  "display.jumuah": "Joumou'a",
+  "display.light": "Clair",
+  "display.dark": "Sombre",
 };
